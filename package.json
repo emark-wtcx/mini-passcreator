@@ -1,5 +1,5 @@
 {
-  "name": "pass-creator",
+  "name": "wpp_passcreator",
   "version": "0.0.1",
   "description": "WPP Integration for Pass Creator",
   "main": "js/index.js",
