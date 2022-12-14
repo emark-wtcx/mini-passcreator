@@ -560,6 +560,28 @@ const jbApp = {
         alert(req.responseText + " " + status);
     },
     
+    getHtml:function(page){
+        if (page==null 
+            || page==undefined 
+            || page=='' 
+            || page.toString().length<1
+            ){
+            page = 'error'
+        }
+        var html = {
+            home:'home',
+            error:'error',
+            inputMessage:'input_message',
+            selectMessage:'select_message',
+            ribbon:'ribbon'   
+        }
+        pageHtml = './html/'+html[page]+'.html'
+        fetch(jbApp.pageHtml)
+            .then(response=> response.text())
+            .then(text=> jbApp.pageHtml = text);
+        return jbApp.pageHtml;
+    },
+    
     load:function(connection){
         if (debug) console.log('Loading jbApp')
         // If JourneyBuilder available
@@ -582,25 +604,9 @@ const jbApp = {
         // Announce ready
         if (debug) console.log('App Loading Complete')
         window.jbApp = jbApp
-    },
-    
-    getHtml:function(page){
-        if (page==null 
-            || page==undefined 
-            || page=='' 
-            || page.toString().length<1
-            ){
-            page = 'error'
-        }
-        var html = {
-            home:'home',
-            error:'error',
-            inputMessage:'input_message',
-            selectMessage:'select_message',
-            ribbon:'ribbon'   
-        }
-        jbApp.pageHtml = $.get('./html/'+html[page]+'.html')
-        return jbApp.pageHtml;
+
+        jbApp.pageHtml = jbApp.getHtml('home')
+        jbApp.refreshPage(true)
     },
 }
 jbApp.load(connection)
