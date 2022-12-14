@@ -2,7 +2,7 @@
   "name": "pass-creator",
   "version": "0.0.1",
   "description": "WPP Integration for Pass Creator",
-  "main": "index.js",
+  "main": "js/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
