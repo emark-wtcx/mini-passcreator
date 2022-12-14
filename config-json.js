@@ -1,4 +1,5 @@
-{
+module.exports = function configJSON(req) {
+    return {
     "workflowApiVersion": "1.1",
     "metaData": {
       "icon": "images/sms.png",
@@ -7,26 +8,27 @@
     "type": "REST",
     "lang": {
       "en-US": {
-        "name": "REST Activity (Workflow API v1.1)",
-        "description": "An example REST activity using workflow API v1.1 format."
+        "name": "Passcreator",
+        "description": "Custom integration for Passcreator"
       }
     },
     "arguments": {
       "execute": {
         "inArguments": [
-          {
-            "emailAddress": "{{InteractionDefaults.Email}}"
-          },
-          {
-            "phoneNumber": "{{Contact.Default.PhoneNumber}}"
-          }
-        ],
+            {"contactIdentifier": "{{Contact.Key}}"},
+            {"emailAddress": "{{InteractionDefaults.Email}}"},
+            {"message":""}
+          ],
         "outArguments": [
           {
             "foundSignupDate": ""
           }
         ],
-        "url": "https://some-endpoint.com/execute"
+        "url": `https://eol3vy07fc9qzyh.m.pipedream.net`,
+        "verb": "POST",
+        "method": "POST",
+        "format": "json",
+        "useJwt": false
       }
     },
     "configurationArguments": {
@@ -88,3 +90,4 @@
       }
     }
   }
+}
