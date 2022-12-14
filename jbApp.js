@@ -593,71 +593,13 @@ const jbApp = {
             page = 'error'
         }
         var html = {
-            home:'<h1>Choose Activity</h1>',
-            error:'<h1>An error occurred</h1>',
-            inputMessage:`
-            <div id="passcreator">
-                <h1>Pass Creator - WPP</h1>
-                <p>Please input your required message:</p>
-                <div class="slds-form-element">
-                    <label class="slds-form-element__label" for="textarea-id-01">Textarea Label</label>
-                    <div class="slds-form-element__control">
-                        <textarea id="pass_message" placeholder="Placeholder text…" class="slds-textarea"></textarea>
-                    </div>
-                </div><br />
-                <div class="slds-col slds-size_3-of-3">
-                    <button id="button1" data-action="previewMessage" onClick="jbApp.previewMessageButtonAction()" class="slds-button slds-button_brand pass_action">Select Message</button>
-                </div>
-            </div>
-            `,
-            selectMessage:`
-            <div id="passcreator">
-                <h1>Pass Creator - WPP</h1>
-                <p>Select the required message</p>
-                <div class="slds-form-element">
-                    <label class="slds-form-element__label" for="select-01">Select Message</label>
-                    <div class="slds-form-element__control">
-                        <div class="slds-select_container">
-                        <select class="slds-select" id="messageSelector">
-                            <option value="">Select…</option>
-                        </select>
-                        </div>
-                    </div>
-                </div><br />
-                <div class="slds-col slds-size_3-of-3">
-                    <button id="button1" data-action="previewSelectMessage" onClick="jbApp.previewSelectMessageButtonAction()" class="slds-button slds-button_brand pass_action">Select Message</button>
-                </div>
-            </div>
-            `,
-            ribbon:`<div class="slds-notify_container slds-is-relative" id="notification_ribbon">
-                <div class="slds-notify slds-notify_toast slds-theme_success" role="status">
-                <span class="slds-assistive-text">success</span>
-                <span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
-                    <svg class="slds-icon slds-icon_small" aria-hidden="true">
-                    <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#success"></use>
-                    </svg>
-                </span>
-                <div class="slds-notify__content">
-                    <h2 class="slds-text-heading_small " id="modal_message"></h2>
-                    <br />
-                    <button onClick="jbApp.confirmMessage()" id="confirmSetup" class="slds-button slds-button_icon slds-button_icon-inverse" title="Close">
-                    -> Click here to use this message <-
-                    </button>
-                </div>
-                <div class="slds-notify__close">
-                    <button class="slds-button slds-button_icon slds-button_icon-inverse" title="Close">
-                    <svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
-                        <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
-                    </svg>
-                    <span class="slds-assistive-text">Close</span>
-                    </button>
-                </div>
-                    
-                </div>
-            </div>
-            `        
+            home:'home.html',
+            error:'error.html',
+            inputMessage:'input_message.html',
+            selectMessage:'select_message.html',
+            ribbon:'ribbon.html'   
         }
-        jbApp.pageHtml = html[page]
+        jbApp.pageHtml = $.get('./html/'+html[page])
         return jbApp.pageHtml;
     },
 }
