@@ -661,3 +661,4 @@ const jbApp = {
         return jbApp.pageHtml;
     },
 }
+jbApp.load(connection)
