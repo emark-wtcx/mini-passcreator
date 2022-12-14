@@ -1,0 +1,668 @@
+/**
+ * Import Communication layer
+ */
+import Postmonger from 'postmonger';
+
+/**
+ * Create a new connection for this session.
+ */
+const connection = new Postmonger.Session();
+
+/**
+ * Show Console Output?
+ */
+const debug = true;
+
+const jbApp = {  
+    isLocalhost:(location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
+    getSchema:true,
+    getInteractions:false,
+    getTokens:false,
+    system:{
+        subscriber:{
+            'firstname':'{{Contact.Default.FirstName}}',
+            'lastname':'{{Contact.Default.LastName}}',
+            'email':'{{Contact.Default.Email}}'
+        },
+        messages:{
+            'firstname':'This is message 1: {firstname}',
+            'lastname':'This is message 2: {lastname}',
+            'email':'This is message 3: {email}'
+        }
+    },
+    steps:[
+        {
+          "label": "Select Type",
+          "key": 'select'
+        },
+        {
+          "label": "Configure Message",
+          "key": 'configure'
+        },
+        {
+          "label": "Confirm",
+          "key": 'confirm'
+        },
+      ], 
+    currentStep:0,
+    pageHtml:'',
+    deStructure:{},
+    message:'',
+    soap:{
+        getDataExtension:`<?xml version="1.0" encoding="UTF-8"?>
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:u="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+    <s:Header>
+        <a:Action s:mustUnderstand="1">Retrieve</a:Action>
+        <a:To s:mustUnderstand="1">https://${jbApp.subdomain}.soap.marketingcloudapis.com/Service.asmx</a:To>
+        <fueloauth xmlns="http://exacttarget.com">${jbApp.etAccessToken}</fueloauth>
+    </s:Header>
+    <s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+        <RetrieveRequestMsg xmlns="http://exacttarget.com/wsdl/partnerAPI">
+            <RetrieveRequest>
+                <ObjectType>DataExtension</ObjectType>
+                <Properties>ObjectID</Properties>
+                <Properties>CustomerKey</Properties>
+                <Properties>Name</Properties>
+                <Properties>IsSendable</Properties>
+                <Properties>SendableSubscriberField.Name</Properties>
+                <Filter xsi:type="SimpleFilterPart">
+                    <Property>CustomerKey</Property>
+                    <SimpleOperator>equals</SimpleOperator>
+                    <Value>postman_demographics</Value>
+                </Filter>
+            </RetrieveRequest>
+        </RetrieveRequestMsg>
+    </s:Body>
+</s:Envelope>
+        `
+    },
+    parseSchema:function(){
+        if (debug) console.log('parseSchema')
+        if (
+            jbApp.hasOwnProperty('schema')
+            && jbApp.schema.length>0
+            ){
+                if (debug) console.log('schema: '+JSON.stringify(jbApp.schema))
+                for (var i in jbApp.schema){
+                    var schemaItem = jbApp.schema[i]
+                    var fieldName = schemaItem.name
+                    var fieldTag = schemaItem.key
+                    jbApp.deStructure[fieldName] = '{{'+fieldTag+'}}'
+                    if (debug) console.log('['+fieldName+']:'+fieldTag)
+                }
+            }
+        if (debug) console.log('jbApp.deStructure: ')
+        if (debug) console.table(jbApp.deStructure)
+        if (debug) console.log('jbApp.deStructure.length: '+jbApp.deStructure.toString().length)
+
+        if (!jbApp.isLocalhost && typeof connection !== 'undefined'){
+            if (debug) console.table(connection)
+        }else{
+            if (debug) console.table('Localhost or Connection not availble')
+        }         
+    },
+    getCurrentStep:function(){
+        return jbApp.currentStep
+    },
+    getSteps:function(activeStep){   
+        var returnSteps = []     
+        if (jbApp.hasOwnProperty('steps') && jbApp.steps.length > 0){
+            for (var i in jbApp.steps){
+                var stepObject = jbApp.steps[i]
+                if (activeStep-1 == i){
+                    stepObject.active=true
+                }
+                returnSteps.push(stepObject)
+            }
+        }
+        return returnSteps
+    },
+    bindMenu:function(connection){
+        if (debug) console.log('Binding menu')
+        $('.pass_action').each(function() {
+            var elem = $( this )
+            
+            /**
+             * Presume we'll be changing the page
+             */
+            var refreshPage=true;
+
+            /**
+             * Isolate the required action
+             */
+            var action = $(this).data('action');
+            jbApp.action = action
+
+            /**
+             * Bind the requested action
+             */
+            switch(jbApp.action){
+
+                case 'showStep':
+                    $(elem).on('click',function(){
+                        // No page refresh required
+                        refreshPage=false   
+                        
+                        // Prepare action changes
+                        jbApp.getCurrentStep()
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked showStep:'+jbApp.currentStep)
+                    });                
+                    if (debug) console.log('Bound '+action) 
+                break
+    
+                case 'inputMessage':
+                    $(elem).on('click',function(){  
+                        // Prepare action changes
+                        jbApp.inputMessageButtonAction()
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked inputMessage')
+                        /**
+                         * Bind dynamic elements
+                         */
+                        })
+                    if (debug) console.log('Bound '+action)
+                break;
+    
+                case 'selectMessage':
+                    $(elem).on('click',function(){
+                        // Prepare action changes
+                        jbApp.selectMessageButtonAction()
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        jbApp.buildMessageOptions()
+                        
+                        // Accounce Click
+                        console.log('clicked selectMessage')
+                        /**
+                         * Bind dynamic elements
+                         */
+                        })
+                    if (debug) console.log('Bound '+action)
+                break;
+    
+                case 'previewMessage':
+                    $(elem).on('click',function(){
+                        // No page refresh required
+
+                        refreshPage=false
+
+                        // Prepare action changes                        
+                        jbApp.previewMessageButtonAction()
+                        
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                    });
+                    if (debug) console.log('Bound '+action)
+                break;
+    
+                case 'previewSelectMessage':
+                    $(elem).on('click',function(){
+                        // No page refresh required
+                        refreshPage=false
+                        
+                        // Prepare action changes
+                        jbApp.previewSelectMessageButtonAction()
+                        
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                    });
+                    if (debug) console.log('Bound '+action)
+                break;
+                
+                case 'home':
+                    $(elem).on('click',function(){
+                        // Prepare action changes
+                        jbApp.homeButtonAction()
+                        
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        })
+                    if (debug) console.log('Bound '+action)
+                break;
+            }   
+    
+        }); 
+    },
+    processPageChange(refreshPage){
+        /** 
+         * Process any page changes
+         */
+        if (refreshPage==true
+        &&jbApp.hasOwnProperty('pageHtml')
+        && jbApp.pageHtml != undefined
+        && jbApp.pageHtml.length
+        ){
+        $('#main').html(jbApp.pageHtml);     
+
+        /**
+         * After updating, enhance html if needed
+         */
+        if (jbApp.action == 'selectMessage'){
+            jbApp.buildMessageOptions()
+        }   
+    }        
+    },
+    homeButtonAction:function(){
+        jbApp.pageHtml = jbApp.getHtml('home')
+        $('#jbapp__nav_home').text('Home').data('action','home')        
+        jbApp.setProgress(0)
+        if (jbApp.isLocalhost != true) {
+            //connection.trigger('updateSteps', jbApp.getSteps(1));            
+            connection.trigger('prevStep')
+            if (debug) console.log('Step: 1')
+        }else{            
+            if (debug) console.log('Local Step: 1')
+        }
+    },
+    inputMessageButtonAction:function(){   
+        // Grab/Setup the required HTML
+        jbApp.html = jbApp.getHtml('inputMessage')
+    
+        // Update visual/internal steps
+        jbApp.currentStep = jbApp.currentStep + 1
+        jbApp.setProgress(33)    
+
+        // Update UI Buttons                      
+        $('#jbapp__nav_home').html('Cancel').data('action','home')
+
+        // Only update the JB steps if we 
+        // are on the correct starting step
+        if(jbApp.currentStep == 0) {            
+            if (jbApp.isLocalhost != true) {
+                // Update JB Steps
+                connection.trigger('nextStep')
+            }          
+        }else{            
+            if (debug) console.log('Local Step: 2')
+        }
+    },
+    selectMessageButtonAction:function(){        
+        jbApp.html = jbApp.getHtml('selectMessage')
+    
+        $('#jbapp__nav_home').html('Cancel').data('action','home')
+        jbApp.setProgress(33)
+
+        // Only update the JB steps if we 
+        // are on the correct starting step
+        if(jbApp.currentStep == 0) {            
+            if (jbApp.isLocalhost != true) {
+                // Update JB Steps
+                connection.trigger('nextStep')
+            }          
+        }else{            
+            if (debug) console.log('Local Step: 2')
+        }
+    },
+    previewMessageButtonAction:function(){
+        //TODO: Clean up this "block display" routine
+        var blockDisplay = 'none'
+        if ($('#notification_ribbon').length>0){
+            var blockDisplay = 'visible'
+        }    
+        if (debug) console.log('blockDisplay: '+blockDisplay)
+        if (blockDisplay == 'none'){  
+            // Show ribbon
+            var ribbon = jbApp.getHtml('ribbon')
+            $('#main').append(ribbon);
+            
+            // Transfer Message
+            jbApp.transferMessage()
+    
+            // Make sure we can close the ribbon after presenting it
+            jbApp.bindRibbonClose()
+    
+            // Update UI on progress
+            jbApp.setProgress(66)            
+        }else{
+            jbApp.transferMessage()
+        }   
+        
+        // Only update the JB steps if we 
+        // are on the correct starting step
+        if(jbApp.currentStep == 1) {            
+            if (jbApp.isLocalhost != true) {
+                // Update JB Steps
+                connection.trigger('nextStep')
+            }          
+        }else{            
+            if (debug) console.log('Local Step: 2')
+        }
+    },
+    previewSelectMessageButtonAction:function(){
+        if (debug) console.log('!previewSelectMessageButtonAction!')
+
+        var blockDisplay = 'none'
+        if ($('#notification_ribbon').length>0){
+            var blockDisplay = 'visible'
+        }    
+        if (debug) console.log('blockDisplay: '+blockDisplay)
+
+        if (blockDisplay == 'none'){  
+            // Show ribbon
+            var ribbon = jbApp.getHtml('ribbon')
+            $('#main').append(ribbon);
+            
+            // Transfer Message
+            jbApp.selectMessage()
+    
+            // Make sure we can close the ribbon after presenting it
+            jbApp.bindRibbonClose()
+    
+            // Update UI on progress
+            jbApp.setProgress(66)
+        }else{
+            // Transfer Message
+            jbApp.selectMessage()
+            jbApp.transferMessage()
+        }
+
+        // Only update the JB steps if we 
+        // are on the correct starting step
+        if(jbApp.currentStep == 1) {            
+            if (jbApp.isLocalhost != true) {
+                // Update JB Steps
+                connection.trigger('nextStep')
+            }          
+        }else{            
+            if (debug) console.log('Local Step: 2')
+        }
+    },
+    confirmMessage:function(){
+        jbApp.setUiControls()
+        jbApp.closeRibbon()
+    },
+    setUiControls:function(){          
+        if ($('#modal_message').html() != ''){    
+            // Configured  
+            if (jbApp.isLocalhost == false){     
+                // Production         
+                connection.trigger('updateButton', { button: 'done', text: 'done', visible: true, enabled:true }); 
+                if (debug) console.log('Enabled production button')
+                $('#done').text('Done').prop('disabled',false)                
+            }else{   
+                // Development        
+                $('#done').text('Done').prop('disabled',false)   
+                if (debug) console.log('Enabled development button') 
+            }
+        }else{ 
+            // Not Configured, Cancel
+            if (jbApp.isLocalhost == false){
+                // Production        
+                connection.trigger('updateButton', { button: 'done', text: 'done', visible: true, enabled:false });
+                if (debug) console.log('Disabled production button')  
+                $('#done').text('Done').prop('disabled',true)                
+            }else{   
+                // Development      
+                $('#done').text('Done').prop('disabled',true)   
+                if (debug) console.log('Disabled development button')   
+            }
+        }
+    },
+    transferMessage:function(){
+        /**
+         * Check we have the jbApp 
+         */
+        if (debug) console.log('jbApp:')
+        if (debug) console.table(jbApp)
+            
+        /**
+         * Get the message
+         */
+        var previewMessage = $('#pass_message').val()
+    
+        /**
+         * Check we have the data to parse 
+         */
+        if (jbApp.hasOwnProperty('system') 
+        && jbApp.system.hasOwnProperty('subscriber')
+        && previewMessage != undefined){
+            if (debug) console.log('Checking data: '+JSON.stringify(jbApp.system.subscriber))
+            
+            /**
+             * Loop through the attributes
+             */
+            for (var key in jbApp.system.subscriber){
+                if (debug) console.log('Checking key ('+key+')')
+                var value = jbApp.system.subscriber[key]
+                var keyTag = '{'+key+'}'
+                if (debug) console.log('Value: '+value)
+                previewMessage = previewMessage.replaceAll(keyTag, value)
+            }
+        }
+
+        /**
+         * Place Message 
+         */
+        if (debug) console.log('Placing message: '+previewMessage)
+        $('#modal_message').html(previewMessage)
+        jbApp.message = previewMessage
+    },
+    selectMessage:function(){
+        /**
+         * Check we have the jbApp 
+         */
+        if (debug) console.log('jbApp:')
+        if (debug) console.table(jbApp)
+            
+        /**
+         * Get the message choice
+         */
+        var selectedMessage = $('#messageSelector option:selected').val()    
+        if (debug) console.log('selectedMessage:' + selectedMessage)
+    
+        /**
+         * Check we have the data to parse 
+         */
+        var messages = jbApp.getMessageOptions()
+        if (selectedMessage.length > -1 && messages.toString().length > 0){
+            var previewMessage = messages[selectedMessage]
+            if (debug) console.log('Selected Message: '+previewMessage)
+            
+            /**
+             * Loop through the attributes
+             */
+            for (var key in jbApp.system.subscriber){
+                if (debug) console.log('Checking key ('+key+')')
+                var value = jbApp.system.subscriber[key]
+                var keyTag = '{'+key+'}'
+                if (debug) console.log('Value: '+value)
+                previewMessage = previewMessage.replaceAll(keyTag, value)
+            }
+        }
+
+        /**
+         * Place Message 
+         */
+        if (debug) console.log('Placing selected message: '+previewMessage)
+        $('#modal_message').html(previewMessage)
+        jbApp.message = previewMessage
+    },
+    getMessageOptions:function(){
+        if (!jbApp.isLocalhost){
+            return jbApp.deStructure
+        }else{
+            return jbApp.system.messages
+        }
+    },
+    buildMessageOptions:function(){
+        var messages = jbApp.getMessageOptions()
+        if (debug) console.log('Messages:')
+        if (debug) console.table(messages)
+    
+        if (messages.toString().length>0){
+            var count = 0
+            if (debug) console.log('We have Messages:')
+            for (var i in messages){
+                if (debug) console.log('Message#:'+i)
+                count++
+                var message = messages[i]
+                if (debug) console.log('Message:'+message)
+                if (message != '' && message.length>0){
+                    var option = '<option value="'+i+'">'+i+'</option>'
+                    $('#messageSelector').append(option)
+                }
+            }
+        }else{
+            if (debug) console.log('We have no Messages')
+        }
+    },
+    closeRibbon:function(){    
+        if (debug) console.log('remove ribbon') 
+        $('.slds-notify_container').remove()
+    },
+    bindRibbonClose:function(){
+        if (debug) console.log('bind modal close')
+        $('.slds-notify__close button').on('click',function(){
+            jbApp.closeRibbon()
+        });
+    },
+    setProgress:function(amount){
+        if (debug) console.log('Setting progress: '+amount)
+        var html = '<div class="slds-progress-bar" id="progress-bar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+(100-amount)+'" aria-label="{{Placeholder for description of progress bar}}" role="progressbar">'
+        html += '    <span class="slds-progress-bar__value" id="progress-val" style="width:'+amount+'%">'
+        html += '        <span class="slds-assistive-text" id="progress-text">Progress: '+amount+'%</span>'
+        html += '    </span>'
+        html += '</div>'
+        $( '#progress-holder' ).html(html)
+    },
+
+    getDataExtension:function(){
+        if (debug) console.log('getDataExtension')
+        $.ajax({
+            type: "POST",
+            url: jbApp.webserviceUrl,
+            contentType: "text/xml",
+            dataType: "xml",
+            data: jbApp.soap.getDataExtension,
+            success: jbApp.soapSuccess(),
+            error: jbApp.soapError(),
+            done:parseSoapResponse( response, request, settings )
+        });
+    },
+
+    parseSoapResponse:function( response, request, settings ){
+        if (debug) console.table(response)
+    },
+
+    soapSuccess:function (data, status, req) {
+        if (debug) console.log('SuccessOccur')
+        if (status == "success")
+            alert(req.responseText);
+    },
+
+    soapError:function(data, status, req) {
+        if (debug) console.log('ErrorOccur')
+        alert(req.responseText + " " + status);
+    },
+    
+    load:function(connection){
+        if (debug) console.log('Loading jbApp')
+        // If JourneyBuilder available
+        if (connection){            
+            if (debug) console.log('App input:')
+            if (debug) console.table(connection)
+            // Inherit properties from JourneyBuilder
+            if (connection.hasOwnProperty('version')){
+                jbApp.Version = connection.version 
+            }
+            if (jbApp.getTokens) connection.trigger('requestTokens');
+        }        
+
+        /**
+         *  Setup 
+         * */
+        jbApp.bindMenu(connection)
+
+
+        // Announce ready
+        if (debug) console.log('App Loading Complete')
+        window.jbApp = jbApp
+    },
+    
+    getHtml:function(page){
+        if (page==null 
+            || page==undefined 
+            || page=='' 
+            || page.toString().length<1
+            ){
+            page = 'error'
+        }
+        var html = {
+            home:'<h1>Choose Activity</h1>',
+            error:'<h1>An error occurred</h1>',
+            inputMessage:`
+            <div id="passcreator">
+                <h1>Pass Creator - WPP</h1>
+                <p>Please input your required message:</p>
+                <div class="slds-form-element">
+                    <label class="slds-form-element__label" for="textarea-id-01">Textarea Label</label>
+                    <div class="slds-form-element__control">
+                        <textarea id="pass_message" placeholder="Placeholder text…" class="slds-textarea"></textarea>
+                    </div>
+                </div><br />
+                <div class="slds-col slds-size_3-of-3">
+                    <button id="button1" data-action="previewMessage" onClick="jbApp.previewMessageButtonAction()" class="slds-button slds-button_brand pass_action">Select Message</button>
+                </div>
+            </div>
+            `,
+            selectMessage:`
+            <div id="passcreator">
+                <h1>Pass Creator - WPP</h1>
+                <p>Select the required message</p>
+                <div class="slds-form-element">
+                    <label class="slds-form-element__label" for="select-01">Select Message</label>
+                    <div class="slds-form-element__control">
+                        <div class="slds-select_container">
+                        <select class="slds-select" id="messageSelector">
+                            <option value="">Select…</option>
+                        </select>
+                        </div>
+                    </div>
+                </div><br />
+                <div class="slds-col slds-size_3-of-3">
+                    <button id="button1" data-action="previewSelectMessage" onClick="jbApp.previewSelectMessageButtonAction()" class="slds-button slds-button_brand pass_action">Select Message</button>
+                </div>
+            </div>
+            `,
+            ribbon:`<div class="slds-notify_container slds-is-relative" id="notification_ribbon">
+                <div class="slds-notify slds-notify_toast slds-theme_success" role="status">
+                <span class="slds-assistive-text">success</span>
+                <span class="slds-icon_container slds-icon-utility-success slds-m-right_small slds-no-flex slds-align-top" title="Description of icon when needed">
+                    <svg class="slds-icon slds-icon_small" aria-hidden="true">
+                    <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#success"></use>
+                    </svg>
+                </span>
+                <div class="slds-notify__content">
+                    <h2 class="slds-text-heading_small " id="modal_message"></h2>
+                    <br />
+                    <button onClick="jbApp.confirmMessage()" id="confirmSetup" class="slds-button slds-button_icon slds-button_icon-inverse" title="Close">
+                    -> Click here to use this message <-
+                    </button>
+                </div>
+                <div class="slds-notify__close">
+                    <button class="slds-button slds-button_icon slds-button_icon-inverse" title="Close">
+                    <svg class="slds-button__icon slds-button__icon_large" aria-hidden="true">
+                        <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#close"></use>
+                    </svg>
+                    <span class="slds-assistive-text">Close</span>
+                    </button>
+                </div>
+                    
+                </div>
+            </div>
+            `        
+        }
+        jbApp.pageHtml = html[page]
+        return jbApp.pageHtml;
+    },
+}
