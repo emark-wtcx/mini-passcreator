@@ -593,13 +593,13 @@ const jbApp = {
             page = 'error'
         }
         var html = {
-            home:'home.html',
-            error:'error.html',
-            inputMessage:'input_message.html',
-            selectMessage:'select_message.html',
-            ribbon:'ribbon.html'   
+            home:'home',
+            error:'error',
+            inputMessage:'input_message',
+            selectMessage:'select_message',
+            ribbon:'ribbon'   
         }
-        jbApp.pageHtml = $.get('./html/'+html[page])
+        jbApp.pageHtml = $.get('./html/'+html[page]+'.html')
         return jbApp.pageHtml;
     },
 }
