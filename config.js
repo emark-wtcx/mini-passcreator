@@ -1,4 +1,4 @@
-{
+return {
   "workflowApiVersion": "1.1",
   "metaData": {
     "icon": "images/pass_creator.png",
