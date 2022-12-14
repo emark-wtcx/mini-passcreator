@@ -2,14 +2,19 @@ module.exports = function configJSON(req) {
     return {
     "workflowApiVersion": "1.1",
     "metaData": {
-      "icon": "images/sms.png",
-      "category": "message"
+      "icon": `images/pass_creator.png`,
+      "category": 'messages',
+      "isConfigured":false,
+      "configOnDrop":true
     },
     "type": "REST",
     "lang": {
       "en-US": {
-        "name": "Passcreator",
-        "description": "Custom integration for Passcreator"
+        "name": 'Pass Creator',
+        "description": 'WPP Integration for Pass Creator',
+        "selectType":'Select Input Type',
+        "configureMessage":'Configure Your Message',
+        "confirm":'Confirm',
       }
     },
     "arguments": {
@@ -32,25 +37,30 @@ module.exports = function configJSON(req) {
       }
     },
     "configurationArguments": {
-      "save": {
-        "url": "URI/for/your/activity/save"
-      },
       "publish": {
-        "url": "URI/for/your/activity/publish"
+        "url": `https://eon2nxjzthbdt2w.m.pipedream.net`
       },
       "validate": {
-        "url": "URI/for/your/activity/validate"
+        "url": `https://eoxsr92hcso0n3h.m.pipedream.net`
       },
       "stop": {
-        "url": "URI/for/your/activity/stop"
+        "url": `https://eoot1xooh8qwfa8.m.pipedream.net`
       }
     },
-    "wizardSteps": [
-      { "label": "Step 1", "key": "step1" },
-      { "label": "Step 2", "key": "step2" },
-      { "label": "Step 3", "key": "step3" },
-      { "label": "Step 4", "key": "step4", "active": false }
-    ],
+    wizardSteps: [
+      {
+        "label": "Select Type",
+        "key": "selectType"
+      },
+      {
+        "label": "Configure Message",
+        "key": "configureMessage"
+      },
+      {
+        "label": "Confirm",
+        "key": "confim"
+      },
+    ], 
     "userInterfaces": {
       "configModal": {
         "height": 200,
@@ -63,11 +73,11 @@ module.exports = function configJSON(req) {
         "execute": {
           "inArguments": [
             {
-              "phoneNumber": {
-                "dataType": "Phone",
+              "message":{
+                "dataType": "text",
                 "isNullable": false,
                 "direction": "in"
-              }
+                }
             },
             {
               "emailAddress": {
@@ -77,15 +87,7 @@ module.exports = function configJSON(req) {
               }
             }
           ],
-          "outArguments": [
-            {
-              "foundSignupDate": {
-                "dataType": "Date",
-                "direction": "out",
-                "access": "visible"
-              }
-            }
-          ]
+          "outArguments": []
         }
       }
     }
