@@ -1,13 +1,3 @@
-/*
-const jbApp = require('jbApp');
-
-var http = require('http');
-http.createServer(function (req, res) {
-    console.log(`Just got a request at ${req.url}!`)
-    res.write('Yo!');
-    res.end();
-}).listen(process.env.PORT || 3000);
-*/
 // we'll store the activity on this variable when we receive it
 let activity = null;
 
