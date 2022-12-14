@@ -1,5 +1,5 @@
 return {
-  "workflowApiVersion": "1.1",
+  "workflowApiVersion": "1.2",
   "metaData": {
     "icon": "images/pass_creator.png",
     "category": "messages",
