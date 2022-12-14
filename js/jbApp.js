@@ -576,9 +576,11 @@ const jbApp = {
             ribbon:'ribbon'   
         }
         pageHtml = './html/'+html[page]+'.html'
-        fetch(jbApp.pageHtml)
-            .then(response=> response.text())
-            .then(text=> jbApp.pageHtml = text);
+        
+        $.get(pageHtml, function(data) {
+            jbApp.pageHtml = data;
+        }, "text");
+
         return jbApp.pageHtml;
     },
     
@@ -606,7 +608,7 @@ const jbApp = {
         window.jbApp = jbApp
 
         jbApp.pageHtml = jbApp.getHtml('home')
-        jbApp.refreshPage(true)
+        jbApp.processPageChange(true)
     },
 }
 jbApp.load(connection)
