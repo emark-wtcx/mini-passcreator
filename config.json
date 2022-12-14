@@ -13,7 +13,7 @@
       "description": "WPP Integration for Pass Creator",
       "selectType":"Select Input Type",
       "configureMessage":"Configure Your Message",
-      "confirm":"Confirm",
+      "confirm":"Confirm"
     }
   },
   "arguments": {
@@ -58,7 +58,7 @@
     {
       "label": "Confirm",
       "key": "confim"
-    },
+    }
   ], 
   "userInterfaces": {
     "configModal": {
