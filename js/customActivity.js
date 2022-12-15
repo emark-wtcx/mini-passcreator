@@ -1,4 +1,3 @@
-var connection = new Postmonger.Session();
 var payload = {};
 var lastStepEnabled = false;
 var steps = [
