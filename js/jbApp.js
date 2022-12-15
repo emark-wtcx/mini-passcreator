@@ -1,8 +1,7 @@
+const connection = new Postmonger.Session();
 /**
  * Create a new connection for this session.
  */
-const connection = new Postmonger.Session();
-
 /**
  * Show Console Output?
  */
