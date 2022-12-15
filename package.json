@@ -2,17 +2,20 @@
   "name": "wpp_passcreator",
   "version": "0.0.1",
   "description": "WPP Integration for Pass Creator",
-  "main": "js/index.js",
+  "main": "index.js",
   "scripts": {
-    "dev": "http-server",
+    "build":"node index.js",
+    "dev": "express",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Dale McConnell",
   "license": "ISC",
   "dependencies": {
+    "express": "^4.17.1",
+    "@salesforce-ux/design-system":"2.19.0"
   },
   "devDependencies": {    
-    "http-server":"14.1.1",
-    "express": "^4.17.1"
+    "express": "^4.17.1",
+    "@salesforce-ux/design-system":"2.19.0"
   }
 }

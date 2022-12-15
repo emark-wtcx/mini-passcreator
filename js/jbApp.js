@@ -151,17 +151,11 @@ const jbApp = {
     
                 case 'inputMessage':
                     $(elem).on('click',function(){  
-                        // Prepare action changes
-                        jbApp.inputMessageButtonAction()
-
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
-                        
                         // Accounce Click
                         console.log('clicked inputMessage')
-                        /**
-                         * Bind dynamic elements
-                         */
+
+                        // Prepare action changes
+                        jbApp.inputMessageButtonAction()
                         })
                     if (debug) console.log('Bound '+action)
                 break;
@@ -186,29 +180,16 @@ const jbApp = {
     
                 case 'previewMessage':
                     $(elem).on('click',function(){
-                        // No page refresh required
-
-                        refreshPage=false
-
                         // Prepare action changes                        
                         jbApp.previewMessageButtonAction()
-                        
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
                     });
                     if (debug) console.log('Bound '+action)
                 break;
     
                 case 'previewSelectMessage':
-                    $(elem).on('click',function(){
-                        // No page refresh required
-                        refreshPage=false
-                        
+                    $(elem).on('click',function(){                        
                         // Prepare action changes
                         jbApp.previewSelectMessageButtonAction()
-                        
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
                     });
                     if (debug) console.log('Bound '+action)
                 break;
@@ -228,28 +209,34 @@ const jbApp = {
         }); 
     },
     processPageChange(refreshPage){
+        console.log('processPageChange')
         /** 
          * Process any page changes
          */
         if (refreshPage==true
-        &&jbApp.hasOwnProperty('pageHtml')
+        && jbApp.hasOwnProperty('pageHtml')
         && jbApp.pageHtml != undefined
         && jbApp.pageHtml.length
         ){
-        $('#main').html(jbApp.pageHtml);     
+            console.log('processPageChange|main:'+jbApp.pageHtml) 
+            $('#main').html(jbApp.pageHtml);    
+            console.log('processPageChange: refresh done')
 
-        /**
-         * After updating, enhance html if needed
-         */
-        if (jbApp.action == 'selectMessage'){
-            jbApp.buildMessageOptions()
+            /**
+             * After updating, enhance html if needed
+             */
+            if (jbApp.action == 'selectMessage'){
+                jbApp.buildMessageOptions()
+            }   
+        }else{            
+            console.log('processPageChange: refresh false')
         }   
-    }        
     },
     homeButtonAction:function(){
         jbApp.pageHtml = jbApp.getHtml('home')
         $('#jbapp__nav_home').text('Home').data('action','home')        
         jbApp.setProgress(0)
+        jbApp.currentStep = 0
         if (jbApp.isLocalhost != true) {
             //connection.trigger('updateSteps', jbApp.getSteps(1));            
             connection.trigger('prevStep')
@@ -258,37 +245,44 @@ const jbApp = {
             if (debug) console.log('Local Step: 1')
         }
     },
-    inputMessageButtonAction:function(){   
-        // Grab/Setup the required HTML
-        jbApp.html = jbApp.getHtml('inputMessage')
-    
+    inputMessageButtonAction:function(){
+        // Setup the required HTML
+        jbApp.getHtml('inputMessage',1)
+
         // Update visual/internal steps
-        jbApp.currentStep = jbApp.currentStep + 1
-        jbApp.setProgress(33)    
+        jbApp.currentStep = 1
+        jbApp.setProgress(33)   
 
         // Update UI Buttons                      
-        $('#jbapp__nav_home').html('Cancel').data('action','home')
+        $('#jbapp__nav_home').html('Cancel').data('action','home') 
 
-        // Only update the JB steps if we 
-        // are on the correct starting step
-        if(jbApp.currentStep == 0) {            
+        /**
+         * Only process action if we 
+         * are on the correct starting step
+         */
+        if(jbApp.currentStep < 2) {   
+ 
+            // Running in JB
             if (jbApp.isLocalhost != true) {
                 // Update JB Steps
                 connection.trigger('nextStep')
-            }          
+            }
+  
+
         }else{            
-            if (debug) console.log('Local Step: 2')
+            if (debug) console.log('Local Step: '+jbApp.currentStep)
         }
     },
     selectMessageButtonAction:function(){        
-        jbApp.html = jbApp.getHtml('selectMessage')
+        jbApp.html = jbApp.getHtml('selectMessage',1)
     
         $('#jbapp__nav_home').html('Cancel').data('action','home')
+        jbApp.currentStep = 1
         jbApp.setProgress(33)
 
         // Only update the JB steps if we 
         // are on the correct starting step
-        if(jbApp.currentStep == 0) {            
+        if(jbApp.currentStep < 2) {            
             if (jbApp.isLocalhost != true) {
                 // Update JB Steps
                 connection.trigger('nextStep')
@@ -306,7 +300,7 @@ const jbApp = {
         if (debug) console.log('blockDisplay: '+blockDisplay)
         if (blockDisplay == 'none'){  
             // Show ribbon
-            var ribbon = jbApp.getHtml('ribbon')
+            var ribbon = jbApp.getHtml('ribbon',false)
             $('#main').append(ribbon);
             
             // Transfer Message
@@ -343,7 +337,7 @@ const jbApp = {
 
         if (blockDisplay == 'none'){  
             // Show ribbon
-            var ribbon = jbApp.getHtml('ribbon')
+            var ribbon = jbApp.getHtml('ribbon',false)
             $('#main').append(ribbon);
             
             // Transfer Message
@@ -402,13 +396,7 @@ const jbApp = {
             }
         }
     },
-    transferMessage:function(){
-        /**
-         * Check we have the jbApp 
-         */
-        if (debug) console.log('jbApp:')
-        if (debug) console.table(jbApp)
-            
+    transferMessage:function(){            
         /**
          * Get the message
          */
@@ -559,7 +547,11 @@ const jbApp = {
         alert(req.responseText + " " + status);
     },
     
-    getHtml:function(page){
+    getHtml:function(page,refreshPage){
+        if (typeof refreshPage == undefined){
+            refreshPage = true
+        }
+        if (debug) console.log('(getHtml)')
         if (page==null 
             || page==undefined 
             || page=='' 
@@ -574,11 +566,15 @@ const jbApp = {
             selectMessage:'select_message',
             ribbon:'ribbon'   
         }
-        pageHtml = './html/'+html[page]+'.html'
-        
-        $.get(pageHtml, function(data) {
-            jbApp.pageHtml = data;
-        }, "text");
+        pageHtmlLocation = './html/'+html[page]+'.html'        
+        if (debug) console.log('(getHtml)Location: '+pageHtmlLocation)
+        $.get(pageHtmlLocation, function(data) {                  
+            // Execute Action
+            console.log('(getHtml)Preparing to place:')
+            console.log(data)
+            jbApp.pageHtml = data; 
+            jbApp.processPageChange(refreshPage)
+        });
 
         return jbApp.pageHtml;
     },
@@ -607,7 +603,7 @@ const jbApp = {
         window.jbApp = jbApp
 
         jbApp.pageHtml = jbApp.getHtml('home')
-        jbApp.processPageChange(true)
+        jbApp.processPageChange(1)
     },
 }
 jbApp.load(connection)
