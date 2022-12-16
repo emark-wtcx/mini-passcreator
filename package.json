@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "local":"node index.js",
-    "build":"install --production & node index.js",
+    "build":"install",
+    "start":"node index.js",
     "dev": "express",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
