@@ -12,6 +12,4 @@ app.get('/', function (req, res) {
  
 app.listen(PORT, function () {
   console.log(`App listening on port ${PORT}`);
-  console.log('Express is a: '+typeof express);
 });
-// Comment for deployment 
