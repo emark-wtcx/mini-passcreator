@@ -171,29 +171,49 @@ function onDoneButtonClick() {
     let restBody = {"message": jbApp.message}
 
     // Add name payload
-    jbApp.payload.name = 'WPP Passcreator'
+    if (jbApp.hasOwnProperty('payload')
+    && jbApp.hasOwnProperty('name')){
+        jbApp.payload.name = 'WPP Passcreator'
+    }else{
+        console.log('missing payload or name')
+    }
 
     /**
      * Place body in outgoing call
      */ 
     // Documented method
-    jbApp.payload["arguments"].execute.inArguments = [restBody]
+    
+    if (jbApp.hasOwnProperty('payload')
+    && jbApp.hasOwnProperty('arguments')){
+        jbApp.payload["arguments"].execute.inArguments = [restBody]
 
-    // Workaround attempt(s)
-    jbApp.payload.arguments.message = jbApp.message
+        // Workaround attempt(s)
+        jbApp.payload.arguments.message = jbApp.message
+    }else{
+        console.log('missing payload or arguments')
+    }
 
     // Tell JB the activity has changes
     connection.trigger('setActivityDirtyState', true);
 
-    // Tell JB we're ready to go
-    jbApp.payload["metaData"].isConfigured = true; 
+    // Tell JB we're ready to go    
+    if (jbApp.hasOwnProperty('payload')
+    && jbApp.hasOwnProperty('arguments')){
+        jbApp.payload["metaData"].isConfigured = true; 
+    }else{
+        console.log('missing payload or metaData')
+    }
 
     // Log payload to check for message inclusion
-    if (debug) console.log('Activating payload')
-    if (debug) console.table(JSON.stringify(jbApp.payload))
+    if (jbApp.hasOwnProperty('payload')){
+        if (debug) console.log('Activating payload')
+        if (debug) console.table(JSON.stringify(jbApp.payload))
 
-    // Tell JB the activity is configured & ready to use
-    connection.trigger('updateActivity', jbApp.payload);
+        // Tell JB the activity is configured & ready to use
+        connection.trigger('updateActivity', jbApp.payload);
+    }else{
+        console.log('missing payload on activation')
+    }
 }
 
 function onCancelButtonClick() {
