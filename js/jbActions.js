@@ -108,8 +108,8 @@ function setupExampleTestHarness() {
     // Cancel Button
     jbSession.on('requestInspectorClose', function() {
         console.log('[echo] requestInspectorClose');        
-        var html = getHtml('selectMessage')
-        setProgress(0)
+        var html = jbApp.getHtml('home',1)
+        jbApp.setProgress(0)
         $('#home').text('Home')
         $('#main').html(html)
     });
