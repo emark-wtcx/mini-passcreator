@@ -1,4 +1,3 @@
-
 // we'll store the activity on this variable when we receive it
 let activity = null;
 
