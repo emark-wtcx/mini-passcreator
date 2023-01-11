@@ -217,6 +217,7 @@ function onDoneButtonClick() {
 }
 
 function onCancelButtonClick() {
+    $('#jbapp__nav_home').html('Cancel').data('action','home')
     // tell Journey Builder that this activity has no changes.
     // we wont be prompted to save changes when the inspector closes
     connection.trigger('setActivityDirtyState', false);
