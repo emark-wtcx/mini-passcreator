@@ -32,13 +32,13 @@
   },
   "configurationArguments": {
     "publish": {
-      "url": "https://eon2nxjzthbdt2w.m.pipedream.net`"
+      "url": "https://eon2nxjzthbdt2w.m.pipedream.net"
     },
     "validate": {
-      "url": "https://eoxsr92hcso0n3h.m.pipedream.net`"
+      "url": "https://eoxsr92hcso0n3h.m.pipedream.net"
     },
     "stop": {
-      "url": "https://eoot1xooh8qwfa8.m.pipedream.net`"
+      "url": "https://eoot1xooh8qwfa8.m.pipedream.net"
     }
   },
   "wizardSteps": [
