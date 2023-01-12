@@ -259,7 +259,7 @@ const jbApp = {
          * Only process action if we 
          * are on the correct starting step
          */
-        if(jbApp.currentStep < 2) {   
+        if(jbApp.currentStep < 1) {   
  
             // Running in JB
             if (jbApp.isLocalhost != true) {
@@ -281,7 +281,7 @@ const jbApp = {
 
         // Only update the JB steps if we 
         // are on the correct starting step
-        if(jbApp.currentStep < 2) {            
+        if(jbApp.currentStep < 1) {            
             if (jbApp.isLocalhost != true) {
                 // Update JB Steps
                 connection.trigger('nextStep')
