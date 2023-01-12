@@ -377,7 +377,7 @@ const jbApp = {
     },
     confirmMessage:function(){
         jbApp.setUiControls()
-        if(jbApp.currentStep == 2) {
+        if(jbApp.currentStep < 3) {
             jbApp.currentStep = 3          
             if (jbApp.isLocalhost != true) {
                 // Update JB Steps

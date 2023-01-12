@@ -181,10 +181,10 @@ function onDoneButtonClick() {
     /**
      * Place body in outgoing call
      */ 
-    // Documented method
     
     if (jbApp.hasOwnProperty('payload')
     && jbApp.payload.hasOwnProperty('arguments')){
+        // Documented method
         jbApp.payload["arguments"].execute.inArguments = [restBody]
 
         // Workaround attempt(s)
