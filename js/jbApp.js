@@ -365,7 +365,8 @@ const jbApp = {
 
         // Only update the JB steps if we 
         // are on the correct starting step
-        if(jbApp.currentStep == 1) {            
+        if(jbApp.currentStep == 1) {
+            jbApp.currentStep = 2            
             if (jbApp.isLocalhost != true) {
                 // Update JB Steps
                 connection.trigger('nextStep')
@@ -376,6 +377,15 @@ const jbApp = {
     },
     confirmMessage:function(){
         jbApp.setUiControls()
+        if(jbApp.currentStep == 2) {
+            jbApp.currentStep = 3          
+            if (jbApp.isLocalhost != true) {
+                // Update JB Steps
+                connection.trigger('nextStep')
+            } 
+            // Update UI on progress
+            jbApp.setProgress(99)      
+        }
         jbApp.closeRibbon()
     },
     setUiControls:function(){          
