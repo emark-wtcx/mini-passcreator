@@ -77,10 +77,10 @@ const jbApp = {
             && jbApp.schema.length>0
             ){
                 if (debug) console.log('schema: '+JSON.stringify(jbApp.schema))
-                for (var i in jbApp.schema){
-                    var schemaItem = jbApp.schema[i]
-                    var fieldName = schemaItem.name
-                    var fieldTag = schemaItem.key
+                for (let i in jbApp.schema){
+                    let schemaItem = jbApp.schema[i]
+                    let fieldName = schemaItem.name
+                    let fieldTag = schemaItem.key
                     jbApp.deStructure[fieldName] = '{{'+fieldTag+'}}'
                     if (debug) console.log('['+fieldName+']:'+fieldTag)
                 }
@@ -99,10 +99,10 @@ const jbApp = {
         return jbApp.currentStep
     },
     getSteps:function(activeStep){   
-        var returnSteps = []     
+        let returnSteps = []     
         if (jbApp.hasOwnProperty('steps') && jbApp.steps.length > 0){
-            for (var i in jbApp.steps){
-                var stepObject = jbApp.steps[i]
+            for (let i in jbApp.steps){
+                let stepObject = jbApp.steps[i]
                 if (activeStep-1 == i){
                     stepObject.active=true
                 }
@@ -114,17 +114,17 @@ const jbApp = {
     bindMenu:function(connection){
         if (debug) console.log('Binding menu')
         $('.pass_action').each(function() {
-            var elem = $( this )
+            let elem = $( this )
             
             /**
              * Presume we'll be changing the page
              */
-            var refreshPage=true;
+            let refreshPage=true;
 
             /**
              * Isolate the required action
              */
-            var action = $(this).data('action');
+            let action = $(this).data('action');
             jbApp.action = action
 
             /**
@@ -166,7 +166,7 @@ const jbApp = {
                         jbApp.selectMessageButtonAction()
 
                         // Execute Action
-                        jbApp.processPageChange(refreshPage)
+                        //jbApp.processPageChange(refreshPage)
                         jbApp.buildMessageOptions()
                         
                         // Accounce Click
@@ -209,7 +209,6 @@ const jbApp = {
         }); 
     },
     processPageChange(refreshPage){
-        console.log('processPageChange')
         /** 
          * Process any page changes
          */
@@ -218,9 +217,9 @@ const jbApp = {
         && jbApp.pageHtml != undefined
         && jbApp.pageHtml.length
         ){
-            console.log('processPageChange|main:'+jbApp.pageHtml) 
+            if(debug) console.log('processPageChange|main:'+jbApp.pageHtml) 
             $('#main').html(jbApp.pageHtml);    
-            console.log('processPageChange: refresh done')
+            if(debug) console.log('processPageChange: refresh done')
 
             /**
              * After updating, enhance html if needed
@@ -229,7 +228,7 @@ const jbApp = {
                 jbApp.buildMessageOptions()
             }   
         }else{            
-            console.log('processPageChange: refresh false')
+            if(debug) console.log('processPageChange: refresh false')
         }   
     },
     homeButtonAction:function(){
@@ -292,25 +291,33 @@ const jbApp = {
         }
     },
     previewMessageButtonAction:function(){
-        //TODO: Clean up this "block display" routine
-        var blockDisplay = 'none'
+        if (debug) console.log('previewMessageButtonAction start')
+        
+        let ribbonVisible = false
+
         if ($('#notification_ribbon').length>0){
-            var blockDisplay = 'visible'
+            ribbonVisible = true
         }    
-        if (debug) console.log('blockDisplay: '+blockDisplay)
-        if (blockDisplay == 'none'){  
-            // Show ribbon
-            var ribbon = jbApp.getHtml('ribbon',false)
-            $('#main').append(ribbon);
-            
-            // Transfer Message
-            jbApp.transferMessage()
-    
-            // Make sure we can close the ribbon after presenting it
-            jbApp.bindRibbonClose()
-    
-            // Update UI on progress
-            jbApp.setProgress(66)            
+
+        if (debug) console.log('ribbonVisible: '+ribbonVisible)
+
+        if (ribbonVisible == false){  
+            // Show ribbon            
+            $.when(jbApp.getHtml('ribbon',false)).then(function(ribbon){
+                if (debug){console.log('Appending ribbon: '+jbApp.pageHtml)}
+                // Place ribbon
+                $('#main').append(jbApp.pageHtml);
+                
+                // Transfer Message
+                jbApp.transferMessage()
+        
+                // Make sure we can close the ribbon after presenting it
+                jbApp.bindRibbonClose()
+        
+                // Update UI on progress
+                jbApp.setProgress(66)
+   
+            });        
         }else{
             jbApp.transferMessage()
         }   
@@ -329,25 +336,27 @@ const jbApp = {
     previewSelectMessageButtonAction:function(){
         if (debug) console.log('!previewSelectMessageButtonAction!')
 
-        var blockDisplay = 'none'
+        let blockVisible = false
         if ($('#notification_ribbon').length>0){
-            var blockDisplay = 'visible'
+            let blockVisible = true
         }    
-        if (debug) console.log('blockDisplay: '+blockDisplay)
+        if (debug) console.log('blockVisible: '+blockVisible)
 
-        if (blockDisplay == 'none'){  
-            // Show ribbon
-            var ribbon = jbApp.getHtml('ribbon',false)
-            $('#main').append(ribbon);
+        if (blockVisible == false){  
+            $.when(jbApp.getHtml('ribbon',false)).then(function(ribbon){
+                if (debug){console.log('Appending ribbon: '+jbApp.pageHtml)}
+                // Place ribbon
+                $('#main').append(jbApp.pageHtml);
             
-            // Transfer Message
-            jbApp.selectMessage()
-    
-            // Make sure we can close the ribbon after presenting it
-            jbApp.bindRibbonClose()
-    
-            // Update UI on progress
-            jbApp.setProgress(66)
+                // Transfer Message
+                jbApp.selectMessage()
+        
+                // Make sure we can close the ribbon after presenting it
+                jbApp.bindRibbonClose()
+        
+                // Update UI on progress
+                jbApp.setProgress(66)
+            });
         }else{
             // Transfer Message
             jbApp.selectMessage()
@@ -400,7 +409,7 @@ const jbApp = {
         /**
          * Get the message
          */
-        var previewMessage = $('#pass_message').val()
+        let previewMessage = $('#pass_message').val()
     
         /**
          * Check we have the data to parse 
@@ -413,10 +422,10 @@ const jbApp = {
             /**
              * Loop through the attributes
              */
-            for (var key in jbApp.system.subscriber){
+            for (let key in jbApp.system.subscriber){
                 if (debug) console.log('Checking key ('+key+')')
-                var value = jbApp.system.subscriber[key]
-                var keyTag = '{'+key+'}'
+                let value = jbApp.system.subscriber[key]
+                let keyTag = '{'+key+'}'
                 if (debug) console.log('Value: '+value)
                 previewMessage = previewMessage.replaceAll(keyTag, value)
             }
@@ -439,13 +448,13 @@ const jbApp = {
         /**
          * Get the message choice
          */
-        var selectedMessage = $('#messageSelector option:selected').val()    
+        let selectedMessage = $('#messageSelector option:selected').val()    
         if (debug) console.log('selectedMessage:' + selectedMessage)
     
         /**
          * Check we have the data to parse 
          */
-        var messages = jbApp.getMessageOptions()
+        let messages = jbApp.getMessageOptions()
         if (selectedMessage.length > -1 && messages.toString().length > 0){
             var previewMessage = messages[selectedMessage]
             if (debug) console.log('Selected Message: '+previewMessage)
@@ -453,10 +462,10 @@ const jbApp = {
             /**
              * Loop through the attributes
              */
-            for (var key in jbApp.system.subscriber){
+            for (let key in jbApp.system.subscriber){
                 if (debug) console.log('Checking key ('+key+')')
-                var value = jbApp.system.subscriber[key]
-                var keyTag = '{'+key+'}'
+                let value = jbApp.system.subscriber[key]
+                let keyTag = '{'+key+'}'
                 if (debug) console.log('Value: '+value)
                 previewMessage = previewMessage.replaceAll(keyTag, value)
             }
@@ -477,20 +486,20 @@ const jbApp = {
         }
     },
     buildMessageOptions:function(){
-        var messages = jbApp.getMessageOptions()
+        let messages = jbApp.getMessageOptions()
         if (debug) console.log('Messages:')
         if (debug) console.table(messages)
     
         if (messages.toString().length>0){
-            var count = 0
+            let count = 0
             if (debug) console.log('We have Messages:')
-            for (var i in messages){
+            for (let i in messages){
                 if (debug) console.log('Message#:'+i)
                 count++
-                var message = messages[i]
+                let message = messages[i]
                 if (debug) console.log('Message:'+message)
                 if (message != '' && message.length>0){
-                    var option = '<option value="'+i+'">'+i+'</option>'
+                    let option = '<option value="'+i+'">'+count+': '+message+'</option>'
                     $('#messageSelector').append(option)
                 }
             }
@@ -510,7 +519,7 @@ const jbApp = {
     },
     setProgress:function(amount){
         if (debug) console.log('Setting progress: '+amount)
-        var html = '<div class="slds-progress-bar" id="progress-bar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+(100-amount)+'" aria-label="{{Placeholder for description of progress bar}}" role="progressbar">'
+        let html = '<div class="slds-progress-bar" id="progress-bar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+(100-amount)+'" aria-label="{{Placeholder for description of progress bar}}" role="progressbar">'
         html += '    <span class="slds-progress-bar__value" id="progress-val" style="width:'+amount+'%">'
         html += '        <span class="slds-assistive-text" id="progress-text">Progress: '+amount+'%</span>'
         html += '    </span>'
@@ -548,35 +557,50 @@ const jbApp = {
     },
     
     getHtml:function(page,refreshPage){
-        if (typeof refreshPage == undefined){
+        if (refreshPage == null){
             refreshPage = true
         }
-        if (debug) console.log('(getHtml)')
+        if (debug) console.log('(getHtml): '+page)
         if (page==null 
-            || page==undefined 
+            || page===undefined 
             || page=='' 
             || page.toString().length<1
             ){
             page = 'error'
         }
-        var html = {
+        let html={
             home:'home',
             error:'error',
             inputMessage:'input_message',
             selectMessage:'select_message',
             ribbon:'ribbon'   
         }
-        pageHtmlLocation = './html/'+html[page]+'.html'        
-        if (debug) console.log('(getHtml)Location: '+pageHtmlLocation)
-        $.get(pageHtmlLocation, function(data) {                  
-            // Execute Action
-            console.log('(getHtml)Preparing to place:')
-            console.log(data)
-            jbApp.pageHtml = data; 
-            jbApp.processPageChange(refreshPage)
-        });
-
-        return jbApp.pageHtml;
+        let pageHtmlLocation = './html/'+html[page]+'.html'        
+        if (debug) console.log('(getHtml) Location: '+pageHtmlLocation)
+        //
+        // Retrieve page
+        //
+        $.ajax({
+            type: "GET",
+            url: pageHtmlLocation,
+            async: false,
+            success: function(response) { 
+                jbApp.pageHtml = response; 
+                if (refreshPage == true){
+                    //
+                    // Refreshing page
+                    //
+                    if (debug)console.log('(getHtml) Refreshing Page:')
+                    jbApp.processPageChange(refreshPage)
+                }else{
+                    //
+                    // Returning page
+                    //
+                    if (debug)console.log('(getHtml) Returning HTML')
+                    return jbApp.pageHtml;
+                }
+             }
+         });
     },
     
     load:function(connection){
