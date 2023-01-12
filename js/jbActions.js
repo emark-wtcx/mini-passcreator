@@ -172,7 +172,7 @@ function onDoneButtonClick() {
 
     // Add name payload
     if (jbApp.hasOwnProperty('payload')
-    && jbApp.hasOwnProperty('name')){
+    && jbApp.payload.hasOwnProperty('name')){
         jbApp.payload.name = 'WPP Passcreator'
     }else{
         console.log('missing payload or name')
@@ -184,7 +184,7 @@ function onDoneButtonClick() {
     // Documented method
     
     if (jbApp.hasOwnProperty('payload')
-    && jbApp.hasOwnProperty('arguments')){
+    && jbApp.payload.hasOwnProperty('arguments')){
         jbApp.payload["arguments"].execute.inArguments = [restBody]
 
         // Workaround attempt(s)
@@ -198,7 +198,7 @@ function onDoneButtonClick() {
 
     // Tell JB we're ready to go    
     if (jbApp.hasOwnProperty('payload')
-    && jbApp.hasOwnProperty('arguments')){
+    && jbApp.payload.hasOwnProperty('arguments')){
         jbApp.payload["metaData"].isConfigured = true; 
     }else{
         console.log('missing payload or metaData')
