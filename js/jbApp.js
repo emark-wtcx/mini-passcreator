@@ -365,8 +365,7 @@ const jbApp = {
 
         // Only update the JB steps if we 
         // are on the correct starting step
-        if(jbApp.currentStep == 1) {
-            jbApp.currentStep = 2            
+        if(jbApp.currentStep == 1) {        
             if (jbApp.isLocalhost != true) {
                 // Update JB Steps
                 connection.trigger('nextStep')
@@ -374,6 +373,7 @@ const jbApp = {
         }else{            
             if (debug) console.log('Local Step: 2')
         }
+        jbApp.currentStep = 2    
     },
     confirmMessage:function(){
         jbApp.setUiControls()
