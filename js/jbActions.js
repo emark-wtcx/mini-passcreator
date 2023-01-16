@@ -188,7 +188,7 @@ function onDoneButtonClick() {
         jbApp.payload["arguments"].execute.inArguments = [restBody]
 
         // Workaround attempt(s)
-        jbApp.payload.arguments.message = jbApp.message
+        //jbApp.payload.arguments.message = jbApp.message
     }else{
         console.log('missing payload or arguments')
     }
