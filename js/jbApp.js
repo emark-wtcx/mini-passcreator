@@ -14,9 +14,9 @@ const jbApp = {
     getTokens:false,
     system:{
         subscriber:{
-            'firstname':'{{Contact.Attribute."Email Demographics".FirstName}}',
-            'lastname':'{{Contact.Attribute."Email Demographics".LastName}}',
-            'email':'{{Contact.Attribute."Email Demographics".Email}}'
+            'firstname':'{{Contact.Attribute.[Email Demographics].FirstName}}',
+            'lastname':'{{Contact.Attribute.[Email Demographics].LastName}}',
+            'email':'{{Contact.Attribute.[Email Demographics].Email}}'
         },
         messages:{
             'firstname':'This is message 1: {firstname}',
