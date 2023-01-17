@@ -101,7 +101,7 @@ const jbApp = {
         if (jbApp.passId != null){
             url = url.replace('{passId}','{{'+jbApp.passId+'}}')
         }else{
-            url = jbApp.endpoints.execute;
+            url = jbApp.credentials.dev.url;
         }
         return url;
     },
