@@ -9,6 +9,10 @@ app.use('/', express.static(__dirname + HOME_DIR));
 app.get('/', function (req, res) {
   res.sendFile(path.resolve('index.html'));
 });
+
+app.get('/execute', function (req, res) {
+  res.sendFile(path.resolve('execute.html'));
+});
  
 app.listen(PORT, function () {
   console.log(`App listening on port ${PORT}`);
