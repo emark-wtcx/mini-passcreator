@@ -167,13 +167,14 @@ function setupEventHandlers() {
 
 
 function onDoneButtonClick() {    
+    let url = jbApp.getPassEndpoint()
     // Construct Body of REST Call    
-    jbApp.payload["arguments"].execute.url = jbApp.getPassEndpoint()
+    jbApp.payload["arguments"].execute.url = url
 
 
     let restBody = {
-        "message": jbApp.message,
-        "pushNotificationText": jbApp.message
+        "endpoint": url,
+        "pushNotificationText": jbApp.message,        
     }
 
     // Add name payload
