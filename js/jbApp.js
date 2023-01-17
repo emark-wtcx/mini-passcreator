@@ -98,8 +98,8 @@ const jbApp = {
                 }
             }
         }
-        if (jbApp.passId != null){
-            url = url.replace('{passId}','{{'+jbApp.passId+'}}')
+        if (structureRow.passId != null){
+            url = url.replace('{passId}','{{'+structureRow.passId+'}}')
         }else{
             url = jbApp.endpoints.execute;
         }
