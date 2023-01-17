@@ -91,9 +91,10 @@ const jbApp = {
         jbApp.passId = null
         var url = jbApp.credentials.dev.url;
         if (jbApp.deStructure.toString().length > 0){
-            for (var key in jbApp.deStructure){
-                if (key == 'passId'){
-                    jbApp.passId = jbApp.deStructure[key]
+            for (var key in jbApp.deStructure[key]){
+                var structureRow = jbApp.deStructure[key]
+                if (structureRow.name == 'passId'){
+                    jbApp.passId = jbApp.deStructure[structureRow.key]
                 }
             }
         }
