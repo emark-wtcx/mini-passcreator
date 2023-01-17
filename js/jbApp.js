@@ -88,6 +88,7 @@ const jbApp = {
         `
     },
     getPassEndpoint:function(){
+        console.log('getPassEndpoint triggered')
         jbApp.passId = null
         var url = jbApp.credentials.dev.url;
         
@@ -96,6 +97,7 @@ const jbApp = {
         if (jbApp.deStructure.toString().length > 0){
             for (var key in jbApp.deStructure[key]){
                 var structureRow = jbApp.deStructure[key]
+                console.log('getPassEndpoint data:'+structureRow.toString())
                 if (structureRow.name == 'passId'){
                     jbApp.passId = structureRow.key
                 }
@@ -106,7 +108,7 @@ const jbApp = {
         if (jbApp.passId != null){
             url = url.replace('{passId}','{{'+jbApp.passId+'}}')
         }else{
-            url = jbApp.credentials.dev.url.replace('{passId}','{{'+jbApp.passId+'}}');
+            url = jbApp.credentials.dev.url
         }
         return url;
     },
