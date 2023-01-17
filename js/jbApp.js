@@ -12,6 +12,17 @@ const jbApp = {
     getSchema:true,
     getInteractions:false,
     getTokens:false,
+    passId:null,
+    credentials:{
+        dev:{
+            'url': 'https://eol3vy07fc9qzyh.m.pipedream.net',
+            'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
+        },
+        prod:{
+            'url': '//app.passcreator.com/api/pass/{passId}/sendpushnotification',
+            'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
+        }
+    },
     system:{
         subscriber:{
             'firstname':'{{Contact.Attribute."Email Demographics".Firstname}}',
@@ -23,6 +34,12 @@ const jbApp = {
             'lastname':'This is message 2: {lastname}',
             'email':'This is message 3: {email}'
         }
+    },
+    endpoints:{        
+        "execute":"https://eol3vy07fc9qzyh.m.pipedream.net",
+        "publish": "https://eon2nxjzthbdt2w.m.pipedream.net",
+        "validate": "https://eoxsr92hcso0n3h.m.pipedream.net",
+        "stop": "https://eoot1xooh8qwfa8.m.pipedream.net"
     },
     steps:[
         {
@@ -69,6 +86,23 @@ const jbApp = {
     </s:Body>
 </s:Envelope>
         `
+    },
+    getPassEndpoint:function(){
+        jbApp.passId = null
+        var url = jbApp.credentials.dev.url;
+        if (jbApp.deStructure.toString().length > 0){
+            for (var key in jbApp.deStructure){
+                if (key == 'passId'){
+                    jbApp.passId = jbApp.deStructure[key]
+                }
+            }
+        }
+        if (jbApp.passId != null){
+            url = url.replace('{passId}','{{'+jbApp.passId+'}}')
+        }else{
+            url = jbApp.endpoints.execute;
+        }
+        return url;
     },
     parseSchema:function(){
         if (debug) console.log('parseSchema')
