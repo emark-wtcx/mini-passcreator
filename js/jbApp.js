@@ -90,18 +90,23 @@ const jbApp = {
     getPassEndpoint:function(){
         jbApp.passId = null
         var url = jbApp.credentials.dev.url;
+        
+        // Check for a value
+        // Extract value if present
         if (jbApp.deStructure.toString().length > 0){
             for (var key in jbApp.deStructure[key]){
                 var structureRow = jbApp.deStructure[key]
                 if (structureRow.name == 'passId'){
-                    jbApp.passId = jbApp.deStructure[structureRow.key]
+                    jbApp.passId = structureRow.key
                 }
             }
         }
+        
+        // Populate value if present
         if (jbApp.passId != null){
             url = url.replace('{passId}','{{'+jbApp.passId+'}}')
         }else{
-            url = jbApp.credentials.dev.url;
+            url = jbApp.credentials.dev.url.replace('{passId}','{{'+jbApp.passId+'}}');
         }
         return url;
     },
