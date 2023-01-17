@@ -98,7 +98,7 @@ const jbApp = {
             console.log('getPassEndpoint deStructure exists:'+jbApp.deStructure.toString())
             for (var key in jbApp.deStructure){
                 var data = jbApp.deStructure[key].toString()
-                console.log('getPassEndpoint data:'+passId)
+                console.log('getPassEndpoint data:'+data)
                 if (key == 'passId'){
                     jbApp.passId = data
                 }
