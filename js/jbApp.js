@@ -95,7 +95,7 @@ const jbApp = {
         // Check for a value
         // Extract value if present
         if (jbApp.hasOwnProperty('deStructure')){
-            console.log('getPassEndpoint deStructure exists')
+            console.log('getPassEndpoint deStructure exists:'+jbApp.deStructure.toString())
             for (var key in jbApp.deStructure){
                 var structureRow = jbApp.deStructure[key]
                 console.log('getPassEndpoint data:'+structureRow.toString())
