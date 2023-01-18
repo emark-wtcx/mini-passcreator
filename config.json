@@ -19,7 +19,6 @@
   "arguments": {
     "execute": {
       "inArguments": [
-          {"emailAddress": "{{InteractionDefaults.Email}}"},
           {"message":""}
         ],
       "outArguments": [],
