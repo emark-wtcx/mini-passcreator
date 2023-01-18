@@ -165,7 +165,6 @@ function setupEventHandlers() {
     $('#cancel').on('click', onCancelButtonClick);
 }
 
-
 function onDoneButtonClick() {    
     // Construct Body of REST Call     
     let restBody = {"message": jbApp.message}
