@@ -19,7 +19,7 @@ const jbApp = {
             'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
         },
         prod:{
-            'url': '//app.passcreator.com/api/pass/{passId}/sendpushnotification',
+            'url': 'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
             'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
         }
     },
