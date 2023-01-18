@@ -90,7 +90,7 @@ const jbApp = {
     getPassEndpoint:function(){
         console.log('getPassEndpoint triggered')
         jbApp.passId = null
-        var url = jbApp.credentials.prod.url;
+        var url = jbApp.credentials.dev.url;
         
         // Check for a value
         // Extract value if present
