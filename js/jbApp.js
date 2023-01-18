@@ -108,7 +108,8 @@ const jbApp = {
         }
         
         // Populate value if present
-        if (jbApp.passId != null){
+        if (jbApp.passId != null
+            && jbApp.pass.toString().length > 0){
             url = url.replace('{passId}',jbApp.passId)
         }else{
             url = jbApp.credentials.dev.url

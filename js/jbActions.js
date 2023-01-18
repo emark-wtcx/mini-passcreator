@@ -166,18 +166,16 @@ function setupEventHandlers() {
 }
 
 
-function onDoneButtonClick() {    
-    let url = jbApp.getPassEndpoint()
-    // Construct Body of REST Call    
+function onDoneButtonClick() { 
+    /**
+     * Determine url for user
+     */     
+    let url = jbApp.getPassEndpoint() 
     jbApp.payload["arguments"].execute.url = url
 
-
-    let restBody = {
-        "endpoint": url,
-        "pushNotificationText": jbApp.message,        
-    }
-
-    // Add name payload
+    /**
+     * Add JB payload name
+     */
     if (jbApp.hasOwnProperty('payload')
     && jbApp.payload.hasOwnProperty('name')){
         jbApp.payload.name = 'WPP Passcreator'
@@ -186,16 +184,21 @@ function onDoneButtonClick() {
     }
 
     /**
-     * Place body in outgoing call
-     */ 
-    
+     * Build external payload
+     */
+    let restBody = {
+        "message": jbApp.message,
+        "endpoint": url,
+        "pushNotificationText": jbApp.message,        
+    }
+
+    /**
+     * Place external payload in body of outgoing call
+     */     
     if (jbApp.hasOwnProperty('payload')
     && jbApp.payload.hasOwnProperty('arguments')){
         // Documented method
         jbApp.payload["arguments"].execute.inArguments = [restBody]
-
-        // Workaround attempt(s)
-        //jbApp.payload.arguments.message = jbApp.message
     }else{
         console.log('missing payload or arguments')
     }
