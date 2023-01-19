@@ -7,7 +7,8 @@ const connection = new Postmonger.Session();
  */
 const debug = true;
 
-const jbApp = {  
+const jbApp = { 
+    isTest:true, 
     isLocalhost:(location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
     getSchema:true,
     getInteractions:false,
@@ -90,7 +91,11 @@ const jbApp = {
     getPassEndpoint:function(){
         console.log('getPassEndpoint triggered')
         jbApp.passId = null
-        var url = jbApp.credentials.dev.url;
+        if (jbApp.isTest){
+            var url = jbApp.credentials.dev.url;
+        }else{
+            var url = jbApp.credentials.prod.url;
+        }
         
         // Check for a value
         // Extract value if present
