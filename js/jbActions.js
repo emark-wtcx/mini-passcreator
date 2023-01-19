@@ -188,8 +188,7 @@ function onDoneButtonClick() {
      */
     let restBody = {
         "message": jbApp.message,
-        "endpoint": url,
-        "pushNotificationText": jbApp.message,        
+        "endpoint": jbApp.credentials.prod.url      
     }
 
     /**
