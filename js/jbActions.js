@@ -188,7 +188,7 @@ function onDoneButtonClick() {
      */
     let restBody = {
         "message": jbApp.message,
-        "endpoint": jbApp.credentials.prod.url      
+        "endpoint": jbApp.credentials.prod.url.replace('{passId}',jbApp.passId)      
     }
 
     /**
