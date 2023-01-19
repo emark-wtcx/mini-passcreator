@@ -89,7 +89,7 @@ const jbApp = {
         `
     },
     getPassEndpoint:function(){
-        console.log('getPassEndpoint triggered')
+        if (debug) console.log('getPassEndpoint triggered')
         jbApp.passId = null
         if (jbApp.isTest){
             var url = jbApp.credentials.dev.url;
@@ -100,16 +100,16 @@ const jbApp = {
         // Check for a value
         // Extract value if present
         if (jbApp.hasOwnProperty('deStructure')){
-            console.log('getPassEndpoint deStructure exists:'+jbApp.deStructure.toString())
+            if (debug) console.log('getPassEndpoint deStructure exists:'+jbApp.deStructure.toString())
             for (var key in jbApp.deStructure){
                 var data = jbApp.deStructure[key].toString()
-                console.log('getPassEndpoint data:'+data)
+                if (debug) console.log('getPassEndpoint data:'+data)
                 if (key == 'passId'){
                     jbApp.passId = data
                 }
             }
         }else{
-            console.log('getPassEndpoint deStructure missing')
+            if (debug) console.log('getPassEndpoint deStructure missing')
         }
         
         // Populate value if present
@@ -203,7 +203,7 @@ const jbApp = {
                 case 'inputMessage':
                     $(elem).on('click',function(){  
                         // Accounce Click
-                        console.log('clicked inputMessage')
+                        if (debug) console.log('clicked inputMessage')
 
                         // Prepare action changes
                         jbApp.inputMessageButtonAction()
@@ -221,7 +221,7 @@ const jbApp = {
                         jbApp.buildMessageOptions()
                         
                         // Accounce Click
-                        console.log('clicked selectMessage')
+                        if (debug) console.log('clicked selectMessage')
                         /**
                          * Bind dynamic elements
                          */
@@ -355,7 +355,7 @@ const jbApp = {
         if (ribbonVisible == false){  
             // Show ribbon            
             $.when(jbApp.getHtml('ribbon',false)).then(function(ribbon){
-                if (debug){console.log('Appending ribbon: '+jbApp.pageHtml)}
+                if (debug) console.log('Appending ribbon: '+jbApp.pageHtml)
                 // Place ribbon
                 $('#main').append(jbApp.pageHtml);
                 
@@ -395,7 +395,7 @@ const jbApp = {
 
         if (blockVisible == false){  
             $.when(jbApp.getHtml('ribbon',false)).then(function(ribbon){
-                if (debug){console.log('Appending ribbon: '+jbApp.pageHtml)}
+                if (debug) console.log('Appending ribbon: '+jbApp.pageHtml)
                 // Place ribbon
                 $('#main').append(jbApp.pageHtml);
             
