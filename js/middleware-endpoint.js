@@ -3,15 +3,16 @@ export default defineComponent({
       const headers = {}
   
       const bodyContent = {
-        "pushNotificationText":steps.trigger.event.body.inArguments[0].message,
-        "url":steps.trigger.event.body.inArguments[0].endpoint
+        "pushNotificationText":steps.trigger.event.body.inArguments[0].message
       }
+      const url = steps.trigger.event.body.inArguments[0].endpoint
+      
       await $.respond({
         status: 200,
         headers,
         bodyContent
       }).then(
-      fetch('https://reqbin.com/echo/post/json', {
+      fetch(url, {
         method: 'POST',
         headers: {
             'Accept': 'application/json',
