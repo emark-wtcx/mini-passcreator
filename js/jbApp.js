@@ -16,7 +16,7 @@ const jbApp = {
     passId:null,
     credentials:{
         dev:{
-            'url': 'https://eol3vy07fc9qzyh.m.pipedream.net/?passId={passId}',
+            'url': 'https://eol3vy07fc9qzyh.m.pipedream.net/',
             'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
         },
         prod:{
