@@ -8,7 +8,7 @@ const connection = new Postmonger.Session();
 const debug = true;
 
 const jbApp = { 
-    isTest:true, 
+    isTest:false, 
     isLocalhost:(location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
     getSchema:true,
     getInteractions:false,
