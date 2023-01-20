@@ -3,6 +3,7 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const cors = require('cors');
+const {finalResponse} = {'data':null}
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 var PORT = process.env.port || 8080;
@@ -33,10 +34,12 @@ app.post('/execute', function (req, res, next) {
   let passId = 'f2235798-6df8-4c85-97b3-a8b0ce26351a'
   req.body.url = 'https://app.passcreator.com/api/pass/'+passId+'/sendpushnotification'
   let serverResponse = postMessage(req.body)
-  res.json(serverResponse)
+  console.log('serverResponse: ')
+  console.table(serverResponse)
+  return res.json(serverResponse)
 })
 
-const postMessage = function(data){
+postMessage = function(data){
   d = new Date();
   var requestDate = d.toLocaleDateString()
   var requestTime = d.toLocaleTimeString()
@@ -53,19 +56,22 @@ const postMessage = function(data){
     "Authorization":apiKey
   }
   console.log('URL: '+data.url)
+  console.log('Headers: ')
   console.table(headers)
 
   var callResponse = postData(data.url, bodyContent)
   .then((dataResponse) => {
     //  Build response /
-    let messageResponse = {
+    var messageResponse = {
       'requestDate':dateTime,
       'status':dataResponse.status
     }
-    console.log(messageResponse); 
-    return messageResponse
+    console.log('messageResponse:'); 
+    console.table(messageResponse);
+    finalResponse = messageResponse
   });
-  return callResponse
+  console.log('Final Response Called:'); 
+  return finalResponse
 
 }
 
