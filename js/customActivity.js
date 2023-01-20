@@ -193,5 +193,5 @@ function save() {
 }
 
 function getMessage() {
-    return $("#messageSelector").find("option:selected").attr("value").trim();
+    return $("#pass_message").find("option:selected").attr("value").trim();
 }

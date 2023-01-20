@@ -1,9 +1,10 @@
 const apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
+const postDebug = false
 const express = require('express');
 const app = express();
 const path = require('path');
 const cors = require('cors');
-const {finalResponse} = {'data':null}
+var {finalResponse} = {'data':null}
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 var PORT = process.env.port || 8080;
@@ -17,11 +18,12 @@ app.use(cors());
 app.get('/', function (req, res) {
   res.sendFile(path.resolve('index.html'));
 });
-
+/**
+ *  Uncomment for development form
 app.all('/form', function (req, res) {
   res.sendFile(path.resolve('./html/form.html'));
 });
- 
+ */
 app.listen(PORT, function () {
   console.log(`App listening on port ${PORT}`);
 });
@@ -34,8 +36,8 @@ app.post('/execute', function (req, res, next) {
   let passId = 'f2235798-6df8-4c85-97b3-a8b0ce26351a'
   req.body.url = 'https://app.passcreator.com/api/pass/'+passId+'/sendpushnotification'
   let serverResponse = postMessage(req.body)
-  console.log('serverResponse: ')
-  console.table(serverResponse)
+  if (postDebug) console.log('serverResponse: ')
+  if (postDebug) console.table(serverResponse)
   return res.json(serverResponse)
 })
 
@@ -47,30 +49,30 @@ postMessage = function(data){
   const bodyContent = {
     "pushNotificationText":data.message+ ' | ['+dateTime+']'
   }
-  console.log('bodyContent: ')
-  console.table(bodyContent)
+  if (postDebug) console.log('bodyContent: ')
+  if (postDebug) console.table(bodyContent)
   let dataType = 'application/json'
   var headers = {
     "Accept": dataType,
     "Content-Type": dataType,
     "Authorization":apiKey
   }
-  console.log('URL: '+data.url)
-  console.log('Headers: ')
-  console.table(headers)
+  if (postDebug) console.log('URL: '+data.url)
+  if (postDebug) console.log('Headers: ')
+  if (postDebug) console.table(headers)
 
   var callResponse = postData(data.url, bodyContent)
-  .then((dataResponse) => {
-    //  Build response /
-    var messageResponse = {
-      'requestDate':dateTime,
-      'status':dataResponse.status
-    }
-    console.log('messageResponse:'); 
-    console.table(messageResponse);
-    finalResponse = messageResponse
-  });
-  console.log('Final Response Called:'); 
+    .then((dataResponse) => {
+      //  Build response /
+      var messageResponse = {
+        'requestDate':dateTime,
+        'status':dataResponse.status
+      }
+      if (postDebug) console.log('messageResponse:'); 
+      if (postDebug) console.table(messageResponse);
+      finalResponse = messageResponse
+    });
+  if (postDebug) console.log('Final Response Called:'); 
   return finalResponse
 
 }
@@ -97,7 +99,7 @@ async function postData(url = '', postData) {
     body: JSON.stringify(postData) // body data type must match "Content-Type" header
   }).catch((error) => {
     // Broadcast error 
-    console.log('Backend error:'+JSON.stringify(error));
+    if (postDebug) console.log('Backend error:'+JSON.stringify(error));
     return error;
   });
   return response; // return response
