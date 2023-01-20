@@ -33,8 +33,8 @@ app.listen(PORT, function () {
  *  Back End 
 * */
 app.post('/execute', function (req, res, next) { 
-  let passId = 'f2235798-6df8-4c85-97b3-a8b0ce26351a'
-  req.body.url = 'https://app.passcreator.com/api/pass/'+passId+'/sendpushnotification'
+  //let passId = 'f2235798-6df8-4c85-97b3-a8b0ce26351a'
+  //req.body.url = 'https://app.passcreator.com/api/pass/'+passId+'/sendpushnotification'
   let serverResponse = postMessage(req.body)
   if (postDebug) console.log('serverResponse: ')
   if (postDebug) console.table(serverResponse)
