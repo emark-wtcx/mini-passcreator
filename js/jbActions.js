@@ -171,7 +171,6 @@ function onDoneButtonClick() {
      * Determine url for user
      */     
     let url = jbApp.getPassEndpoint() 
-    jbApp.payload["arguments"].execute.url = 'https://real-puce-raven-yoke.cyclic.app/execute'
 
     /**
      * Add JB payload name
@@ -188,7 +187,7 @@ function onDoneButtonClick() {
      */
     let restBody = {
         "message": jbApp.message,
-        "endpoint": jbApp.credentials.prod.url.replace('{passId}',jbApp.passId)      
+        "endpoint": url
     }
 
     /**
