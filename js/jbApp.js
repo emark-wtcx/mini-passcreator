@@ -8,7 +8,7 @@ const connection = new Postmonger.Session();
 const debug = true;
 
 const jbApp = { 
-    isTest:true, 
+    isTest:false, 
     isLocalhost:(location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
     getSchema:true,
     getInteractions:false,
@@ -20,7 +20,7 @@ const jbApp = {
             'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
         },
         prod:{
-            'url': 'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
+            'url': '/execute',
             'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
         }
     },
