@@ -60,9 +60,9 @@ const postMessage = function(data){
     //  Build response /
     let messageResponse = {
       'requestDate':dateTime,
-      'body':dataResponse
+      'status':dataResponse.status
     }
-    console.log(messageResponse); // JSON data parsed by `data.json()` call
+    console.log(messageResponse); 
     return messageResponse
   });
   return callResponse
