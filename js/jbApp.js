@@ -20,7 +20,7 @@ const jbApp = {
             'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
         },
         prod:{
-            'url': 'https://real-puce-raven-yoke.cyclic.app/execute',
+            'url': 'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
             'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
         }
     },
@@ -37,7 +37,7 @@ const jbApp = {
         }
     },
     endpoints:{        
-        "execute":"https://eol3vy07fc9qzyh.m.pipedream.net",
+        "execute":"https://real-puce-raven-yoke.cyclic.app/execute",
         "publish": "https://eon2nxjzthbdt2w.m.pipedream.net",
         "validate": "https://eoxsr92hcso0n3h.m.pipedream.net",
         "stop": "https://eoot1xooh8qwfa8.m.pipedream.net"

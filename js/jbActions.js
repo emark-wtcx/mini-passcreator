@@ -171,7 +171,7 @@ function onDoneButtonClick() {
      * Determine url for user
      */     
     let url = jbApp.getPassEndpoint() 
-    jbApp.payload["arguments"].execute.url = url
+    jbApp.payload["arguments"].execute.url = 'https://real-puce-raven-yoke.cyclic.app/execute'
 
     /**
      * Add JB payload name
