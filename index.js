@@ -24,9 +24,6 @@ app.all('/form', function (req, res) {
   res.sendFile(path.resolve('./html/form.html'));
 });
  */
-app.listen(PORT, function () {
-  console.log(`App listening on port ${PORT}`);
-});
 
 
 /**
@@ -104,3 +101,8 @@ async function postData(url = '', postData) {
   });
   return response; // return response
 }
+
+
+app.listen(PORT, function () {
+  console.log(`App listening on port ${PORT}`);
+});
