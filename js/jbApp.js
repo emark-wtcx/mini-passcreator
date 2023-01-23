@@ -645,7 +645,7 @@ const jbApp = {
             type: "GET",
             url: pageHtmlLocation,
             async: false,
-            success: function(response) { 
+            success: function(response) {                 
                 jbApp.pageHtml = response; 
                 if (refreshPage == true){
                     //
@@ -662,6 +662,10 @@ const jbApp = {
                 }
              }
          });
+    },
+
+    translatePage:function(html){
+        if (jbApp.lang
     },
     
     load:function(connection){
