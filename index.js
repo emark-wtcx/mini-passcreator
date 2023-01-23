@@ -59,7 +59,7 @@ postMessage = function(data){
   if (postDebug) console.log('Headers: ')
   if (postDebug) console.table(headers)
 
-  var callResponse = postData(data.url, bodyContent)
+  postData(data.url, bodyContent)
     .then((dataResponse) => {
       //  Build response /
       var messageResponse = {
