@@ -133,7 +133,7 @@ const jbApp = {
                     let fieldName = schemaItem.name
                     let fieldTag = schemaItem.key
                     if (schemaItem.type == 'Text'
-                    && parseInt(schemaItem.length) == 80)
+                    && schemaItem.length == '80')
                     {
                     jbApp.deStructure[fieldName] = '{{'+fieldTag+'}}'
                     }
