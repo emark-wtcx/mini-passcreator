@@ -665,7 +665,7 @@ const jbApp = {
     },
 
     translatePage:function(html){
-        if (jbApp.lang
+        
     },
     
     load:function(connection){
