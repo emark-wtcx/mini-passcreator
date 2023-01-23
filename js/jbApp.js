@@ -132,7 +132,11 @@ const jbApp = {
                     let schemaItem = jbApp.schema[i]
                     let fieldName = schemaItem.name
                     let fieldTag = schemaItem.key
+                    if (schemaItem.type == 'Text'
+                    && parseInt(schemaItem.length) == 80)
+                    {
                     jbApp.deStructure[fieldName] = '{{'+fieldTag+'}}'
+                    }
                     if (debug) console.log('['+fieldName+']:'+fieldTag)
                 }
             }
@@ -560,7 +564,7 @@ const jbApp = {
                 let message = messages[i]
                 if (debug) console.log('Message:'+message)
                 if (message != '' && message.length>0){
-                    let option = '<option value="'+i+'">'+count+': '+message+'</option>'
+                    let option = '<option value="'+i+'">'+count+': '+i+'</option>'
                     $('#messageSelector').append(option)
                 }
             }
@@ -586,37 +590,7 @@ const jbApp = {
         html += '    </span>'
         html += '</div>'
         $( '#progress-holder' ).html(html)
-    },
-
-    getDataExtension:function(){
-        if (debug) console.log('getDataExtension')
-        $.ajax({
-            type: "POST",
-            url: jbApp.webserviceUrl,
-            contentType: "text/xml",
-            dataType: "xml",
-            data: jbApp.soap.getDataExtension,
-            success: jbApp.soapSuccess(),
-            error: jbApp.soapError(),
-            done:parseSoapResponse( response, request, settings )
-        });
-    },
-
-    parseSoapResponse:function( response, request, settings ){
-        if (debug) console.table(response)
-    },
-
-    soapSuccess:function (data, status, req) {
-        if (debug) console.log('SuccessOccur')
-        if (status == "success")
-            alert(req.responseText);
-    },
-
-    soapError:function(data, status, req) {
-        if (debug) console.log('ErrorOccur')
-        alert(req.responseText + " " + status);
-    },
-    
+    },    
     getHtml:function(page,refreshPage){
         if (refreshPage == null){
             refreshPage = true
@@ -663,11 +637,8 @@ const jbApp = {
              }
          });
     },
-
     translatePage:function(html){
-        
-    },
-    
+    },    
     load:function(connection){
         if (debug) console.log('Loading jbApp')
         // If JourneyBuilder available
@@ -693,6 +664,38 @@ const jbApp = {
 
         jbApp.pageHtml = jbApp.getHtml('home')
         jbApp.processPageChange(1)
+    },
+
+    /**
+     * In Progress
+     */
+    getDataExtension:function(){
+        if (debug) console.log('getDataExtension')
+        $.ajax({
+            type: "POST",
+            url: jbApp.webserviceUrl,
+            contentType: "text/xml",
+            dataType: "xml",
+            data: jbApp.soap.getDataExtension,
+            success: jbApp.soapSuccess(),
+            error: jbApp.soapError(),
+            done:parseSoapResponse( response, request, settings )
+        });
+    },
+
+    parseSoapResponse:function( response, request, settings ){
+        if (debug) console.table(response)
+    },
+
+    soapSuccess:function (data, status, req) {
+        if (debug) console.log('SuccessOccur')
+        if (status == "success")
+            alert(req.responseText);
+    },
+
+    soapError:function(data, status, req) {
+        if (debug) console.log('ErrorOccur')
+        alert(req.responseText + " " + status);
     },
 }
 jbApp.load(connection)
