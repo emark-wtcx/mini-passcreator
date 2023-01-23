@@ -4,7 +4,8 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const cors = require('cors');
-var {finalResponse} = {'data':null}
+var finalResponse = {'data':null}
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 var PORT = process.env.port || 8080;
@@ -86,14 +87,14 @@ async function postData(url = '', postData) {
     "Authorization":apiKey
   }
   const response = await fetch(url, {
-    method: 'POST', // *GET, POST, PUT, DELETE, etc.
-    mode: 'no-cors', // no-cors, *cors, same-origin
-    cache: 'no-cache', // *default, no-cache, reload, force-cache, only-if-cached
-    credentials: 'omit', // include, *same-origin, omit
+    method: 'POST', 
+    mode: 'no-cors', 
+    cache: 'no-cache', 
+    credentials: 'omit', 
     headers: headers,
-    redirect: 'follow', // manual, *follow, error
-    referrerPolicy: 'no-referrer', // no-referrer, *no-referrer-when-downgrade, origin, origin-when-cross-origin, same-origin, strict-origin, strict-origin-when-cross-origin, unsafe-url
-    body: JSON.stringify(postData) // body data type must match "Content-Type" header
+    redirect: 'follow', 
+    referrerPolicy: 'no-referrer', 
+    body: JSON.stringify(postData) 
   }).catch((error) => {
     // Broadcast error 
     if (postDebug) console.log('Backend error:'+JSON.stringify(error));
