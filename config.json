@@ -13,6 +13,8 @@
       "description": "WPP Integration for Pass Creator",
       "selectType":"Select Input Type",
       "configureMessage":"Configure Your Message",
+      "messageLimit":"Messages are limited to 80 characters",
+      "messagePlaceholder":"Enter your message...",
       "confirm":"Confirm"
     }
   },

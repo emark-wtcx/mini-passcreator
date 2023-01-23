@@ -9,6 +9,7 @@ var finalResponse = {'data':null}
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 var PORT = process.env.port || 8080;
+
 /**
  *  Front End 
 * */
@@ -20,11 +21,11 @@ app.get('/', function (req, res) {
   res.sendFile(path.resolve('index.html'));
 });
 /**
- *  Uncomment for development form
+ *  Uncomment for development form access
 app.all('/form', function (req, res) {
   res.sendFile(path.resolve('./html/form.html'));
 });
- */
+*/
 
 
 /**
@@ -59,6 +60,9 @@ postMessage = function(data){
   if (postDebug) console.log('Headers: ')
   if (postDebug) console.table(headers)
 
+  /**
+   * Transmit Message 
+   */
   postData(data.url, bodyContent)
     .then((dataResponse) => {
       //  Build response /
