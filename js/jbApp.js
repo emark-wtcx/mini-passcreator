@@ -133,6 +133,7 @@ const jbApp = {
                     let fieldName = schemaItem.name
                     let fieldTag = schemaItem.key
                     if (schemaItem.type == 'Text'
+                    && schemaItem.name != 'passId'
                     && schemaItem.length == null)
                     {
                     jbApp.deStructure[fieldName] = '{{'+fieldTag+'}}'
