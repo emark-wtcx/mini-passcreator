@@ -32,7 +32,9 @@ app.get('/form', function (req, res) {
 /**
  *  Back End Routes
 * */
-app.all('/execute', function (req, res, next) { 
+app.route('/execute')
+  .all(function (req, res, next) {
+  }).post(function (req, res, next) { 
   let serverResponse = postMessage(req.body)
   if (postDebug) console.log('serverResponse: ')
   if (postDebug) console.table(serverResponse)
