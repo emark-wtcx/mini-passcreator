@@ -167,12 +167,7 @@ function setupEventHandlers() {
 }
 
 
-function onDoneButtonClick() { 
-    /**
-     * Determine url for user
-     */     
-    let url = jbApp.getPassEndpoint() 
-
+function onDoneButtonClick() {  
     /**
      * Add JB payload name
      */
@@ -181,6 +176,14 @@ function onDoneButtonClick() {
         jbApp.payload.name = 'WPP Passcreator'
     }else{
         console.log('missing payload or name')
+    }
+
+    /**
+     * Determine url for user
+     */     
+    let url = jbApp.getPassEndpoint()
+    if (url == null){
+        return false;
     }
 
     /**

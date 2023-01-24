@@ -96,11 +96,7 @@ const jbApp = {
         jbApp.passId = null
 
         // Get starter URL based on isTest setting of app
-        if (jbApp.isTest){
-            var url = jbApp.credentials.dev.url;
-        }else{
-            var url = jbApp.credentials.prod.url;
-        }
+        var url = jbApp.credentials.prod.url;
         
         // Check for a PassId value
         // Extract value if present
@@ -121,7 +117,7 @@ const jbApp = {
         if (jbApp.passId != null){
             url = url.replace('{passId}',jbApp.passId)
         }else{
-            url = jbApp.credentials.dev.url
+            url = null
         }
         return url;
     },

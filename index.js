@@ -3,10 +3,10 @@ const app = express();
 const path = require('path');
 const cors = require('cors');
 
-var {finalResponse} = {'data':null}
 const apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
 const postDebug = true
 const HOME_DIR = '/';
+var {finalResponse} = {'data':null}
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
