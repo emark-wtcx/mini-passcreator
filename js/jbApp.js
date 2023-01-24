@@ -92,26 +92,9 @@ const jbApp = {
     },
     getPassEndpoint:function(){
         if (debug) console.log('getPassEndpoint triggered')
-        // Reset PassId between subscribers        
-        jbApp.passId = null
-
         // Get starter URL based on isTest setting of app
         var url = jbApp.credentials.prod.url;
         
-        // Check for a PassId value
-        // Extract value if present
-        if (jbApp.hasOwnProperty('deStructure')){
-            if (debug) console.log('getPassEndpoint deStructure exists:'+jbApp.deStructure.toString())
-            for (var key in jbApp.deStructure){
-                var data = jbApp.deStructure[key].toString()
-                if (debug) console.log('getPassEndpoint data:'+data)
-                if (key == 'passId'){
-                    jbApp.passId = data
-                }
-            }
-        }else{
-            if (debug) console.log('getPassEndpoint deStructure missing')
-        }
         if (jbApp.passId != null){
             url = url.replace('{passId}',jbApp.passId)
         }
@@ -128,11 +111,16 @@ const jbApp = {
                     let schemaItem = jbApp.schema[i]
                     let fieldName = schemaItem.name
                     let fieldTag = schemaItem.key
+
                     if (schemaItem.type == 'Text'
                     && schemaItem.name != 'passId'
                     && schemaItem.length == null)
                     {
                     jbApp.deStructure[fieldName] = '{{'+fieldTag+'}}'
+                    }else{
+                        if (schemaItem.name == 'passId'){                            
+                            jbApp.passId = '{{'+fieldTag+'}}'
+                        }
                     }
                     if (debug) console.log('['+fieldName+']:'+fieldTag)
                 }
