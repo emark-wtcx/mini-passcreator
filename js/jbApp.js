@@ -14,13 +14,17 @@ const jbApp = {
     getInteractions:false,
     getTokens:false,
     passId:null,
+    currentStep:0,
+    pageHtml:'',
+    deStructure:{},
+    message:'',
     credentials:{
         dev:{
             'url': 'https://eol3vy07fc9qzyh.m.pipedream.net/',
-            'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
+            'auth': null
         },
         prod:{
-            'url': 'https://real-puce-raven-yoke.cyclic.app/execute',
+            'url': 'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
             'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
         }
     },
@@ -56,10 +60,6 @@ const jbApp = {
           "key": 'confirm'
         },
       ], 
-    currentStep:0,
-    pageHtml:'',
-    deStructure:{},
-    message:'',
     soap:{
         getDataExtension:`<?xml version="1.0" encoding="UTF-8"?>
 <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:u="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
@@ -90,14 +90,17 @@ const jbApp = {
     },
     getPassEndpoint:function(){
         if (debug) console.log('getPassEndpoint triggered')
+        // Reset PassId between subscribers        
         jbApp.passId = null
+
+        // Get starter URL based on isTest setting of app
         if (jbApp.isTest){
             var url = jbApp.credentials.dev.url;
         }else{
             var url = jbApp.credentials.prod.url;
         }
         
-        // Check for a value
+        // Check for a PassId value
         // Extract value if present
         if (jbApp.hasOwnProperty('deStructure')){
             if (debug) console.log('getPassEndpoint deStructure exists:'+jbApp.deStructure.toString())

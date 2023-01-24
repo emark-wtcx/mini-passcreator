@@ -11,7 +11,7 @@ app.use(express.urlencoded({ extended: true }))
 var PORT = process.env.port || 8080;
 
 /**
- *  Front End 
+ *  Front End Routes
 * */
 const HOME_DIR = '/';
 app.use('/', express.static(__dirname + HOME_DIR));
@@ -20,33 +20,32 @@ app.use(cors());
 app.get('/', function (req, res) {
   res.sendFile(path.resolve('index.html'));
 });
+
 /**
  *  Uncomment for development form access
+ * 
 app.all('/form', function (req, res) {
   res.sendFile(path.resolve('./html/form.html'));
 });
 */
 
-
 /**
- *  Back End 
+ *  Back End Routes
 * */
 app.post('/execute', function (req, res, next) { 
-  //let passId = 'f2235798-6df8-4c85-97b3-a8b0ce26351a'
-  //req.body.url = 'https://app.passcreator.com/api/pass/'+passId+'/sendpushnotification'
   let serverResponse = postMessage(req.body)
   if (postDebug) console.log('serverResponse: ')
   if (postDebug) console.table(serverResponse)
   return res.json(serverResponse)
 })
 
+/**
+ *  Back End Functions
+* */
 postMessage = function(data){
-  d = new Date();
-  var requestDate = d.toLocaleDateString()
-  var requestTime = d.toLocaleTimeString()
-  var dateTime = requestDate+' - '+requestTime;
-  const bodyContent = {
-    "pushNotificationText":data.message+ ' | ['+dateTime+']'
+  var date = getDateTime();
+  var bodyContent = {
+    "pushNotificationText":data.message+ ' | ['+date.Time+']'
   }
   if (postDebug) console.log('bodyContent: ')
   if (postDebug) console.table(bodyContent)
@@ -61,7 +60,7 @@ postMessage = function(data){
   if (postDebug) console.table(headers)
 
   /**
-   * Transmit Message 
+   * Transmit Message via postData function
    */
   postData(data.url, bodyContent)
     .then((dataResponse) => {
@@ -76,7 +75,18 @@ postMessage = function(data){
     });
   if (postDebug) console.log('Final Response Called:'); 
   return finalResponse
+}
 
+function getDateTime(){
+  let d = new Date();
+  var requestDate = d.toLocaleDateString()
+  var requestTime = d.toLocaleTimeString()
+  var dateTime = requestDate+' - '+requestTime;
+  return{
+    'Date':requestDate,
+    'Time':requestTime,
+    'DateTime':dateTime
+  }
 }
 
 /**
