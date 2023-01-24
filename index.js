@@ -32,9 +32,7 @@ app.get('/form', function (req, res) {
 /**
  *  Back End Routes
 * */
-app.route('/execute')
-.all(function (req, res, next) {})
-.post(function (req, res, next) { 
+app.post('/execute',function (req, res, next) { 
   if (req.body != null){
     let serverResponse = postMessage(req.body)
     if (postDebug) console.log('serverResponse: ')
@@ -44,6 +42,7 @@ app.route('/execute')
     return {'message':'No data submitted'}
   }
 })
+
 
 /**
  *  Back End Functions
