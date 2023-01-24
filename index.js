@@ -26,7 +26,7 @@ app.get('/', function (req, res) {
  *  Uncomment for development form access
  * */
 app.get('/form', function (req, res) {
-  res.sendFile(path.resolve(__dirname +'/html/form.html'));
+  res.sendFile(path.resolve('./html/form.html'));
 });
 
 /**
