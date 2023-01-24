@@ -197,7 +197,7 @@ function onDoneButtonClick() {
     /**
      * Build external payload
      */
-    let d = getDateTime;
+    let d = getDateTime();
     let restBody = {
         "message": jbApp.message+'|['+d.Time+']',
         "endpoint": url
