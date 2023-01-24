@@ -1,5 +1,5 @@
 const apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
-const postDebug = false
+const postDebug = true
 const express = require('express');
 const app = express();
 const path = require('path');
