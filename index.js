@@ -43,9 +43,10 @@ app.post('/execute', function (req, res, next) {
  *  Back End Functions
 * */
 postMessage = function(data){
+  var messageData = data.inArguments[0]
   var date = getDateTime();
   var bodyContent = {
-    "pushNotificationText":data.message+ ' | ['+date.Time+']'
+    "pushNotificationText":messageData.message+ ' | ['+date.Time+']'
   }
   if (postDebug) console.log('bodyContent: ')
   if (postDebug) console.table(bodyContent)
@@ -55,14 +56,14 @@ postMessage = function(data){
     "Content-Type": dataType,
     "Authorization":apiKey
   }
-  if (postDebug) console.log('URL: '+data.url)
+  if (postDebug) console.log('URL: '+messageData.url)
   if (postDebug) console.log('Headers: ')
   if (postDebug) console.table(headers)
 
   /**
    * Transmit Message via postData function
    */
-  postData(data.url, bodyContent)
+  postData(messageData.url, bodyContent)
     .then((dataResponse) => {
       //  Build response /
       var messageResponse = {
