@@ -28,19 +28,6 @@ app.get('/form', function (req, res) {
   res.sendFile(path.resolve(__dirname +'/html/form.html'));
 });
 
-
-/**
- *  Back End Routes
-* */
-app.route('/execute')
-  .all(function (req, res, next) {
-  }).post(function (req, res, next) { 
-  let serverResponse = postMessage(req.body)
-  if (postDebug) console.log('serverResponse: ')
-  if (postDebug) console.table(serverResponse)
-  return res.json(serverResponse)
-})
-
 /**
  *  Back End Functions
 * */
@@ -131,6 +118,18 @@ async function postData(url = '', postData) {
   return response; // return response
 }
 
+
+/**
+ *  Back End Routes
+* */
+app.route('/execute')
+  .all(function (req, res, next) {
+  }).post(function (req, res, next) { 
+  let serverResponse = postMessage(req.body)
+  if (postDebug) console.log('serverResponse: ')
+  if (postDebug) console.table(serverResponse)
+  return res.json(serverResponse)
+})
 
 app.listen(PORT, function () {
   console.log(`App listening on port ${PORT}`);
