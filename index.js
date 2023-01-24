@@ -43,6 +43,13 @@ app.post('/execute',function (req, res, next) {
   }
 })
 
+/**
+ * Generic Error Handling
+ */
+app.use(function (err, req, res, next) {
+  console.error(err.stack)
+  res.status(500).send('Something broke!')
+})
 
 /**
  *  Back End Functions
@@ -52,7 +59,7 @@ postMessage = function(data){
     var messageData = data.inArguments[0]
   }else{
     var messageData = data
-    messageData.url = jbApp.credentials.dev.url
+    messageData.url = 'https://eo2mifqm9yelk7e.m.pipedream.net'
     }
     
   if (postDebug) console.log('messageData: ')
