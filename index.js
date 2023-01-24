@@ -44,21 +44,26 @@ app.post('/execute', function (req, res, next) {
 * */
 postMessage = function(data){
   var messageData = data.inArguments[0]
+  if (postDebug) console.log('messageData: ')
+  if (postDebug) console.table(messageData)
+
   var date = getDateTime();
+
   var bodyContent = {
     "pushNotificationText":messageData.message+ ' | ['+date.Time+']'
   }
   if (postDebug) console.log('bodyContent: ')
   if (postDebug) console.table(bodyContent)
+
   let dataType = 'application/json'
   var headers = {
     "Accept": dataType,
     "Content-Type": dataType,
     "Authorization":apiKey
   }
-  if (postDebug) console.log('URL: '+messageData.url)
   if (postDebug) console.log('Headers: ')
   if (postDebug) console.table(headers)
+  if (postDebug) console.log('URL: '+messageData.url)
 
   /**
    * Transmit Message via postData function
@@ -75,6 +80,7 @@ postMessage = function(data){
       finalResponse = messageResponse
     });
   if (postDebug) console.log('Final Response Called:'); 
+  if (postDebug) console.table(finalResponse)
   return finalResponse
 }
 
@@ -83,7 +89,7 @@ function getDateTime(){
   var requestDate = d.toLocaleDateString()
   var requestTime = d.toLocaleTimeString()
   var dateTime = requestDate+' - '+requestTime;
-  return{
+  return {
     'Date':requestDate,
     'Time':requestTime,
     'DateTime':dateTime
