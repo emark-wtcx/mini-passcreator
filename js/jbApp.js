@@ -112,12 +112,8 @@ const jbApp = {
         }else{
             if (debug) console.log('getPassEndpoint deStructure missing')
         }
-        
-        // Populate value if present
         if (jbApp.passId != null){
             url = url.replace('{passId}',jbApp.passId)
-        }else{
-            url = null
         }
         return url;
     },

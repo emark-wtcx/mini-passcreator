@@ -182,9 +182,6 @@ function onDoneButtonClick() {
      * Determine url for user
      */     
     let url = jbApp.getPassEndpoint()
-    if (url == null){
-        return false;
-    }
 
     /**
      * Build external payload
