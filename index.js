@@ -11,21 +11,6 @@ const HOME_DIR = '/';
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 var PORT = process.env.port || 8080;
-/**
- *  Back End Routes
-* */
-app.route('/execute')
-.all(function (req, res, next) {})
-.post(function (req, res, next) { 
-  if (req.body != null){
-    let serverResponse = postMessage(req.body)
-    if (postDebug) console.log('serverResponse: ')
-    if (postDebug) console.table(serverResponse)
-    return res.json(serverResponse)
-  }else{
-    return {'message':'No data submitted'}
-  }
-})
 
 /**
  *  Front End Routes
@@ -43,6 +28,22 @@ app.get('/', function (req, res) {
 app.get('/form', function (req, res) {
   res.sendFile(path.resolve(__dirname +'/html/form.html'));
 });
+
+/**
+ *  Back End Routes
+* */
+app.route('/execute')
+.all(function (req, res, next) {})
+.post(function (req, res, next) { 
+  if (req.body != null){
+    let serverResponse = postMessage(req.body)
+    if (postDebug) console.log('serverResponse: ')
+    if (postDebug) console.table(serverResponse)
+    return res.json(serverResponse)
+  }else{
+    return {'message':'No data submitted'}
+  }
+})
 
 /**
  *  Back End Functions
