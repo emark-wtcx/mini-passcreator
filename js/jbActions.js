@@ -166,6 +166,17 @@ function setupEventHandlers() {
     $('#cancel').on('click', onCancelButtonClick);
 }
 
+function getDateTime(){
+    let d = new Date();
+    var requestDate = d.toLocaleDateString()
+    var requestTime = d.toLocaleTimeString()
+    var dateTime = requestDate+' - '+requestTime;
+    return {
+      'Date':requestDate,
+      'Time':requestTime,
+      'DateTime':dateTime
+    }
+  }
 
 function onDoneButtonClick() {  
     /**
@@ -186,8 +197,9 @@ function onDoneButtonClick() {
     /**
      * Build external payload
      */
+    let d = getDateTime;
     let restBody = {
-        "message": jbApp.message,
+        "message": jbApp.message+'|['+d.Time+']',
         "endpoint": url
     }
 
