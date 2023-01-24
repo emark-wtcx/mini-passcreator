@@ -3,7 +3,7 @@ const app = express();
 const path = require('path');
 const cors = require('cors');
 
-var finalResponse = {'data':null}
+var {finalResponse} = {'data':null}
 const apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
 const postDebug = true
 const HOME_DIR = '/';
@@ -59,7 +59,7 @@ postMessage = function(data){
     var messageData = data.inArguments[0]
   }else{
     var messageData = data
-    messageData.url = 'https://eo2mifqm9yelk7e.m.pipedream.net'
+    messageData.url = 'https://eoya8wjvw5vh5ff.m.pipedream.net'
     }
     
   if (postDebug) console.log('messageData: ')
@@ -68,7 +68,8 @@ postMessage = function(data){
   var date = getDateTime();
 
   var bodyContent = {
-    "pushNotificationText":messageData.message+ ' | ['+date.Time+']'
+    "pushNotificationText":messageData.message+ ' | ['+date.Time+']',   
+    "url":messageData.url
   }
   if (postDebug) console.log('bodyContent: ')
   if (postDebug) console.table(bodyContent)

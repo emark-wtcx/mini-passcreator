@@ -41,7 +41,8 @@ const jbApp = {
         }
     },
     endpoints:{        
-        "jbMiddleware":"https://eol3vy07fc9qzyh.m.pipedream.net/",
+        "jbMiddleware":'https://eoya8wjvw5vh5ff.m.pipedream.net',
+        "jbTest":"https://eol3vy07fc9qzyh.m.pipedream.net/",
         "execute":"https://real-puce-raven-yoke.cyclic.app/execute",
         "publish": "https://eon2nxjzthbdt2w.m.pipedream.net",
         "validate": "https://eoxsr92hcso0n3h.m.pipedream.net",
