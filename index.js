@@ -23,11 +23,11 @@ app.get('/', function (req, res) {
 
 /**
  *  Uncomment for development form access
- * 
-app.all('/form', function (req, res) {
-  res.sendFile(path.resolve('./html/form.html'));
+ * */
+app.get('/form', function (req, res) {
+  res.sendFile(path.resolve(__dirname +'/html/form.html'));
 });
-*/
+
 
 /**
  *  Back End Routes
@@ -43,7 +43,12 @@ app.post('/execute', function (req, res, next) {
  *  Back End Functions
 * */
 postMessage = function(data){
-  var messageData = data.inArguments[0]
+  if (data.hasOwnProperty('inArguments')){
+    var messageData = data.inArguments[0]
+  }else{
+    var messageData = data
+    messageData.url = 'https://eo2mifqm9yelk7e.m.pipedream.net'
+    }
   if (postDebug) console.log('messageData: ')
   if (postDebug) console.table(messageData)
 
@@ -72,7 +77,7 @@ postMessage = function(data){
     .then((dataResponse) => {
       //  Build response /
       var messageResponse = {
-        'requestDate':dateTime,
+        'requestDate':date.DateTime,
         'status':dataResponse.status
       }
       if (postDebug) console.log('messageResponse:'); 
