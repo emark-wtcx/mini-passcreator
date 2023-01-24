@@ -1,19 +1,35 @@
-const apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
-const postDebug = true
 const express = require('express');
 const app = express();
 const path = require('path');
 const cors = require('cors');
+
 var finalResponse = {'data':null}
+const apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
+const postDebug = true
+const HOME_DIR = '/';
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 var PORT = process.env.port || 8080;
+/**
+ *  Back End Routes
+* */
+app.route('/execute')
+.all(function (req, res, next) {})
+.post(function (req, res, next) { 
+  if (req.body != null){
+    let serverResponse = postMessage(req.body)
+    if (postDebug) console.log('serverResponse: ')
+    if (postDebug) console.table(serverResponse)
+    return res.json(serverResponse)
+  }else{
+    return {'message':'No data submitted'}
+  }
+})
 
 /**
  *  Front End Routes
 * */
-const HOME_DIR = '/';
 app.use('/', express.static(__dirname + HOME_DIR));
 app.use(cors());
 
@@ -36,8 +52,9 @@ postMessage = function(data){
     var messageData = data.inArguments[0]
   }else{
     var messageData = data
-    messageData.url = 'https://eo2mifqm9yelk7e.m.pipedream.net'
+    messageData.url = jbApp.credentials.dev.url
     }
+    
   if (postDebug) console.log('messageData: ')
   if (postDebug) console.table(messageData)
 
@@ -119,17 +136,7 @@ async function postData(url = '', postData) {
 }
 
 
-/**
- *  Back End Routes
-* */
-app.route('/execute')
-  .all(function (req, res, next) {
-  }).post(function (req, res, next) { 
-  let serverResponse = postMessage(req.body)
-  if (postDebug) console.log('serverResponse: ')
-  if (postDebug) console.table(serverResponse)
-  return res.json(serverResponse)
-})
+
 
 app.listen(PORT, function () {
   console.log(`App listening on port ${PORT}`);
