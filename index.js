@@ -59,7 +59,7 @@ postMessage = function(data){
     var messageData = data.inArguments[0]
   }else{
     var messageData = data
-    messageData.url = 'https://eoya8wjvw5vh5ff.m.pipedream.net'
+    messageData.endpoint = 'https://eoya8wjvw5vh5ff.m.pipedream.net'
     }
     
   if (postDebug) console.log('messageData: ')
@@ -69,7 +69,7 @@ postMessage = function(data){
 
   var bodyContent = {
     "pushNotificationText":messageData.message+ ' | ['+date.Time+']',   
-    "url":messageData.url
+    "url":messageData.endpoint
   }
   if (postDebug) console.log('bodyContent: ')
   if (postDebug) console.table(bodyContent)
@@ -82,12 +82,12 @@ postMessage = function(data){
   }
   if (postDebug) console.log('Headers: ')
   if (postDebug) console.table(headers)
-  if (postDebug) console.log('URL: '+messageData.url)
+  if (postDebug) console.log('endpoint: '+messageData.endpoint)
 
   /**
    * Transmit Message via postData function
    */
-  postData(messageData.url, bodyContent)
+  postData(messageData.endpoint, bodyContent)
     .then((dataResponse) => {
       //  Build response /
       var messageResponse = {
