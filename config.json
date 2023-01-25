@@ -4,7 +4,7 @@
     "icon": "assets/images/pass_creator.png",
     "category": "messages",
     "isConfigured":false,
-    "configOnDrop":true
+    "configOnDrop":false
   },
   "type": "REST",
   "lang": {
