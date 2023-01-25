@@ -539,8 +539,9 @@ const jbApp = {
         let messages = jbApp.getMessageOptions()
         if (debug) console.log('Messages:')
         if (debug) console.table(messages)
-    
+        
         if (messages.toString().length>0){
+            $('#messageSelector').empty()
             let count = 0
             if (debug) console.log('We have Messages:')
             for (let i in messages){
