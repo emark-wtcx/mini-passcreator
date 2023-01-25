@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const path = require('path');
-const cors = require('cors');
+//const cors = require('cors');
 
 const apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
 const postDebug = true
@@ -16,7 +16,7 @@ var PORT = process.env.port || 8080;
  *  Front End Routes
 * */
 app.use('/', express.static(__dirname + HOME_DIR));
-app.use(cors());
+//app.use(cors());
 
 app.get('/', function (req, res) {
   res.sendFile(path.resolve('index.html'));
