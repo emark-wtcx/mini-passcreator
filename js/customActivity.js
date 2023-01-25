@@ -74,15 +74,15 @@ function initialize(data) {
 
     // If there is no message selected, disable the next button
     if (!message) {
-    showStep(null, 1);
-    connection.trigger("updateButton", { button: "next", enabled: false });
-    // If there is a message, skip to the summary step
+        showStep(null, 1);
+        connection.trigger("updateButton", { button: "next", enabled: false });
+        // If there is a message, skip to the summary step
     } else {
-    $("#select1")
-        .find("option[value=" + message + "]")
-        .attr("selected", "selected");
-    $("#message").html(message);
-    showStep(null, 3);
+        $("#select1")
+            .find("option[value=" + message + "]")
+            .attr("selected", "selected");
+        $("#message").html(message);
+        showStep(null, 3);
     }
 }
 
@@ -193,5 +193,5 @@ function save() {
 }
 
 function getMessage() {
-    return $("#messageSelector").find("option:selected").attr("value").trim();
+    return $("#pass_message").find("option:selected").attr("value").trim();
 }

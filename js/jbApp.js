@@ -8,16 +8,20 @@ const connection = new Postmonger.Session();
 const debug = true;
 
 const jbApp = { 
-    isTest:true, 
+    isTest:false, 
     isLocalhost:(location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
     getSchema:true,
     getInteractions:false,
     getTokens:false,
     passId:null,
+    currentStep:0,
+    pageHtml:'',
+    deStructure:{},
+    message:'',
     credentials:{
         dev:{
-            'url': 'https://eol3vy07fc9qzyh.m.pipedream.net/',
-            'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
+            'url': 'https://eoya8wjvw5vh5ff.m.pipedream.net',
+            'auth': null
         },
         prod:{
             'url': 'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
@@ -37,7 +41,9 @@ const jbApp = {
         }
     },
     endpoints:{        
-        "execute":"https://eol3vy07fc9qzyh.m.pipedream.net",
+        "jbMiddleware":"https://eoya8wjvw5vh5ff.m.pipedream.net",
+        "jbTest":"https://eo2mifqm9yelk7e.m.pipedream.net",
+        "execute":"https://eoya8wjvw5vh5ff.m.pipedream.net",
         "publish": "https://eon2nxjzthbdt2w.m.pipedream.net",
         "validate": "https://eoxsr92hcso0n3h.m.pipedream.net",
         "stop": "https://eoot1xooh8qwfa8.m.pipedream.net"
@@ -56,10 +62,6 @@ const jbApp = {
           "key": 'confirm'
         },
       ], 
-    currentStep:0,
-    pageHtml:'',
-    deStructure:{},
-    message:'',
     soap:{
         getDataExtension:`<?xml version="1.0" encoding="UTF-8"?>
 <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:u="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
@@ -90,34 +92,11 @@ const jbApp = {
     },
     getPassEndpoint:function(){
         if (debug) console.log('getPassEndpoint triggered')
-        jbApp.passId = null
-        if (jbApp.isTest){
-            var url = jbApp.credentials.dev.url;
-        }else{
-            var url = jbApp.credentials.prod.url;
-        }
+        // Get starter URL based on isTest setting of app
+        var url = jbApp.credentials.prod.url;
         
-        // Check for a value
-        // Extract value if present
-        if (jbApp.hasOwnProperty('deStructure')){
-            if (debug) console.log('getPassEndpoint deStructure exists:'+jbApp.deStructure.toString())
-            for (var key in jbApp.deStructure){
-                var data = jbApp.deStructure[key].toString()
-                if (debug) console.log('getPassEndpoint data:'+data)
-                if (key == 'passId'){
-                    jbApp.passId = data
-                }
-            }
-        }else{
-            if (debug) console.log('getPassEndpoint deStructure missing')
-        }
-        
-        // Populate value if present
-        if (jbApp.passId != null
-            && jbApp.passId.toString().length > 0){
+        if (jbApp.passId != null){
             url = url.replace('{passId}',jbApp.passId)
-        }else{
-            url = jbApp.credentials.dev.url
         }
         return url;
     },
@@ -132,7 +111,17 @@ const jbApp = {
                     let schemaItem = jbApp.schema[i]
                     let fieldName = schemaItem.name
                     let fieldTag = schemaItem.key
+
+                    if (schemaItem.type == 'Text'
+                    && schemaItem.name != 'passId'
+                    && schemaItem.length == null)
+                    {
                     jbApp.deStructure[fieldName] = '{{'+fieldTag+'}}'
+                    }else{
+                        if (schemaItem.name == 'passId'){                            
+                            jbApp.passId = '{{'+fieldTag+'}}'
+                        }
+                    }
                     if (debug) console.log('['+fieldName+']:'+fieldTag)
                 }
             }
@@ -560,7 +549,7 @@ const jbApp = {
                 let message = messages[i]
                 if (debug) console.log('Message:'+message)
                 if (message != '' && message.length>0){
-                    let option = '<option value="'+i+'">'+count+': '+message+'</option>'
+                    let option = '<option value="'+i+'">'+count+': '+i+'</option>'
                     $('#messageSelector').append(option)
                 }
             }
@@ -586,37 +575,7 @@ const jbApp = {
         html += '    </span>'
         html += '</div>'
         $( '#progress-holder' ).html(html)
-    },
-
-    getDataExtension:function(){
-        if (debug) console.log('getDataExtension')
-        $.ajax({
-            type: "POST",
-            url: jbApp.webserviceUrl,
-            contentType: "text/xml",
-            dataType: "xml",
-            data: jbApp.soap.getDataExtension,
-            success: jbApp.soapSuccess(),
-            error: jbApp.soapError(),
-            done:parseSoapResponse( response, request, settings )
-        });
-    },
-
-    parseSoapResponse:function( response, request, settings ){
-        if (debug) console.table(response)
-    },
-
-    soapSuccess:function (data, status, req) {
-        if (debug) console.log('SuccessOccur')
-        if (status == "success")
-            alert(req.responseText);
-    },
-
-    soapError:function(data, status, req) {
-        if (debug) console.log('ErrorOccur')
-        alert(req.responseText + " " + status);
-    },
-    
+    },    
     getHtml:function(page,refreshPage){
         if (refreshPage == null){
             refreshPage = true
@@ -645,7 +604,7 @@ const jbApp = {
             type: "GET",
             url: pageHtmlLocation,
             async: false,
-            success: function(response) { 
+            success: function(response) {                 
                 jbApp.pageHtml = response; 
                 if (refreshPage == true){
                     //
@@ -663,7 +622,8 @@ const jbApp = {
              }
          });
     },
-    
+    translatePage:function(html){
+    },    
     load:function(connection){
         if (debug) console.log('Loading jbApp')
         // If JourneyBuilder available
@@ -689,6 +649,38 @@ const jbApp = {
 
         jbApp.pageHtml = jbApp.getHtml('home')
         jbApp.processPageChange(1)
+    },
+
+    /**
+     * In Progress
+     */
+    getDataExtension:function(){
+        if (debug) console.log('getDataExtension')
+        $.ajax({
+            type: "POST",
+            url: jbApp.webserviceUrl,
+            contentType: "text/xml",
+            dataType: "xml",
+            data: jbApp.soap.getDataExtension,
+            success: jbApp.soapSuccess(),
+            error: jbApp.soapError(),
+            done:parseSoapResponse( response, request, settings )
+        });
+    },
+
+    parseSoapResponse:function( response, request, settings ){
+        if (debug) console.table(response)
+    },
+
+    soapSuccess:function (data, status, req) {
+        if (debug) console.log('SuccessOccur')
+        if (status == "success")
+            alert(req.responseText);
+    },
+
+    soapError:function(data, status, req) {
+        if (debug) console.log('ErrorOccur')
+        alert(req.responseText + " " + status);
     },
 }
 jbApp.load(connection)

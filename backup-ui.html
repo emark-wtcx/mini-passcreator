@@ -3,19 +3,15 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width">
-    <title>Pass Creator Development</title>
-
-    <link rel="apple-touch-icon" sizes="128x128" href="/assets/images/favicon-2.png">
-    <link rel="icon" type="image/png" sizes="128x128" href="/assets/images/favicon-2.png">
-
-    <!--Styles-->
-    <link type="text/css" rel="stylesheet" href="/assets/styles/salesforce-lightning-design-system.css"></style>
+    <title>Pass Creator</title>
+    <link rel="stylesheet" type="text/css" href="dist/pass_creator/styles/salesforce-lightning-design-system.css" >
+    <script src="https://code.jquery.com/jquery-3.6.1.min.js" integrity="sha256-o88AwQnZB+VDvE9tvIXrMQaPlFFSUTR+nldQm1LuPXQ=" crossorigin="anonymous"></script>
 </head>
 <body style="padding-top:2em">
     <div id="progress-holder">
         <div class="slds-progress-bar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="{{Placeholder for description of progress bar}}" role="progressbar">
-            <span class="slds-progress-bar__value" style="width:0%">
-                <span class="slds-assistive-text">Progress: 0%</span>
+            <span class="slds-progress-bar__value" style="width:1%">
+                <span class="slds-assistive-text">Progress: 1%</span>
             </span>
         </div>
     </div>
@@ -30,11 +26,9 @@
         <div class="slds-col slds-size_1-of-4">
             <button id="jbapp__nav_button2" data-action="selectMessage" class="slds-button slds-button_brand pass_action">Select Message</button>
         </div>
-        <!--
         <div class="slds-col slds-size_1-of-4">
             <button id="jbapp__nav_button3" data-action="showStep" class="slds-button slds-button_brand pass_action">Show step</button>
         </div>
-    -->
     </div>
     <input type="hidden" style="visibility:none" id="pass_activity" value="" />
 
@@ -46,11 +40,6 @@
     <div id="main" style="padding:2em;">
     <h1>Choose Activity</h1>
     </div>
-    <script type="application/javascript" src="/js/postmonger.js"></script>   
-    <script type="application/javascript" src="/js/jquery.js"></script>
-    <script type="application/javascript" src="/js/require.js"></script> 
-    <script type="application/javascript" src="/js/jbApp.js"></script>
-    <script type="application/javascript" src="/js/jbActions.js"></script>
-    <script type="application/javascript" src="index.js"></script>
+    <script type="text/javascript" src="dist/pass_creator-activity.js"></script>
 </body>
 </html>

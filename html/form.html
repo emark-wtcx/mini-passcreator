@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>Pass Creator Development</title>
+
+    <link rel="apple-touch-icon" sizes="128x128" href="/assets/images/favicon-2.png">
+    <link rel="icon" type="image/png" sizes="128x128" href="/assets/images/favicon-2.png">
+
+    <!--Styles-->
+    <link type="text/css" rel="stylesheet" href="/assets/styles/salesforce-lightning-design-system.css"></style>
+    
+</head>
+<body style="padding-top:2em">
+<div id="passcreator">
+    <h1>Pass Creator - WPP</h1>
+    <p>Test message processing:</p>
+    <form id="testForm">
+        <div class="slds-form-element">
+            <label class="slds-form-element__label" for="textarea-id-01">Textarea Label</label>
+            <div class="slds-form-element__control">
+                <textarea id="pass_message" placeholder="Placeholder text…" class="slds-textarea"></textarea>
+            </div>
+        </div><br />
+        <div class="slds-col slds-size_3-of-3">
+            <button id="button1" type="submit" data-action="previewMessage" onClick="testBackend(event)" class="slds-button slds-button_brand pass_action">Select Message</button>
+        </div>
+    </form>
+</div>
+<script type="application/javascript" src="/js/jquery.js"></script>
+<script>
+    testBackend = function(event){
+        event.preventDefault()
+        var formData = {
+            'message':$('#pass_message').val()
+        }
+        $.ajax({
+            url : location.protocol+'//'+location.host+"/execute",
+            type: "POST",
+            data : formData,
+            success: function(data, textStatus, jqXHR)
+            {
+                console.log('Response received')
+                console.table(data)
+            },
+            error: function (jqXHR, textStatus, errorThrown)
+            {
+                console.log('There was an error retrieving the Data')        
+            }
+        });
+    }
+</script>

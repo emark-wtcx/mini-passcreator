@@ -1,13 +1,39 @@
 <div id="passcreator">
     <h1>Pass Creator - WPP</h1>
     <p>Please input your required message:</p>
+    <br />
     <div class="slds-form-element">
-        <label class="slds-form-element__label" for="textarea-id-01">Textarea Label</label>
+        <label class="slds-form-element__label" for="textarea-id-01">Push Notification</label>
         <div class="slds-form-element__control">
-            <textarea id="pass_message" placeholder="Placeholder text…" class="slds-textarea"></textarea>
+            <textarea 
+                id="pass_message" 
+                placeholder="Enter your message..." 
+                class="slds-textarea"
+                maxlength="80"
+            ></textarea>
         </div>
-    </div><br />
+    </div>
+    <br />
+    <p>Characters: <strong><span id="charCount"></span></strong>
+    <br />
+    <small>Messages are limited to 80 characters</small>
+    </p>
+    <br />
     <div class="slds-col slds-size_3-of-3">
         <button id="button1" data-action="previewMessage" onClick="jbApp.previewMessageButtonAction()" class="slds-button slds-button_brand pass_action">Select Message</button>
     </div>
 </div>
+<script>
+    $('#pass_message').keyup(function(){
+        var editor = $(this)
+        var editorText = editor.val()
+        console.log(editorText)
+        var charCount = editorText.length
+        // Force charCount limit of 80
+        if (charCount > 80){
+            editorText = editorText.subString(0,80)
+            editor.val(editorText)
+        }
+        $('#charCount').html(charCount+'/80')
+    })
+</script>

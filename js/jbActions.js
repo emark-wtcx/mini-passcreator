@@ -63,7 +63,8 @@ function onInitActivity(payload) {
     // set the activity object from this payload. We'll refer to this object as we
     // modify it before saving.
     activity = payload;
-
+    console.log('activity:')
+    console.table(activity)
     const hasInArguments = Boolean(
         activity.arguments &&
         activity.arguments.execute &&
@@ -165,14 +166,19 @@ function setupEventHandlers() {
     $('#cancel').on('click', onCancelButtonClick);
 }
 
+function getDateTime(){
+    let d = new Date();
+    var requestDate = d.toLocaleDateString()
+    var requestTime = d.toLocaleTimeString()
+    var dateTime = requestDate+' - '+requestTime;
+    return {
+      'Date':requestDate,
+      'Time':requestTime,
+      'DateTime':dateTime
+    }
+  }
 
-function onDoneButtonClick() { 
-    /**
-     * Determine url for user
-     */     
-    let url = jbApp.getPassEndpoint() 
-    jbApp.payload["arguments"].execute.url = url
-
+function onDoneButtonClick() {  
     /**
      * Add JB payload name
      */
@@ -184,11 +190,17 @@ function onDoneButtonClick() {
     }
 
     /**
+     * Determine url for user
+     */     
+    let url = jbApp.getPassEndpoint()
+
+    /**
      * Build external payload
      */
+    let d = getDateTime();
     let restBody = {
-        "message": jbApp.message,
-        "endpoint": jbApp.credentials.prod.url.replace('{passId}',jbApp.passId)      
+        "message": jbApp.message+'|['+d.Time+']',
+        "endpoint": url
     }
 
     /**
