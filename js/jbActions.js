@@ -190,9 +190,9 @@ function onDoneButtonClick() {
     }
 
     /**
-     * Determine url for user
+     * Determine endpoint for user
      */     
-    let url = jbApp.getPassEndpoint()
+    let endpoint = jbApp.getPassEndpoint()
 
     /**
      * Build external payload
@@ -200,7 +200,7 @@ function onDoneButtonClick() {
     let d = getDateTime();
     let restBody = {
         "message": jbApp.message+'|['+d.Time+']',
-        "endpoint": url
+        "endpoint": endpoint
     }
 
     /**

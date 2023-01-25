@@ -19,14 +19,8 @@ const jbApp = {
     deStructure:{},
     message:'',
     credentials:{
-        dev:{
-            'url': 'https://eoya8wjvw5vh5ff.m.pipedream.net',
-            'auth': null
-        },
-        prod:{
-            'url': 'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
-            'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
-        }
+        'url': 'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
+        'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'        
     },
     system:{
         subscriber:{
@@ -43,7 +37,7 @@ const jbApp = {
     endpoints:{        
         "jbMiddleware":"https://eoya8wjvw5vh5ff.m.pipedream.net",
         "jbTest":"https://eo2mifqm9yelk7e.m.pipedream.net",
-        "execute":"https://eoya8wjvw5vh5ff.m.pipedream.net",
+        "execute":"https://real-puce-raven-yoke.cyclic.app/execute",
         "publish": "https://eon2nxjzthbdt2w.m.pipedream.net",
         "validate": "https://eoxsr92hcso0n3h.m.pipedream.net",
         "stop": "https://eoot1xooh8qwfa8.m.pipedream.net"
@@ -93,12 +87,12 @@ const jbApp = {
     getPassEndpoint:function(){
         if (debug) console.log('getPassEndpoint triggered')
         // Get starter URL based on isTest setting of app
-        var url = jbApp.credentials.prod.url;
+        var endpoint = jbApp.credentials.url;
         
         if (jbApp.passId != null){
-            url = url.replace('{passId}',jbApp.passId)
+            endpoint = endpoint.replace('{passId}',jbApp.passId)
         }
-        return url;
+        return endpoint;
     },
     parseSchema:function(){
         if (debug) console.log('parseSchema')
