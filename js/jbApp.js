@@ -265,8 +265,9 @@ const jbApp = {
 
                 case 'readSendable':
                     $(elem).on('click',function(){
-
+                        let customerKey = 'testing_dale'
                         var testResults = 'Test successful'
+                        var testResults = jbApp.getDataExtensionRest(customerKey)
                         jbApp.pageHtml = testResults
 
                         // Execute Action
@@ -701,10 +702,25 @@ const jbApp = {
         jbApp.processPageChange(1)
     },
 
+    getDataExtensionRest:function(customerKey){
+        if (debug) console.log('getDataExtension:'+customerKey)
+        $.ajax({
+            type: "POST",
+            url: '/getde',
+            contentType: "application/json",
+            dataType: "json",
+            data: '{"customerKey":"'+customerKey+'"}',
+            success: jbApp.soapSuccess(),
+            error: jbApp.soapError()
+        }).done(function(responseData, request, settings ){
+            console.table(responseData)
+        });
+    },
+
     /**
      * In Progress
      */
-    getDataExtension:function(){
+    getDataExtensionSoap:function(){
         if (debug) console.log('getDataExtension')
         $.ajax({
             type: "POST",
@@ -720,17 +736,22 @@ const jbApp = {
 
     parseSoapResponse:function( response, request, settings ){
         if (debug) console.table(response)
+        return JSON.stringify(response)
     },
 
     soapSuccess:function (data, status, req) {
         if (debug) console.log('SuccessOccur')
-        if (status == "success")
-            alert(req.responseText);
+        if (data && data.hasOwnProperty('responseText') && status == "success")
+            alert(data.responseText);
     },
 
     soapError:function(data, status, req) {
         if (debug) console.log('ErrorOccur')
-        alert(req.responseText + " " + status);
+        if (data && data.hasOwnProperty('responseText')){
+        alert(data.responseText + " " + status);
+        }else{
+            console.table(data)
+        }
     },
 }
 jbApp.load(connection)

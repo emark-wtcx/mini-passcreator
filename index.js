@@ -6,6 +6,7 @@ const path = require('path');
 const apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
 const postDebug = true
 const HOME_DIR = '/';
+var dataType = 'application/json'
 var finalResponse = {'data':null}
 
 app.use(express.json())
@@ -16,21 +17,20 @@ var PORT = process.env.port || 8080;
  *  Front End Routes
 * */
 app.use('/', express.static(__dirname + HOME_DIR));
-//app.use(cors());
 
 app.get('/', function (req, res) {
   res.sendFile(path.resolve('index.html'));
 });
 
 /**
- *  Uncomment for development form access
+ *  Mock form access
  * */
 app.get('/form', function (req, res) {
   res.sendFile(path.resolve('./html/form.html'));
 });
 
 /**
- *  Uncomment for development form access
+ *  Tesing area access
  * */
 app.get('/test', function (req, res) {
   res.sendFile(path.resolve('./html/test_area.html'));
@@ -40,9 +40,10 @@ app.get('/test', function (req, res) {
  *  Back End Routes
 * */
 app.post('/execute',function (req, res, next) { 
+  if (postDebug) console.log('/execute called ')
   if (req.body != null){
     let serverResponse = postMessage(req.body)
-    if (postDebug) console.log('serverResponse: ')
+    if (postDebug) console.log('/execute Response: ')
     if (postDebug) console.table(serverResponse)
     return res.json(serverResponse)
   }else{
@@ -51,11 +52,13 @@ app.post('/execute',function (req, res, next) {
 })
 
 app.post('/getde',function (req, res, next) { 
-  if (req.body != null){
-    let serverResponse = postMessage(req.body)
-    if (postDebug) console.log('serverResponse: ')
-    if (postDebug) console.table(serverResponse)
-    return res.json(serverResponse)
+  if (postDebug) console.log('/getde called ') 
+  if (postDebug) console.table(req.body)
+  if (req.body.customerKey != null){
+    let getServerResponse = getDataExtension(req.body.customerKey)
+    if (postDebug) console.log('/getde Response: ')
+    if (postDebug) console.table(getServerResponse)
+    return res.json(getServerResponse)
   }else{
     return {'message':'No data submitted'}
   }
@@ -79,7 +82,7 @@ postMessage = function(data){
     messageData.endpoint = 'https://eoya8wjvw5vh5ff.m.pipedream.net'
     }
     
-  if (postDebug) console.log('messageData: ')
+  if (postDebug) console.log('POST messageData: ')
   if (postDebug) console.table(messageData)
 
   var date = getDateTime();
@@ -88,18 +91,17 @@ postMessage = function(data){
     "pushNotificationText":messageData.message+ ' | ['+date.Time+']',   
     "url":messageData.endpoint
   }
-  if (postDebug) console.log('bodyContent: ')
+  if (postDebug) console.log('POST bodyContent: ')
   if (postDebug) console.table(bodyContent)
 
-  let dataType = 'application/json'
   var headers = {
     "Accept": dataType,
     "Content-Type": dataType,
     "Authorization":apiKey
   }
-  if (postDebug) console.log('Headers: ')
+  if (postDebug) console.log('POST Headers: ')
   if (postDebug) console.table(headers)
-  if (postDebug) console.log('endpoint: '+messageData.endpoint)
+  if (postDebug) console.log('POST Endpoint: '+messageData.endpoint)
 
   /**
    * Transmit Message via postData function
@@ -111,54 +113,52 @@ postMessage = function(data){
         'requestDate':date.DateTime,
         'status':dataResponse.status
       }
-      if (postDebug) console.log('messageResponse:'); 
+      if (postDebug) console.log('POST messageResponse:'); 
       if (postDebug) console.table(messageResponse);
       finalResponse = messageResponse
     });
-  if (postDebug) console.log('Final Response Called:'); 
+  if (postDebug) console.log('POST Final Response Called:'); 
   if (postDebug) console.table(finalResponse)
   return finalResponse
 }
 
-getDataExtension = function(data = {}){
+getDataExtension = function(customerKey){
   // Request setup
+  var data = {}
   data.customerKey = 'testing_dale'
   let dePath = 'https://www.exacttargetapis.com/data/v1/customobjectdata/key/{{dataextension}}/rowset/'
-  let deUrl = dePath.replace('{{dataextension}}',data.customerKey)
+  data.url = dePath.replace('{{dataextension}}',customerKey)
 
   // Request time
   var date = getDateTime();
 
   // Request content
-  var bodyContent = {
-    "pushNotificationText":messageData.message+ ' | ['+date.Time+']',   
-    "url":messageData.endpoint
-  }
-  if (postDebug) console.log('bodyContent: ')
-  if (postDebug) console.table(bodyContent)
-
-  let dataType = 'application/json'
+  if (postDebug) console.log('Get Table by CustomerKey: ')
+  if (postDebug) console.table(customerKey)
+  
+  
+  let accessToken = getAccessToken()
   var headers = {
     "Accept": dataType,
     "Content-Type": dataType,
-    "Authorization":apiKey
+    "Authorization":accessToken
   }
-  if (postDebug) console.log('Headers: ')
+  if (postDebug) console.log('Get Headers: ')
   if (postDebug) console.table(headers)
-  if (postDebug) console.log('endpoint: '+messageData.endpoint)
+  if (postDebug) console.log('Get Endpoint: '+data.url)
 
-  /**
-   * Request Data via getData function
-   */
-  var getDataResponse = getData(messageData.endpoint, bodyContent)
+  //
+  // Request Data via getData function
+  //
+  var getDataResponse = getData(data.url,headers)
     .then((dataResponse) => {
       //  Build response /
       var messageResponse = {
         'requestDate':date.DateTime,
         'status':dataResponse.status
       }
-      if (postDebug) console.log('messageResponse:'); 
-      if (postDebug) console.table(messageResponse);
+      if (postDebug) console.log('Get messageResponse:'); 
+      if (postDebug) console.log(JSON.stringify(messageResponse));
       return messageResponse
     });
     return getDataResponse; // return response
@@ -179,9 +179,72 @@ function getDateTime(){
 /**
  *  External API call engine 
  * */
+async function getAccessToken(){
+  console.log('Requesting Authentication')
+  let authUrl = 'https://mc3tb2-hmmbngz-85h36g8xz1b4m.auth.marketingcloudapis.com/v2/token'
+  let authBody = {
+    "grant_type": "client_credentials",
+    "client_id": "xja05pcunay325cyg6odcyex",
+    "client_secret": "b36KqpkMECP8T3h0j2nD81Ve",
+    "account_id": "7207193"
+    }
+    
+  var authHeaders = {
+    "Accept": dataType,
+    "Content-Type": dataType
+  }
+
+  if (postDebug) console.log('Auth Headers: ')
+  if (postDebug) console.table(authHeaders)
+  if (postDebug) console.log('Auth URL: ')
+  if (postDebug) console.table(authUrl)
+  if (postDebug) console.log('Auth Body: ')
+  if (postDebug) console.table(authBody)
+
+  var authResponse = await fetch(authUrl, {
+      method: 'POST', 
+      mode: 'no-cors', 
+      cache: 'no-cache', 
+      credentials: 'omit', 
+      headers: authHeaders,
+      redirect: 'follow', 
+      referrerPolicy: 'no-referrer', 
+      body: JSON.stringify(authBody) 
+    }).catch((error) => {
+      // Broadcast error 
+      if (postDebug) console.log('Backend auth error:'+JSON.stringify(error));
+      return error;
+    }).then(response => response.json())
+    .then((authResponse) => {  
+      console.log('Requested Authentication')
+      if (authResponse.hasOwnProperty('access_token')){
+        var access_token = authResponse.access_token
+        console.log('Got Authentication: '+access_token)
+        return 'Bearer '+access_token
+      }else{
+        console.log('Authentication failed: '+JSON.stringify(authResponse))
+        }
+    })
+}
+async function getData(url = '', headers) {
+  var getResponse = await fetch(url, {
+    method: 'GET', 
+    mode: 'no-cors', 
+    cache: 'no-cache', 
+    credentials: 'omit', 
+    headers: headers,
+    redirect: 'follow', 
+    referrerPolicy: 'no-referrer'
+  }).catch((error) => {
+    // Broadcast error 
+    if (postDebug) console.log('Backend error:'+JSON.stringify(error));
+    return error;
+  });
+  return getResponse; // return response
+}
+
 async function postData(url = '', postData) {
   // Default options are marked with *
-  let dataType = 'application/json'
   var headers = {
     "Accept": dataType,
     "Content-Type": dataType,
@@ -204,33 +267,6 @@ async function postData(url = '', postData) {
   return response; // return response
 }
 
-/**
- *  External API call engine 
- * */
-async function getData(url = '', getData) {
-  // Default options are marked with *
-  let dataType = 'application/json'
-  var headers = {
-    "Accept": dataType,
-    "Content-Type": dataType,
-    "Authorization":apiKey
-  }
-  const response = await fetch(url, {
-    method: 'GET', 
-    mode: 'no-cors', 
-    cache: 'no-cache', 
-    credentials: 'omit', 
-    headers: headers,
-    redirect: 'follow', 
-    referrerPolicy: 'no-referrer', 
-    body: JSON.stringify(getData) 
-  }).catch((error) => {
-    // Broadcast error 
-    if (postDebug) console.log('Backend error:'+JSON.stringify(error));
-    return error;
-  });
-  return response; // return response
-}
 
 
 
