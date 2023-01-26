@@ -125,7 +125,7 @@ postMessage = function(data){
 getDataExtension = function(customerKey){
   // Request setup
   var data = {}
-  data.customerKey = 'testing_dale'
+  //data.customerKey = 'testing_dale'
   let dePath = 'https://www.exacttargetapis.com/data/v1/customobjectdata/key/{{dataextension}}/rowset/'
   data.url = dePath.replace('{{dataextension}}',customerKey)
 
@@ -133,7 +133,7 @@ getDataExtension = function(customerKey){
   var date = getDateTime();
 
   // Request content
-  if (postDebug) console.log('Get Table by CustomerKey: ')
+  if (postDebug) console.log('GetDE Table by CustomerKey: ')
   if (postDebug) console.table(customerKey)
   
   
@@ -143,21 +143,27 @@ getDataExtension = function(customerKey){
     "Content-Type": dataType,
     "Authorization":accessToken
   }
-  if (postDebug) console.log('Get Headers: ')
+  
+  headers.Authorization = 'eyJhbGciOiJIUzI1NiIsImtpZCI6IjQiLCJ2ZXIiOiIxIiwidHlwIjoiSldUIn0.eyJhY2Nlc3NfdG9rZW4iOiI3UzFaRHRTZ2EyRFNLWkRXSm5ZamtaaEYiLCJjbGllbnRfaWQiOiJ4amEwNXBjdW5heTMyNWN5ZzZvZGN5ZXgiLCJlaWQiOjcyMDcxOTMsInN0YWNrX2tleSI6IlM3IiwicGxhdGZvcm1fdmVyc2lvbiI6MiwiY2xpZW50X3R5cGUiOiJTZXJ2ZXJUb1NlcnZlciIsInBpZCI6MzYzfQ.JVDaLYZoTkq67ldjkRIsf0_JVSCiAhLXzymi5hGOrJs.XEAR2xl5DFnrBcKUfsmXZ4-Fz20zAVFNuwu7-zBCiDt381vpdZ1q1KBojsqnF9H0K6efXM9YoVvuxCANvREpqHyGHIptrfHxG_vMynKGpqQ6x9CJoytsH1IA-rB9XBaPP-VNIPpGhn61rUHTi9boaB580_ZAoAVRGf04bbJAd'
+
+  if (postDebug) console.log('GetDE Headers: ')
   if (postDebug) console.table(headers)
-  if (postDebug) console.log('Get Endpoint: '+data.url)
+  if (postDebug) console.log('GetDE Endpoint: '+data.url)
 
   //
   // Request Data via getData function
   //
   var getDataResponse = getData(data.url,headers)
     .then((dataResponse) => {
+      if (postDebug) console.log('dataResponse: ')
+      if (postDebug) console.table(dataResponse)
       //  Build response /
       var messageResponse = {
         'requestDate':date.DateTime,
-        'status':dataResponse.status
+        'status':dataResponse.status,
+        'body':dataResponse.body
       }
-      if (postDebug) console.log('Get messageResponse:'); 
+      if (postDebug) console.log('getDataExtension:'); 
       if (postDebug) console.log(JSON.stringify(messageResponse));
       return messageResponse
     });
@@ -179,7 +185,7 @@ function getDateTime(){
 /**
  *  External API call engine 
  * */
-async function getAccessToken(){
+function getAccessToken(){
   console.log('Requesting Authentication')
   let authUrl = 'https://mc3tb2-hmmbngz-85h36g8xz1b4m.auth.marketingcloudapis.com/v2/token'
   let authBody = {
@@ -201,7 +207,7 @@ async function getAccessToken(){
   if (postDebug) console.log('Auth Body: ')
   if (postDebug) console.table(authBody)
 
-  var authResponse = await fetch(authUrl, {
+  var authResponse = fetch(authUrl, {
       method: 'POST', 
       mode: 'no-cors', 
       cache: 'no-cache', 
@@ -215,10 +221,10 @@ async function getAccessToken(){
       if (postDebug) console.log('Backend auth error:'+JSON.stringify(error));
       return error;
     }).then(response => response.json())
-    .then((authResponse) => {  
+    .then((authenticationResponse) => {  
       console.log('Requested Authentication')
-      if (authResponse.hasOwnProperty('access_token')){
-        var access_token = authResponse.access_token
+      if (authenticationResponse.hasOwnProperty('access_token')){
+        var access_token = authenticationResponse.access_token
         console.log('Got Authentication: '+access_token)
         return 'Bearer '+access_token
       }else{
@@ -266,10 +272,6 @@ async function postData(url = '', postData) {
   });
   return response; // return response
 }
-
-
-
-
 
 app.listen(PORT, function () {
   console.log(`App listening on port ${PORT}`);
