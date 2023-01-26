@@ -6,7 +6,7 @@ const path = require('path');
 const apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
 const postDebug = true
 const HOME_DIR = '/';
-var {finalResponse} = {'data':null}
+var finalResponse = {'data':null}
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
@@ -30,6 +30,13 @@ app.get('/form', function (req, res) {
 });
 
 /**
+ *  Uncomment for development form access
+ * */
+app.get('/test', function (req, res) {
+  res.sendFile(path.resolve('./html/test_area.html'));
+});
+
+/**
  *  Back End Routes
 * */
 app.post('/execute',function (req, res, next) { 
@@ -42,7 +49,6 @@ app.post('/execute',function (req, res, next) {
     return {'message':'No data submitted'}
   }
 })
-
 /**
  * Generic Error Handling
  */
