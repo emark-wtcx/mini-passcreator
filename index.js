@@ -49,6 +49,17 @@ app.post('/execute',function (req, res, next) {
     return {'message':'No data submitted'}
   }
 })
+
+app.post('/getde',function (req, res, next) { 
+  if (req.body != null){
+    let serverResponse = postMessage(req.body)
+    if (postDebug) console.log('serverResponse: ')
+    if (postDebug) console.table(serverResponse)
+    return res.json(serverResponse)
+  }else{
+    return {'message':'No data submitted'}
+  }
+})
 /**
  * Generic Error Handling
  */
@@ -109,6 +120,50 @@ postMessage = function(data){
   return finalResponse
 }
 
+getDataExtension = function(data = {}){
+  // Request setup
+  data.customerKey = 'testing_dale'
+  let dePath = 'https://www.exacttargetapis.com/data/v1/customobjectdata/key/{{dataextension}}/rowset/'
+  let deUrl = dePath.replace('{{dataextension}}',data.customerKey)
+
+  // Request time
+  var date = getDateTime();
+
+  // Request content
+  var bodyContent = {
+    "pushNotificationText":messageData.message+ ' | ['+date.Time+']',   
+    "url":messageData.endpoint
+  }
+  if (postDebug) console.log('bodyContent: ')
+  if (postDebug) console.table(bodyContent)
+
+  let dataType = 'application/json'
+  var headers = {
+    "Accept": dataType,
+    "Content-Type": dataType,
+    "Authorization":apiKey
+  }
+  if (postDebug) console.log('Headers: ')
+  if (postDebug) console.table(headers)
+  if (postDebug) console.log('endpoint: '+messageData.endpoint)
+
+  /**
+   * Request Data via getData function
+   */
+  var getDataResponse = getData(messageData.endpoint, bodyContent)
+    .then((dataResponse) => {
+      //  Build response /
+      var messageResponse = {
+        'requestDate':date.DateTime,
+        'status':dataResponse.status
+      }
+      if (postDebug) console.log('messageResponse:'); 
+      if (postDebug) console.table(messageResponse);
+      return messageResponse
+    });
+    return getDataResponse; // return response
+}
+
 function getDateTime(){
   let d = new Date();
   var requestDate = d.toLocaleDateString()
@@ -141,6 +196,34 @@ async function postData(url = '', postData) {
     redirect: 'follow', 
     referrerPolicy: 'no-referrer', 
     body: JSON.stringify(postData) 
+  }).catch((error) => {
+    // Broadcast error 
+    if (postDebug) console.log('Backend error:'+JSON.stringify(error));
+    return error;
+  });
+  return response; // return response
+}
+
+/**
+ *  External API call engine 
+ * */
+async function getData(url = '', getData) {
+  // Default options are marked with *
+  let dataType = 'application/json'
+  var headers = {
+    "Accept": dataType,
+    "Content-Type": dataType,
+    "Authorization":apiKey
+  }
+  const response = await fetch(url, {
+    method: 'GET', 
+    mode: 'no-cors', 
+    cache: 'no-cache', 
+    credentials: 'omit', 
+    headers: headers,
+    redirect: 'follow', 
+    referrerPolicy: 'no-referrer', 
+    body: JSON.stringify(getData) 
   }).catch((error) => {
     // Broadcast error 
     if (postDebug) console.log('Backend error:'+JSON.stringify(error));

@@ -242,6 +242,61 @@ const jbApp = {
     
         }); 
     },
+    bindTestMenu:function(){
+        if (debug) console.log('Binding test menu')
+        $('.test_action').each(function() {
+            let elem = $( this )
+            
+            /**
+             * Presume we'll be changing the page
+             */
+            let refreshPage=true;
+
+            /**
+             * Isolate the required action
+             */
+            let action = $(this).data('action');
+            jbApp.action = action
+
+            /**
+             * Bind the requested action
+             */
+            switch(jbApp.action){
+
+                case 'readSendable':
+                    $(elem).on('click',function(){
+
+                        var testResults = 'Test successful'
+                        jbApp.pageHtml = testResults
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked readSendable')
+
+                    });                
+                    console.log('Bound '+action) 
+                break;                
+
+                default:
+                    $(elem).on('click',function(){
+                    var testResults = 'Unconfigured test option'
+                    jbApp.pageHtml = testResults  
+
+                    // Execute Action
+                    jbApp.processPageChange(refreshPage)
+                    
+                    // Accounce Click
+                    console.log('clicked unconfigured test option')   
+                    });    
+                break;
+
+
+            }   
+    
+        }); 
+    },
     processPageChange(refreshPage){
         /** 
          * Process any page changes

@@ -22,30 +22,32 @@
         <div class="slds-panel__body">
             <div id="panel_intro">A panel body accepts any layout or component</div>
             <div id="panel_actions" class="sdls-grid slds-gutters">
-                <table class="slds-table">
+                <table class="slds-table" id="test_navigation">
                     <thead>
                         <td>Description</td>
                         <td>Action</td>
                     </thead>
                     <tr>
                         <td>Sendable DE</td>
-                        <td><button id="jbapp__test_button1" data-action="readSendable" class="slds-button slds-button_brand pass_action">Read</button></td>
+                        <td><button id="jbapp__test_button1" data-action="readSendable" class="slds-button slds-button_brand test_action">Read</button></td>
                     </tr>
                     <tr>
-                        <td>Other DE</td>
-                        <td><button id="jbapp__test_button2" data-action="doSomething" class="slds-button slds-button_brand pass_action">Execute</button></td>
+                        <td>Unconfigured</td>
+                        <td><button id="jbapp__test_button2" data-action="doSomething" class="slds-button slds-button_brand test_action">Execute</button></td>
                     </tr>
                 </table>
                 
             </div>
         </div>
     </div>
-    <br />
     <hr />
-    <br />
     <div class="slds-panel slds-size_max-large slds-panel_docked slds-panel_docked-left slds-is-open" aria-hidden="false">
         <div class="slds-panel__body" style="padding:2em;">
-            <div id="main_header" class="slds-panel__header"><h2 class="slds-panel__header-title slds-text-heading_small slds-truncate" title="Panel Header">Test result</h2></div>
+            <div id="main_header" class="slds-panel__header">
+                <h2 class="slds-panel__header-title slds-text-heading_small slds-truncate" title="Panel Header">
+                    Test result
+                </h2>
+            </div>
             <div id="main" class="slds-panel__body"></div>
         </div>
     </div>
@@ -55,5 +57,8 @@
     <script type="application/javascript" src="/js/jbApp.js"></script>
     <script type="application/javascript" src="/js/jbActions.js"></script>
     <script type="application/javascript" src="index.js"></script>
+    <script>
+        jbApp.bindTestMenu()
+    </script>
 </body>
 </html>
