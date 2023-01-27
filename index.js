@@ -10,6 +10,8 @@ var finalResponse = {'data':null}
 var apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
 var access_token = null
 var accessToken = null
+var restDomain = null
+var authDomain = null
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
@@ -41,13 +43,14 @@ app.get('/test', function (req, res) {
 /**
  *  Back End Routes
 * */
-app.post('/execute',function (req, res, next) { 
+app.post('/execute',async function (req, res, next) { 
   if (postDebug) console.log('/execute called ')
   if (req.body != null){
-    let serverResponse = postMessage(req.body)
+    await postMessage(req.body).then((serverResponse) => {
     if (postDebug) console.log('/execute Response: ')
     if (postDebug) console.table(serverResponse)
     return res.json(serverResponse)
+    })
   }else{
     return {'message':'No data submitted'}
   }
@@ -57,10 +60,11 @@ app.post('/getde',async function (req, res, next) {
   if (postDebug) console.log('/getde called ') 
   if (postDebug) console.table(req.body)
   if (req.body.customerKey != null){
-    let getServerResponse = await getDataExtension(req.body.customerKey)
+    await getDataExtension(req.body.customerKey).then((getServerResponse) => {
     if (postDebug) console.log('/getde Response: ')
     if (postDebug) console.table(getServerResponse)
     return res.json(getServerResponse)
+    })
   }else{
     return {'message':'No data submitted'}
   }
@@ -69,8 +73,7 @@ app.post('/getde',async function (req, res, next) {
 app.post('/testauth',async function (req, res, next) { 
   if (postDebug) console.log('/testauth called ') 
   if (req != null){
-    var AuthResponse = await getAccessToken()
-    .then((getAuthResponse) => {
+    await getAccessToken().then((getAuthResponse) => {
       if (postDebug) console.log('/testauth Response: ')
       if (postDebug) console.table(getAuthResponse)
       return res.json(getAuthResponse)
@@ -79,13 +82,29 @@ app.post('/testauth',async function (req, res, next) {
     return {'message':'No data submitted'}
   }
 })
+
+app.post('/testlog',async function (req, res, next) { 
+  if (postDebug) console.log('/testlog called') 
+  if (req != null){
+    await logData('Log test',req.body).then((logResponse) => {
+      if (postDebug) console.log('/testlog Response: ')
+      if (postDebug) console.table(logResponse)
+      return res.send(logResponse)
+    })
+  }else{
+    return {'message':'No data submitted'}
+  }
+})
+
+
 /**
  * Generic Error Handling
  */
 app.use(function (err, req, res, next) {
-  console.error(err.stack)
+  console.table(err.stack)
   res.status(500).send('Something broke!')
 })
+
 
 /**
  *  Back End Functions
@@ -102,6 +121,7 @@ function getDateTime(){
     'DateTime':dateTime
   }
 }
+
 function postMessage(data){
   if (data.hasOwnProperty('inArguments')){
     var messageData = data.inArguments[0]
@@ -134,7 +154,7 @@ function postMessage(data){
   /**
    * Transmit Message via postData function
    */
-  postData(messageData.endpoint, bodyContent)
+  postDataToPassCreator(messageData.endpoint, bodyContent)
     .then((dataResponse) => {
       //  Build response /
       var messageResponse = {
@@ -194,18 +214,70 @@ async function getDataExtension(customerKey){
       }
       if (postDebug) console.log('getDataExtension Returning:'); 
       if (postDebug) console.log(JSON.stringify(messageResponse));
+      logData('Got data extension',messageResponse)
       return messageResponse
+    }).catch((error) => {
+      logError(error)
     });
     if (postDebug) console.log('getDataExtension getDataResponse: ')
     if (postDebug) console.table(getDataResponse)
     return getDataResponse; // return response
 }
 
+async function logData(message,data={}){
+  if (postDebug) console.log('logData called')
+  let logDe = 'passcreator_success_log'
+  let date = getDateTime();
+  let logId = guid();
+  let loggingUrl = 'data/v1/async/dataextensions/key:'+logDe+'/rows'
+
+  let items = {
+    'Id':logId,
+    'DateTime':date.DateTime,
+    'Message':message,
+    'MetaData':JSON.stringify(data)
+  }
+  
+  if (postDebug) console.log('logData loggingUrl: '+loggingUrl)
+  if (postDebug) console.log('logData items: ')
+  if (postDebug) console.table(items)
+
+  await postData(loggingUrl,items).then((logResponse) => {
+    if (postDebug) console.log('logData logResponse: ')
+    if (postDebug) console.table(logResponse)
+    return logResponse
+    });  
+}
+
+
+async function logError(message){
+  let loggingUrl = '/data/v1/async/dataextensions/key:'+logDe+'/rows'
+  let logDe = 'passcreator_error_log'
+  let date = getDateTime();
+  let logId = guid();
+
+  let items = {
+    'Id':logId,
+    'DateTime':date.DateTime,
+    'Message':message,
+    'MetaData':data
+  }
+
+  await postData(loggingUrl,items).then((logResponse) => {
+    if (postDebug) console.log('logError logResponse: ')
+    if (postDebug) console.table(logResponse)
+    return logResponse  
+    });
+}
+
 /**
  *  External API call engine 
  * */
 async function getAccessToken(){
-  console.log('Requesting Authentication')
+  if (jbApp.token != null){
+    return jbApp.token
+  }
+  if (postDebug) console.log('Requesting Authentication')
   let authUrl = 'https://mc3tb2-hmmbngz-85h36g8xz1b4m.auth.marketingcloudapis.com/v2/token'
   let authBody = {
     "grant_type": "client_credentials",
@@ -219,12 +291,14 @@ async function getAccessToken(){
     "Content-Type": dataType
   }
 
-  if (postDebug) console.log('Auth Headers: ')
-  if (postDebug) console.table(authHeaders)
-  if (postDebug) console.log('Auth URL: ')
-  if (postDebug) console.table(authUrl)
-  if (postDebug) console.log('Auth Body: ')
-  if (postDebug) console.table(authBody)
+  if (postDebug){
+    console.log('Auth Headers: ')
+    console.table(authHeaders)
+    console.log('Auth URL: ')
+    console.table(authUrl)
+    console.log('Auth Body: ')
+    console.table(authBody)
+    }
 
   var authResponse = await fetch(authUrl, {
       method: 'POST', 
@@ -241,14 +315,20 @@ async function getAccessToken(){
       return error;
     }).then(response => response.json())
     .then((authenticationResponse) => {  
-      console.log('Requested Authentication')
+      if (postDebug) console.log('Requested Authentication')
       if (authenticationResponse.hasOwnProperty('access_token')){
         access_token = authenticationResponse.access_token
-        console.log('Got Authentication: '+access_token)
+        if (postDebug) console.log('Got Authentication: '+access_token)
         accessToken = 'Bearer '+access_token
+        if (authenticationResponse.hasOwnProperty('rest_instance_url')){
+          restDomain = authenticationResponse.rest_instance_url
+        }
+        if (authenticationResponse.hasOwnProperty('auth_instance_url')){
+          authDomain = authenticationResponse.auth_instance_url
+        }
         return accessToken
       }else{
-        console.log('Authentication failed: '+JSON.stringify(authResponse))
+        if (postDebug) console.log('Authentication failed: '+JSON.stringify(authResponse))
         }
     })
     return authResponse
@@ -273,7 +353,7 @@ async function getData(url = '', headers) {
   return getResponse;
 }
 
-async function postData(url = '', postData=null) {
+async function postDataToPassCreator(url = '', postData=null) {
   if (url != '' && postData != null){
     // Default options are marked with *
     var headers = {
@@ -297,6 +377,65 @@ async function postData(url = '', postData=null) {
     });
     return postResponse; // return response
   }
+}
+
+async function postData(url = '', postData=null) {
+  if (url != '' && postData != null){
+    // Prepend Rest Domain to URL 
+    // (if missing)
+    if (url.indexOf(restDomain)==-1){
+      url = restDomain+url
+    }
+    // Default options are marked with *
+    let accessToken = await getAccessToken()
+    var headers = {
+      "Accept": dataType,
+      "Content-Type": dataType,
+      "Authorization":accessToken
+    }
+
+    if (postDebug) {
+      console.log('postData postDataUrl: '+url)
+      console.log('postData headers: ')
+      console.table(headers)
+      console.log('postData data: ')
+      console.table(postData)
+    }
+
+    await fetch(url, {
+      method: 'POST', 
+      mode: 'no-cors', 
+      cache: 'no-cache', 
+      credentials: 'omit', 
+      headers: headers,
+      redirect: 'follow', 
+      referrerPolicy: 'no-referrer', 
+      body: postData
+    }).then(async response => await response.json())
+    .then(response => {
+      if (postDebug) console.log('(postData) Backend response:'+JSON.stringify(response));
+      return response; // return response
+    }).catch(error => {
+      // Broadcast error 
+      if (postDebug) console.log('(postData) Backend error:'+JSON.stringify(error));
+      return error;
+    });
+    }
+}
+function guid() { 
+  var d = new Date().getTime();//Timestamp
+  var d2 = (performance && performance.now && (performance.now()*1000)) || 0;//Time in microseconds since page-load or 0 if unsupported
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16;//random number between 0 and 16
+      if(d > 0){//Use timestamp until depleted
+          r = (d + r)%16 | 0;
+          d = Math.floor(d/16);
+      } else {//Use microseconds since page-load if supported
+          r = (d2 + r)%16 | 0;
+          d2 = Math.floor(d2/16);
+      }
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
 }
 
 app.listen(PORT, function () {

@@ -11,8 +11,10 @@ const jbApp = {
     isTest:false, 
     isLocalhost:(location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
     getSchema:true,
+    getTokens:true,
+    getEndpoints:true,
     getInteractions:false,
-    getTokens:false,
+    token:null,
     passId:null,
     currentStep:0,
     pageHtml:'',
@@ -293,7 +295,22 @@ const jbApp = {
 
                     });                
                     console.log('Bound '+action) 
-                break;              
+                break;     
+
+                case 'testLog':
+                    $(elem).on('click',function(){
+                        var testResults = jbApp.testLog({1:'help'})
+                        jbApp.pageHtml = testResults
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked:'+jbApp.action)
+
+                    });                
+                    console.log('Bound '+action) 
+                break;          
 
                 default:
                     $(elem).on('click',function(){
@@ -304,7 +321,7 @@ const jbApp = {
                     jbApp.processPageChange(refreshPage)
                     
                     // Accounce Click
-                    console.log('clicked unconfigured test option')   
+                    console.log('clicked unconfigured test option:'+jbApp.action)   
                     });    
                 break;
 
@@ -748,17 +765,43 @@ const jbApp = {
                 jbApp.restError(xhr)
               }
         });        
+    },    
+
+    testLog:function(data){
+        if (debug) console.log('testLog:')
+        if (debug) console.table(data)
+        $.ajax({
+            type: "POST",
+            url: '/testlog',
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify(data),
+            success: function(result){
+                jbApp.restSuccess(result)
+            },
+            error: function(error){
+                jbApp.restError(error)
+            }
+        });
     },
 
-    restSuccess:function (result,status) {
-        if (debug) console.log('Rest Success')
+    getDeSuccess:function (result) {
+        if (debug) console.log('getDeSuccess Success')
+        if (debug) console.log('Call Status: '+result.status)
+        if (debug) console.log('Success data: ')
+        console.table(result.body)
+        $('#main').html(result.body)
+    },
+
+    authSuccess:function (result) {
+        if (debug) console.log('Auth Success')
         if (debug) console.log('Success data: ')
         console.table(result)
         $('#main').html(result)
     },
 
-    authSuccess:function (result,status) {
-        if (debug) console.log('Auth Success')
+    restSuccess:function (result) {
+        if (debug) console.log('Rest Success')
         if (debug) console.log('Success data: ')
         console.table(result)
         $('#main').html(result)

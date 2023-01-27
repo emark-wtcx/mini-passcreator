@@ -41,14 +41,22 @@ document.addEventListener('DOMContentLoaded', function main() {
             jbApp.schema = data['schema']
             jbApp.parseSchema()
             });
-    }
-    
+    }    
     
     if (jbApp.getInteractions){
         connection.trigger('requestInteraction');
         connection.on('requestedInteractions', function (data) {
             console.log('Requested Interaction:')
             console.table(data)
+        });
+    }    
+    
+    if (jbApp.getEndpoints){
+        connection.trigger('requestEndpoints');
+        connection.on('requestedEndpoints', function (data) {
+            console.log('Requested Interaction:')
+            console.table(data)
+            jbApp.endpoints = data
         });
     }
     console.log('connection:')
