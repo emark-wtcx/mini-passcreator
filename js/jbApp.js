@@ -725,40 +725,51 @@ const jbApp = {
             contentType: "application/json",
             dataType: "json",
             data: '{"customerKey":"'+customerKey+'"}',
-            success: jbApp.soapSuccess(),
-            error: jbApp.soapError()
-        }).done(function(responseData, request, settings ){
-            console.table('Get request: ')
-            console.table(responseData)
+            success: function(result){
+                jbApp.restSuccess(result)
+            },
+            error: function(error){
+                jbApp.restError(error)
+            }
         });
     },
 
     testAuth:function(){
         $.ajax({
+            beforeSend:function(){$('#main').html('Loading')},
             type: "POST",
             url: '/testauth',
             contentType: "application/json",
             dataType: "json",
             success: function(authResult){                        
-                $('#main').html(authResult)
+                jbApp.authSuccess(authResult)
             },
             error: function(xhr){
-                alert("An error occured: " + xhr.status + " " + xhr.statusText);
+                jbApp.restError(xhr)
               }
         });        
     },
 
-    authSuccess:function (result) {
-        if (debug) console.log('SuccessOccur')
-        if (debug) console.log('Success status: '+result.status)
+    restSuccess:function (result,status) {
+        if (debug) console.log('Rest Success')
         if (debug) console.log('Success data: ')
         console.table(result)
+        $('#main').html(result)
     },
 
-    restError:function(xhr) {
-        if (debug) console.log('ErrorOccur')
-        if (data && data.hasOwnProperty('responseText')){
-            alert(data.responseText + " " + xhr.status);
+    authSuccess:function (result,status) {
+        if (debug) console.log('Auth Success')
+        if (debug) console.log('Success data: ')
+        console.table(result)
+        $('#main').html(result)
+    },
+
+    restError:function(data) {
+        if (debug) console.log('Auth Error')
+        if (data.hasOwnProperty('responseText')){
+            console.log(data.responseText + " " + data.status);
+        }else if (data.hasOwnProperty('statusText')){
+            console.log(data.responseText + " " + data.statusText);
         }else{
             console.table(data)
         }

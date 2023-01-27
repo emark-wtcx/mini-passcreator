@@ -53,11 +53,11 @@ app.post('/execute',function (req, res, next) {
   }
 })
 
-app.post('/getde',function (req, res, next) { 
+app.post('/getde',async function (req, res, next) { 
   if (postDebug) console.log('/getde called ') 
   if (postDebug) console.table(req.body)
   if (req.body.customerKey != null){
-    let getServerResponse = getDataExtension(req.body.customerKey)
+    let getServerResponse = await getDataExtension(req.body.customerKey)
     if (postDebug) console.log('/getde Response: ')
     if (postDebug) console.table(getServerResponse)
     return res.json(getServerResponse)
@@ -138,9 +138,12 @@ function postMessage(data){
     .then((dataResponse) => {
       //  Build response /
       var messageResponse = {
-        'requestDate':date.DateTime,
-        'status':dataResponse.status
+        'requestDate':date.DateTime
       }
+      if (dataResponse && dataResponse.hasOwnProperty('status')){
+        messageResponse.status = dataResponse.status
+      }
+
       if (postDebug) console.log('POST messageResponse:'); 
       if (postDebug) console.table(messageResponse);
       finalResponse = messageResponse
@@ -186,13 +189,15 @@ async function getDataExtension(customerKey){
       //  Build response /
       var messageResponse = {
         'requestDate':date.DateTime,
-        'status':dataResponse.status,
-        'body':dataResponse.body
+        'status':200,
+        'body':dataResponse
       }
-      if (postDebug) console.log('getDataExtension:'); 
+      if (postDebug) console.log('getDataExtension Returning:'); 
       if (postDebug) console.log(JSON.stringify(messageResponse));
       return messageResponse
     });
+    if (postDebug) console.log('getDataExtension getDataResponse: ')
+    if (postDebug) console.table(getDataResponse)
     return getDataResponse; // return response
 }
 
@@ -268,28 +273,30 @@ async function getData(url = '', headers) {
   return getResponse;
 }
 
-async function postData(url = '', postData) {
-  // Default options are marked with *
-  var headers = {
-    "Accept": dataType,
-    "Content-Type": dataType,
-    "Authorization":apiKey
+async function postData(url = '', postData=null) {
+  if (url != '' && postData != null){
+    // Default options are marked with *
+    var headers = {
+      "Accept": dataType,
+      "Content-Type": dataType,
+      "Authorization":apiKey
+    }
+    const postResponse = await fetch(url, {
+      method: 'POST', 
+      mode: 'no-cors', 
+      cache: 'no-cache', 
+      credentials: 'omit', 
+      headers: headers,
+      redirect: 'follow', 
+      referrerPolicy: 'no-referrer', 
+      body: JSON.stringify(postData) 
+    }).catch((error) => {
+      // Broadcast error 
+      if (postDebug) console.log('Backend error:'+JSON.stringify(error));
+      return error;
+    });
+    return postResponse; // return response
   }
-  const postResponse = await fetch(url, {
-    method: 'POST', 
-    mode: 'no-cors', 
-    cache: 'no-cache', 
-    credentials: 'omit', 
-    headers: headers,
-    redirect: 'follow', 
-    referrerPolicy: 'no-referrer', 
-    body: JSON.stringify(postData) 
-  }).catch((error) => {
-    // Broadcast error 
-    if (postDebug) console.log('Backend error:'+JSON.stringify(error));
-    return error;
-  });
-  return postResponse; // return response
 }
 
 app.listen(PORT, function () {
