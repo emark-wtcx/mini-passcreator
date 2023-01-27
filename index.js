@@ -3,11 +3,11 @@ const app = express();
 const path = require('path');
 //const cors = require('cors');
 
-const apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
-const postDebug = true
-const HOME_DIR = '/';
+var HOME_DIR = '/';
+var postDebug = true
 var dataType = 'application/json'
 var finalResponse = {'data':null}
+var apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
@@ -63,6 +63,23 @@ app.post('/getde',function (req, res, next) {
     return {'message':'No data submitted'}
   }
 })
+
+app.post('/testauth',async function (req, res, next) { 
+  if (postDebug) console.log('/testauth called ') 
+  if (req != null){
+    var AuthResponse = await getAccessToken()
+    .then((getAuthResponse) => {
+      if (postDebug) console.log('/testauth Response: ')
+      if (postDebug) console.table(getAuthResponse)
+      return getAuthResponse
+    })
+    if (postDebug) console.log('/testauth Return: ')
+    if (postDebug) console.table(AuthResponse)
+    return AuthResponse
+  }else{
+    return {'message':'No data submitted'}
+  }
+})
 /**
  * Generic Error Handling
  */
@@ -74,7 +91,19 @@ app.use(function (err, req, res, next) {
 /**
  *  Back End Functions
 * */
-postMessage = function(data){
+
+function getDateTime(){
+  let d = new Date();
+  var requestDate = d.toLocaleDateString()
+  var requestTime = d.toLocaleTimeString()
+  var dateTime = requestDate+' - '+requestTime;
+  return {
+    'Date':requestDate,
+    'Time':requestTime,
+    'DateTime':dateTime
+  }
+}
+function postMessage(data){
   if (data.hasOwnProperty('inArguments')){
     var messageData = data.inArguments[0]
   }else{
@@ -122,7 +151,7 @@ postMessage = function(data){
   return finalResponse
 }
 
-getDataExtension = function(customerKey){
+async function getDataExtension(customerKey){
   // Request setup
   var data = {}
   //data.customerKey = 'testing_dale'
@@ -137,14 +166,12 @@ getDataExtension = function(customerKey){
   if (postDebug) console.table(customerKey)
   
   
-  let accessToken = getAccessToken()
+  let accessToken = await getAccessToken()
   var headers = {
     "Accept": dataType,
     "Content-Type": dataType,
     "Authorization":accessToken
   }
-  
-  headers.Authorization = 'eyJhbGciOiJIUzI1NiIsImtpZCI6IjQiLCJ2ZXIiOiIxIiwidHlwIjoiSldUIn0.eyJhY2Nlc3NfdG9rZW4iOiI3UzFaRHRTZ2EyRFNLWkRXSm5ZamtaaEYiLCJjbGllbnRfaWQiOiJ4amEwNXBjdW5heTMyNWN5ZzZvZGN5ZXgiLCJlaWQiOjcyMDcxOTMsInN0YWNrX2tleSI6IlM3IiwicGxhdGZvcm1fdmVyc2lvbiI6MiwiY2xpZW50X3R5cGUiOiJTZXJ2ZXJUb1NlcnZlciIsInBpZCI6MzYzfQ.JVDaLYZoTkq67ldjkRIsf0_JVSCiAhLXzymi5hGOrJs.XEAR2xl5DFnrBcKUfsmXZ4-Fz20zAVFNuwu7-zBCiDt381vpdZ1q1KBojsqnF9H0K6efXM9YoVvuxCANvREpqHyGHIptrfHxG_vMynKGpqQ6x9CJoytsH1IA-rB9XBaPP-VNIPpGhn61rUHTi9boaB580_ZAoAVRGf04bbJAd'
 
   if (postDebug) console.log('GetDE Headers: ')
   if (postDebug) console.table(headers)
@@ -153,9 +180,9 @@ getDataExtension = function(customerKey){
   //
   // Request Data via getData function
   //
-  var getDataResponse = getData(data.url,headers)
+  var getDataResponse = await getData(data.url,headers)
     .then((dataResponse) => {
-      if (postDebug) console.log('dataResponse: ')
+      if (postDebug) console.log('getDataExtension dataResponse: ')
       if (postDebug) console.table(dataResponse)
       //  Build response /
       var messageResponse = {
@@ -170,22 +197,10 @@ getDataExtension = function(customerKey){
     return getDataResponse; // return response
 }
 
-function getDateTime(){
-  let d = new Date();
-  var requestDate = d.toLocaleDateString()
-  var requestTime = d.toLocaleTimeString()
-  var dateTime = requestDate+' - '+requestTime;
-  return {
-    'Date':requestDate,
-    'Time':requestTime,
-    'DateTime':dateTime
-  }
-}
-
 /**
  *  External API call engine 
  * */
-function getAccessToken(){
+async function getAccessToken(){
   console.log('Requesting Authentication')
   let authUrl = 'https://mc3tb2-hmmbngz-85h36g8xz1b4m.auth.marketingcloudapis.com/v2/token'
   let authBody = {
@@ -207,7 +222,7 @@ function getAccessToken(){
   if (postDebug) console.log('Auth Body: ')
   if (postDebug) console.table(authBody)
 
-  var authResponse = fetch(authUrl, {
+  var authResponse = await fetch(authUrl, {
       method: 'POST', 
       mode: 'no-cors', 
       cache: 'no-cache', 
@@ -245,8 +260,10 @@ async function getData(url = '', headers) {
     // Broadcast error 
     if (postDebug) console.log('Backend error:'+JSON.stringify(error));
     return error;
-  });
-  return getResponse; // return response
+  }).then(response => response.json())
+  .then((getResponse) => {
+    return getResponse; // return response
+  })
 }
 
 async function postData(url = '', postData) {

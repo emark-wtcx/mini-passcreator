@@ -274,11 +274,26 @@ const jbApp = {
                         jbApp.processPageChange(refreshPage)
                         
                         // Accounce Click
-                        console.log('clicked readSendable')
+                        console.log('clicked:'+jbApp.action)
 
                     });                
                     console.log('Bound '+action) 
-                break;                
+                break;  
+
+                case 'authenticate':
+                    $(elem).on('click',function(){
+                        var testResults = jbApp.testAuth()
+                        jbApp.pageHtml = testResults
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked:'+jbApp.action)
+
+                    });                
+                    console.log('Bound '+action) 
+                break;              
 
                 default:
                     $(elem).on('click',function(){
@@ -713,6 +728,21 @@ const jbApp = {
             success: jbApp.soapSuccess(),
             error: jbApp.soapError()
         }).done(function(responseData, request, settings ){
+            console.table('Get request: ')
+            console.table(responseData)
+        });
+    },
+
+    testAuth:function(){
+        $.ajax({
+            type: "POST",
+            url: '/testauth',
+            contentType: "application/json",
+            dataType: "json",
+            success: jbApp.soapSuccess(),
+            error: jbApp.soapError()
+        }).done(function(responseData, request, settings ){
+            console.table('testAuth: ')
             console.table(responseData)
         });
     },
