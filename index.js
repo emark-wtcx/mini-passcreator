@@ -1,7 +1,6 @@
 const express = require('express');
 const app = express();
 const path = require('path');
-//const cors = require('cors');
 
 var HOME_DIR = '/';
 var postDebug = true
@@ -114,11 +113,12 @@ function getDateTime(){
   let d = new Date();
   var requestDate = d.toLocaleDateString()
   var requestTime = d.toLocaleTimeString()
-  var dateTime = requestDate+' - '+requestTime;
+  var dateTime = requestDate+'-'+requestTime;
   return {
     'Date':requestDate,
     'Time':requestTime,
-    'DateTime':dateTime
+    'DateTime':dateTime,
+    'ISODateTime':d.toISOString()
   }
 }
 
@@ -229,20 +229,23 @@ async function logData(message,data={}){
   let logDe = 'passcreator_success_log'
   let date = getDateTime();
   let logId = guid();
-  let loggingUrl = 'data/v1/async/dataextensions/key:'+logDe+'/rows'
+  let loggingUri = 'data/v1/async/dataextensions/key:'+logDe+'/rows'
 
-  let items = {
-    'Id':logId,
-    'DateTime':date.DateTime,
-    'Message':message,
-    'MetaData':JSON.stringify(data)
+  let row = {'items':[
+    {
+      'Id':logId,
+      'DateTime':date.ISODateTime,
+      'Message':message,
+      'MetaData':JSON.stringify(data)
+    }
+  ]
   }
   
-  if (postDebug) console.log('logData loggingUrl: '+loggingUrl)
+  if (postDebug) console.log('logData loggingUrl: '+loggingUri)
   if (postDebug) console.log('logData items: ')
-  if (postDebug) console.table(items)
+  if (postDebug) console.table(row.items)
 
-  await postData(loggingUrl,items).then((logResponse) => {
+  await postData(loggingUri,row).then(logResponse => {
     if (postDebug) console.log('logData logResponse: ')
     if (postDebug) console.table(logResponse)
     return logResponse
@@ -250,20 +253,23 @@ async function logData(message,data={}){
 }
 
 
-async function logError(message){
-  let loggingUrl = '/data/v1/async/dataextensions/key:'+logDe+'/rows'
+async function logError(message,data={}){
   let logDe = 'passcreator_error_log'
+  let loggingUri = '/data/v1/async/dataextensions/key:'+logDe+'/rows'
   let date = getDateTime();
   let logId = guid();
 
-  let items = {
-    'Id':logId,
-    'DateTime':date.DateTime,
-    'Message':message,
-    'MetaData':data
+  let row = {'items':[
+    {
+      'Id':logId,
+      'DateTime':date.ISODateTime,
+      'Message':message,
+      'MetaData':JSON.stringify(data)
+    }
+  ]
   }
 
-  await postData(loggingUrl,items).then((logResponse) => {
+  await postData(loggingUri,row).then((logResponse) => {
     if (postDebug) console.log('logError logResponse: ')
     if (postDebug) console.table(logResponse)
     return logResponse  
@@ -274,11 +280,9 @@ async function logError(message){
  *  External API call engine 
  * */
 async function getAccessToken(){
-  if (jbApp.token != null){
-    return jbApp.token
-  }
   if (postDebug) console.log('Requesting Authentication')
   let authUrl = 'https://mc3tb2-hmmbngz-85h36g8xz1b4m.auth.marketingcloudapis.com/v2/token'
+  //let authUrl = jbApp.authUrl+'v2/token'
   let authBody = {
     "grant_type": "client_credentials",
     "client_id": "xja05pcunay325cyg6odcyex",
@@ -381,11 +385,6 @@ async function postDataToPassCreator(url = '', postData=null) {
 
 async function postData(url = '', postData=null) {
   if (url != '' && postData != null){
-    // Prepend Rest Domain to URL 
-    // (if missing)
-    if (url.indexOf(restDomain)==-1){
-      url = restDomain+url
-    }
     // Default options are marked with *
     let accessToken = await getAccessToken()
     var headers = {
@@ -393,13 +392,18 @@ async function postData(url = '', postData=null) {
       "Content-Type": dataType,
       "Authorization":accessToken
     }
+    // Prepend Rest Domain to URL 
+    // (if missing)
+    if (url.indexOf(restDomain)==-1){
+      url = restDomain+url
+    }
 
     if (postDebug) {
       console.log('postData postDataUrl: '+url)
       console.log('postData headers: ')
       console.table(headers)
       console.log('postData data: ')
-      console.table(postData)
+      console.log(JSON.stringify(postData))
     }
 
     await fetch(url, {
@@ -416,10 +420,12 @@ async function postData(url = '', postData=null) {
       if (postDebug) console.log('(postData) Backend response:'+JSON.stringify(response));
       return response; // return response
     }).catch(error => {
+      let errorObject = response.json()
       // Broadcast error 
-      if (postDebug) console.log('(postData) Backend error:'+JSON.stringify(error));
-      return error;
+      if (postDebug) console.log('(postData) Backend error:'+JSON.stringify(errorObject.message));
+      return errorObject;
     });
+
     }
 }
 function guid() { 

@@ -96,6 +96,12 @@ const jbApp = {
         }
         return endpoint;
     },
+    parseEndpoints:function(){
+        if (jbApp.hasOwnProperty('endpoints')){
+            jbApp.restUrl = 'https://'+jbApp.endpoints.restHost+'/'
+            jbApp.authUrl = jbApp.jbHost.replace('rest','auth')
+        }
+    },
     parseSchema:function(){
         if (debug) console.log('parseSchema')
         if (
@@ -299,7 +305,7 @@ const jbApp = {
 
                 case 'testLog':
                     $(elem).on('click',function(){
-                        var testResults = jbApp.testLog({1:'help'})
+                        var testResults = jbApp.testLog({'message':'help'})
                         jbApp.pageHtml = testResults
 
                         // Execute Action

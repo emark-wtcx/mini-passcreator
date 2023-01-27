@@ -37,8 +37,8 @@ document.addEventListener('DOMContentLoaded', function main() {
         connection.trigger('requestSchema');
         connection.on('requestedSchema', function (data) {
             // save schema
-            console.log('*** Schema ***', JSON.stringify(data['schema']));
             jbApp.schema = data['schema']
+            console.log('*** Schema ***', JSON.stringify(jbApp.schema));
             jbApp.parseSchema()
             });
     }    
@@ -57,6 +57,7 @@ document.addEventListener('DOMContentLoaded', function main() {
             console.log('Requested Endpoints:')
             console.table(data)
             jbApp.endpoints = data
+            jbApp.parseEndpoints()
         });
     }
     console.log('connection:')
