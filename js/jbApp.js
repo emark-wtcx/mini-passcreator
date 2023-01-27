@@ -739,12 +739,29 @@ const jbApp = {
             url: '/testauth',
             contentType: "application/json",
             dataType: "json",
-            success: jbApp.soapSuccess(),
-            error: jbApp.soapError()
-        }).done(function(responseData, request, settings ){
-            console.table('testAuth: ')
-            console.table(responseData)
-        });
+            success: function(authResult){                        
+                $('#main').html(authResult)
+            },
+            error: function(xhr){
+                alert("An error occured: " + xhr.status + " " + xhr.statusText);
+              }
+        });        
+    },
+
+    authSuccess:function (result) {
+        if (debug) console.log('SuccessOccur')
+        if (debug) console.log('Success status: '+result.status)
+        if (debug) console.log('Success data: ')
+        console.table(result)
+    },
+
+    restError:function(xhr) {
+        if (debug) console.log('ErrorOccur')
+        if (data && data.hasOwnProperty('responseText')){
+            alert(data.responseText + " " + xhr.status);
+        }else{
+            console.table(data)
+        }
     },
 
     /**

@@ -8,6 +8,8 @@ var postDebug = true
 var dataType = 'application/json'
 var finalResponse = {'data':null}
 var apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
+var access_token = null
+var accessToken = null
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
@@ -71,11 +73,8 @@ app.post('/testauth',async function (req, res, next) {
     .then((getAuthResponse) => {
       if (postDebug) console.log('/testauth Response: ')
       if (postDebug) console.table(getAuthResponse)
-      return getAuthResponse
+      return res.json(getAuthResponse)
     })
-    if (postDebug) console.log('/testauth Return: ')
-    if (postDebug) console.table(AuthResponse)
-    return AuthResponse
   }else{
     return {'message':'No data submitted'}
   }
@@ -239,13 +238,15 @@ async function getAccessToken(){
     .then((authenticationResponse) => {  
       console.log('Requested Authentication')
       if (authenticationResponse.hasOwnProperty('access_token')){
-        var access_token = authenticationResponse.access_token
+        access_token = authenticationResponse.access_token
         console.log('Got Authentication: '+access_token)
-        return 'Bearer '+access_token
+        accessToken = 'Bearer '+access_token
+        return accessToken
       }else{
         console.log('Authentication failed: '+JSON.stringify(authResponse))
         }
     })
+    return authResponse
 }
 async function getData(url = '', headers) {
   var getResponse = await fetch(url, {
@@ -264,6 +265,7 @@ async function getData(url = '', headers) {
   .then((getResponse) => {
     return getResponse; // return response
   })
+  return getResponse;
 }
 
 async function postData(url = '', postData) {
@@ -273,7 +275,7 @@ async function postData(url = '', postData) {
     "Content-Type": dataType,
     "Authorization":apiKey
   }
-  const response = await fetch(url, {
+  const postResponse = await fetch(url, {
     method: 'POST', 
     mode: 'no-cors', 
     cache: 'no-cache', 
@@ -287,7 +289,7 @@ async function postData(url = '', postData) {
     if (postDebug) console.log('Backend error:'+JSON.stringify(error));
     return error;
   });
-  return response; // return response
+  return postResponse; // return response
 }
 
 app.listen(PORT, function () {
