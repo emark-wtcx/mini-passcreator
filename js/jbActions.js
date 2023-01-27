@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function main() {
     if (jbApp.getEndpoints){
         connection.trigger('requestEndpoints');
         connection.on('requestedEndpoints', function (data) {
-            console.log('Requested Interaction:')
+            console.log('Requested Endpoints:')
             console.table(data)
             jbApp.endpoints = data
         });
