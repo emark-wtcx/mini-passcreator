@@ -20,6 +20,7 @@ const jbApp = {
     pageHtml:'',
     deStructure:{},
     message:'',
+    action:null,
     credentials:{
         'url': 'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
         'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'        
@@ -258,21 +259,23 @@ const jbApp = {
             /**
              * Presume we'll be changing the page
              */
-            let refreshPage=true;
+            var refreshPage=true;
 
             /**
              * Isolate the required action
              */
-            let action = $(this).data('action');
+            let action = elem.data('action');
+            jbApp.action = null
             jbApp.action = action
 
             /**
              * Bind the requested action
              */
-            switch(jbApp.action){
+            switch(action){
 
                 case 'readSendable':
                     $(elem).on('click',function(){
+                        jbApp.action = action
                         let customerKey = 'testing_dale'
                         var testResults = 'Test successful'
                         var testResults = jbApp.getDataExtensionRest(customerKey)
@@ -282,7 +285,7 @@ const jbApp = {
                         jbApp.processPageChange(refreshPage)
                         
                         // Accounce Click
-                        console.log('clicked:'+jbApp.action)
+                        console.log('clicked:readSendable | '+jbApp.action)
 
                     });                
                     console.log('Bound '+action) 
@@ -290,6 +293,8 @@ const jbApp = {
 
                 case 'authenticate':
                     $(elem).on('click',function(){
+                        jbApp.action = null
+                        jbApp.action = action
                         var testResults = jbApp.testAuth()
                         jbApp.pageHtml = testResults
 
@@ -297,7 +302,7 @@ const jbApp = {
                         jbApp.processPageChange(refreshPage)
                         
                         // Accounce Click
-                        console.log('clicked:'+jbApp.action)
+                        console.log('clicked:authenticate | '+jbApp.action)
 
                     });                
                     console.log('Bound '+action) 
@@ -305,6 +310,8 @@ const jbApp = {
 
                 case 'testLog':
                     $(elem).on('click',function(){
+                        jbApp.action = null
+                        jbApp.action = action
                         var testResults = jbApp.testLog({'message':'help'})
                         jbApp.pageHtml = testResults
 
@@ -312,7 +319,7 @@ const jbApp = {
                         jbApp.processPageChange(refreshPage)
                         
                         // Accounce Click
-                        console.log('clicked:'+jbApp.action)
+                        console.log('clicked:testLog | '+jbApp.action)
 
                     });                
                     console.log('Bound '+action) 
@@ -320,14 +327,15 @@ const jbApp = {
 
                 default:
                     $(elem).on('click',function(){
-                    var testResults = 'Unconfigured test option'
-                    jbApp.pageHtml = testResults  
+                        jbApp.action = null
+                        var testResults = 'Unconfigured test option'
+                        jbApp.pageHtml = testResults  
 
-                    // Execute Action
-                    jbApp.processPageChange(refreshPage)
-                    
-                    // Accounce Click
-                    console.log('clicked unconfigured test option:'+jbApp.action)   
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked unconfigured test option:'+jbApp.action)   
                     });    
                 break;
 
