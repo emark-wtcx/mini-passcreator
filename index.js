@@ -260,14 +260,16 @@ async function logData(message,data={}){
       'Message':message,
       'MetaData':JSON.stringify(data)
     }
-  ]
+    ]
   }
   
   if (postDebug) console.log('logData loggingUrl: '+loggingUri)
   if (postDebug) console.log('logData items: ')
   if (postDebug) console.table(row.items)
 
-  await postData(loggingUri,row).then(logResponse => {
+  await postData(loggingUri,row)   
+    .then(async logResponse => JSON.stringify(logResponse))
+    .then((logResponse) => {
     if (postDebug) console.log('logData logResponse: ')
     if (postDebug) console.table(logResponse)
     return logResponse
@@ -287,14 +289,15 @@ async function logError(message,data={}){
       'Message':message,
       'MetaData':JSON.stringify(data)
     }
-  ]
+    ]
   }
 
-  await postData(loggingUri,row).then((logResponse) => {
-    if (postDebug) console.log('logError logResponse: ')
-    if (postDebug) console.table(logResponse)
-    return logResponse  
-    });
+  await postData(loggingUri,row)
+    .then((errorResponse) => {
+      if (postDebug) console.log('logError logResponse: ')
+      if (postDebug) console.table(errorResponse)
+      return errorResponse  
+      });
 }
 
 /**
@@ -381,7 +384,7 @@ async function getData(url = '', headers) {
 async function postData(url = '', postData=null) {
   if (url != '' && postData != null){
     // Default options are marked with *
-    await getAccessToken()
+    let postResponse = await getAccessToken()
       .then(async accessToken => {
         var headers = {
           "Accept": "*/*",
@@ -402,23 +405,30 @@ async function postData(url = '', postData=null) {
           console.log(JSON.stringify(postData))
         }
 
-        await fetch(url, {
-          method: 'POST', 
-          headers: headers,
-          body: JSON.stringify(postData)
-        }).then(async fetchResponse => await fetchResponse.json())
-        .then(fetchResult => {
-          if (postDebug) console.log('(postData) Backend response:'+JSON.stringify(fetchResult));
-          return fetchResult; // return response
-        }).catch(error => {
-          let errorObject = error.json()
-          // Broadcast error 
-          if (postDebug) console.log('(postData) Backend error:'+JSON.stringify(errorObject.message));
-          return errorObject;
-        });
-
+        let requestResponse = fetch(url, {
+            method: 'POST', 
+            headers: headers,
+            body: JSON.stringify(postData)
+          }).catch(errorObject => {
+            let errorString = JSON.stringify(errorObject)
+            // Broadcast error 
+            if (postDebug) console.log('(postData) Backend error:'+errorString);
+            return errorObject;
+          })
+          .then(async fetchResponse => await fetchResponse.json())
+          .then((fetchResult) => {
+            if (postDebug) {
+              let responseString = JSON.stringify(fetchResult)
+              console.log('(postData) Backend responseString:'+responseString);
+            }
+            return fetchResult; // return response
+          }).finally((fetchResult)=>{
+            return fetchResult
+          });
+        return requestResponse;
       }
-    );
+    );    
+    return postResponse;
   }
 }
 
