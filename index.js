@@ -1,12 +1,14 @@
 const express = require('express');
 const app = express();
 const path = require('path');
+const apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
+const logDe = 'passcreator_success_log'
+const errorDe = 'passcreator_error_log'
 
 var HOME_DIR = '/';
 var postDebug = true
 var dataType = 'application/json'
 var finalResponse = {'data':null}
-var apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
 var access_token = null
 var accessToken = null
 var restDomain = null
@@ -109,6 +111,22 @@ app.use(function (err, req, res, next) {
  *  Back End Functions
 * */
 
+function guid() { 
+  var d = new Date().getTime();//Timestamp
+  var d2 = (performance && performance.now && (performance.now()*1000)) || 0;//Time in microseconds since page-load or 0 if unsupported
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+      var r = Math.random() * 16;//random number between 0 and 16
+      if(d > 0){//Use timestamp until depleted
+          r = (d + r)%16 | 0;
+          d = Math.floor(d/16);
+      } else {//Use microseconds since page-load if supported
+          r = (d2 + r)%16 | 0;
+          d2 = Math.floor(d2/16);
+      }
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+  });
+}
+
 function getDateTime(){
   let d = new Date();
   var requestDate = d.toLocaleDateString()
@@ -184,49 +202,53 @@ async function getDataExtension(customerKey){
   var date = getDateTime();
 
   // Request content
-  if (postDebug) console.log('GetDE Table by CustomerKey: ')
+  if (postDebug) console.log('getDataExtension Table by CustomerKey: ')
   if (postDebug) console.table(customerKey)
   
-  
-  let accessToken = await getAccessToken()
-  var headers = {
-    "Accept": dataType,
-    "Content-Type": dataType,
-    "Authorization":accessToken
-  }
+  // Perform Request
+  await getAccessToken().then(async (accessToken) => {
+    if (postDebug) console.log('getDataExtension accessToken: ')
+    if (postDebug) console.table(accessToken)
 
-  if (postDebug) console.log('GetDE Headers: ')
-  if (postDebug) console.table(headers)
-  if (postDebug) console.log('GetDE Endpoint: '+data.url)
+    /* Get DE Headers */
+    var headers = {
+      "Accept": dataType,
+      "Content-Type": dataType,
+      "Authorization":accessToken
+    }
 
-  //
-  // Request Data via getData function
-  //
-  var getDataResponse = await getData(data.url,headers)
-    .then((dataResponse) => {
-      if (postDebug) console.log('getDataExtension dataResponse: ')
-      if (postDebug) console.table(dataResponse)
-      //  Build response /
-      var messageResponse = {
-        'requestDate':date.DateTime,
-        'status':200,
-        'body':dataResponse
-      }
-      if (postDebug) console.log('getDataExtension Returning:'); 
-      if (postDebug) console.log(JSON.stringify(messageResponse));
-      logData('Got data extension',messageResponse)
-      return messageResponse
-    }).catch((error) => {
-      logError(error)
-    });
-    if (postDebug) console.log('getDataExtension getDataResponse: ')
-    if (postDebug) console.table(getDataResponse)
-    return getDataResponse; // return response
+    if (postDebug) console.log('getDataExtension Headers: ')
+    if (postDebug) console.table(headers)
+    if (postDebug) console.log('getDataExtension Endpoint: '+data.url)
+
+    //
+    // Request Data via getData function
+    //
+    var getDataResponse = await getData(data.url,headers)
+      .then((dataResponse) => {
+        if (postDebug) console.log('getDataExtension dataResponse: ')
+        if (postDebug) console.table(dataResponse)
+        //  Build response /
+        var messageResponse = {
+          'requestDate':date.DateTime,
+          'status':200,
+          'body':dataResponse
+        }
+        if (postDebug) console.log('getDataExtension Returning:'); 
+        if (postDebug) console.log(JSON.stringify(messageResponse));
+        logData('Got data extension:',customerKey)
+        return messageResponse
+      }).catch((error) => {
+        logError(error)
+      });
+      if (postDebug) console.log('getDataExtension getDataResponse: ')
+      if (postDebug) console.table(getDataResponse)
+      return getDataResponse; // return response
+    })
 }
 
 async function logData(message,data={}){
   if (postDebug) console.log('logData called')
-  let logDe = 'passcreator_success_log'
   let date = getDateTime();
   let logId = guid();
   let loggingUri = 'data/v1/async/dataextensions/key:'+logDe+'/rows'
@@ -254,8 +276,7 @@ async function logData(message,data={}){
 
 
 async function logError(message,data={}){
-  let logDe = 'passcreator_error_log'
-  let loggingUri = '/data/v1/async/dataextensions/key:'+logDe+'/rows'
+  let loggingUri = '/data/v1/async/dataextensions/key:'+errorDe+'/rows'
   let date = getDateTime();
   let logId = guid();
 
@@ -357,6 +378,50 @@ async function getData(url = '', headers) {
   return getResponse;
 }
 
+async function postData(url = '', postData=null) {
+  if (url != '' && postData != null){
+    // Default options are marked with *
+    await getAccessToken()
+      .then(async accessToken => {
+        var headers = {
+          "Accept": "*/*",
+          "Content-Type": dataType,
+          "Authorization":accessToken
+        }
+        // Prepend Rest Domain to URL 
+        // (if missing)
+        if (url.indexOf(restDomain)==-1){
+          url = restDomain+url
+        }
+
+        if (postDebug) {
+          console.log('postData postDataUrl: '+url)
+          console.log('postData headers: ')
+          console.table(headers)
+          console.log('postData data: ')
+          console.log(JSON.stringify(postData))
+        }
+
+        await fetch(url, {
+          method: 'POST', 
+          headers: headers,
+          body: JSON.stringify(postData)
+        }).then(async fetchResponse => await fetchResponse.json())
+        .then(fetchResult => {
+          if (postDebug) console.log('(postData) Backend response:'+JSON.stringify(fetchResult));
+          return fetchResult; // return response
+        }).catch(error => {
+          let errorObject = error.json()
+          // Broadcast error 
+          if (postDebug) console.log('(postData) Backend error:'+JSON.stringify(errorObject.message));
+          return errorObject;
+        });
+
+      }
+    );
+  }
+}
+
 async function postDataToPassCreator(url = '', postData=null) {
   if (url != '' && postData != null){
     // Default options are marked with *
@@ -381,67 +446,6 @@ async function postDataToPassCreator(url = '', postData=null) {
     });
     return postResponse; // return response
   }
-}
-
-async function postData(url = '', postData=null) {
-  if (url != '' && postData != null){
-    // Default options are marked with *
-    let accessToken = await getAccessToken()
-    var headers = {
-      "Accept": dataType,
-      "Content-Type": dataType,
-      "Authorization":accessToken
-    }
-    // Prepend Rest Domain to URL 
-    // (if missing)
-    if (url.indexOf(restDomain)==-1){
-      url = restDomain+url
-    }
-
-    if (postDebug) {
-      console.log('postData postDataUrl: '+url)
-      console.log('postData headers: ')
-      console.table(headers)
-      console.log('postData data: ')
-      console.log(JSON.stringify(postData))
-    }
-
-    await fetch(url, {
-      method: 'POST', 
-      mode: 'no-cors', 
-      cache: 'no-cache', 
-      credentials: 'omit', 
-      headers: headers,
-      redirect: 'follow', 
-      referrerPolicy: 'no-referrer', 
-      body: postData
-    }).then(async response => await response.json())
-    .then(response => {
-      if (postDebug) console.log('(postData) Backend response:'+JSON.stringify(response));
-      return response; // return response
-    }).catch(error => {
-      let errorObject = response.json()
-      // Broadcast error 
-      if (postDebug) console.log('(postData) Backend error:'+JSON.stringify(errorObject.message));
-      return errorObject;
-    });
-
-    }
-}
-function guid() { 
-  var d = new Date().getTime();//Timestamp
-  var d2 = (performance && performance.now && (performance.now()*1000)) || 0;//Time in microseconds since page-load or 0 if unsupported
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-      var r = Math.random() * 16;//random number between 0 and 16
-      if(d > 0){//Use timestamp until depleted
-          r = (d + r)%16 | 0;
-          d = Math.floor(d/16);
-      } else {//Use microseconds since page-load if supported
-          r = (d2 + r)%16 | 0;
-          d2 = Math.floor(d2/16);
-      }
-      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-  });
 }
 
 app.listen(PORT, function () {
