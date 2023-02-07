@@ -323,7 +323,27 @@ const jbApp = {
 
                     });                
                     console.log('Bound '+action) 
-                break;          
+                break;        
+
+                case 'testMessage':
+                    $(elem).on('click',function(){
+                        jbApp.action = null
+                        jbApp.action = action
+                        var testResults = jbApp.testMessage({
+                            'pushNotificationText':'help me',
+                            'url':'https://eo2mifqm9yelk7e.m.pipedream.net'
+                        })
+                        jbApp.pageHtml = testResults
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked:testLog | '+jbApp.action)
+
+                    });                
+                    console.log('Bound '+action) 
+                break;   
 
                 default:
                     $(elem).on('click',function(){
@@ -797,6 +817,24 @@ const jbApp = {
                 jbApp.restError(error)
             }
         });
+    },   
+
+    testMessage:function(data){
+        if (debug) console.log('testmessage:')
+        if (debug) console.table(data)
+        $.ajax({
+            type: "POST",
+            url: '/testmessage',
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify(data),
+            success: function(result){
+                jbApp.restSuccess(result)
+            },
+            error: function(error){
+                jbApp.restError(error)
+            }
+        });
     },
 
     getDeSuccess:function (result) {
@@ -833,7 +871,7 @@ const jbApp = {
     },
 
     /**
-     * In Progress
+     * Deprecated
      */
     getDataExtensionSoap:function(){
         if (debug) console.log('getDataExtension')

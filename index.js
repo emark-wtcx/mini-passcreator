@@ -4,6 +4,7 @@ const path = require('path');
 const apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
 const logDe = 'passcreator_success_log'
 const errorDe = 'passcreator_error_log'
+const testUrl = 'https://eo2mifqm9yelk7e.m.pipedream.net'
 
 var HOME_DIR = '/';
 var postDebug = true
@@ -97,6 +98,19 @@ app.post('/testlog',async function (req, res, next) {
   }
 })
 
+app.post('/testmessage',async function (req, res, next) { 
+  if (postDebug) console.log('/testmessage called ')
+  if (req.body != null){
+    await postMessage(req.body).then((serverResponse) => {
+    if (postDebug) console.log('/testmessage Response: ')
+    if (postDebug) console.table(serverResponse)
+    return res.json(serverResponse)
+    })
+  }else{
+    return {'message':'No data submitted'}
+  }
+})
+
 
 /**
  * Generic Error Handling
@@ -140,12 +154,14 @@ function getDateTime(){
   }
 }
 
-function postMessage(data){
-  if (data.hasOwnProperty('inArguments')){
+async function postMessage(data){
+  if (data.hasOwnProperty('inArguments')
+    && data.inArguments[0].hasOwnProperty('endpoint')
+    ){
     var messageData = data.inArguments[0]
   }else{
     var messageData = data
-    messageData.endpoint = 'https://eoya8wjvw5vh5ff.m.pipedream.net'
+    messageData.endpoint = testUrl
     }
     
   if (postDebug) console.log('POST messageData: ')
@@ -172,23 +188,25 @@ function postMessage(data){
   /**
    * Transmit Message via postData function
    */
-  postDataToPassCreator(messageData.endpoint, bodyContent)
+  let postResponse = postDataToPassCreator(messageData.endpoint, bodyContent)
     .then((dataResponse) => {
       //  Build response /
       var messageResponse = {
-        'requestDate':date.DateTime
+        'requestDate':date.DateTime,
+        'messageData':JSON.stringify(dataResponse)
       }
       if (dataResponse && dataResponse.hasOwnProperty('status')){
         messageResponse.status = dataResponse.status
       }
 
-      if (postDebug) console.log('POST messageResponse:'); 
+      if (postDebug) console.log('pDTPC messageResponse:'); 
       if (postDebug) console.table(messageResponse);
       finalResponse = messageResponse
+      if (postDebug) console.log('pDTPC Final Response Called:'); 
+      if (postDebug) console.table(finalResponse)
+      return finalResponse
     });
-  if (postDebug) console.log('POST Final Response Called:'); 
-  if (postDebug) console.table(finalResponse)
-  return finalResponse
+  return postResponse
 }
 
 async function getDataExtension(customerKey){
