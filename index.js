@@ -1,10 +1,11 @@
 const express = require('express');
 const app = express();
 const path = require('path');
-const apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
 const logDe = 'passcreator_success_log'
 const errorDe = 'passcreator_error_log'
 const testUrl = 'https://eo2mifqm9yelk7e.m.pipedream.net'
+const tokenUrl = 'https://mc3tb2-hmmbngz-85h36g8xz1b4m.auth.marketingcloudapis.com/v2/token'
+const apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
 
 var HOME_DIR = '/';
 var postDebug = true
@@ -13,15 +14,16 @@ var finalResponse = {'data':null}
 var access_token = null
 var accessToken = null
 var restDomain = null
-var authDomain = null
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 var PORT = process.env.port || 8080;
 
 /**
- *  Front End Routes
-* */
+ *
+ * Front End Routes 
+ * 
+**/
 app.use('/', express.static(__dirname + HOME_DIR));
 
 app.get('/', function (req, res) {
@@ -37,14 +39,20 @@ app.get('/form', function (req, res) {
 
 /**
  *  Tesing area access
- * */
+ **/
 app.get('/test', function (req, res) {
   res.sendFile(path.resolve('./html/test_area.html'));
 });
 
 /**
- *  Back End Routes
-* */
+ *  
+ * Back End Routes
+ * 
+**/
+
+/**
+ * Send payload to Passcreator 
+ */
 app.post('/execute',async function (req, res, next) { 
   if (postDebug) console.log('/execute called ')
   if (req.body != null){
@@ -58,6 +66,9 @@ app.post('/execute',async function (req, res, next) {
   }
 })
 
+/**
+ * Test reading data from a DataExtension identified by CustomerKey 
+ */
 app.post('/getde',async function (req, res, next) { 
   if (postDebug) console.log('/getde called ') 
   if (postDebug) console.table(req.body)
@@ -72,6 +83,9 @@ app.post('/getde',async function (req, res, next) {
   }
 })
 
+/**
+ * Test requesting an authentication token
+ */
 app.post('/testauth',async function (req, res, next) { 
   if (postDebug) console.log('/testauth called ') 
   if (req != null){
@@ -85,6 +99,9 @@ app.post('/testauth',async function (req, res, next) {
   }
 })
 
+/**
+ * Test writing data to the log 
+ */
 app.post('/testlog',async function (req, res, next) { 
   if (postDebug) console.log('/testlog called') 
   if (req != null){
@@ -98,6 +115,9 @@ app.post('/testlog',async function (req, res, next) {
   }
 })
 
+/**
+ * Send a mock payload to the test endpoint 
+ */
 app.post('/testmessage',async function (req, res, next) { 
   if (postDebug) console.log('/testmessage called ')
   if (req.body != null){
@@ -323,61 +343,66 @@ async function logError(message,data={}){
  * */
 async function getAccessToken(){
   if (postDebug) console.log('Requesting Authentication')
-  let authUrl = 'https://mc3tb2-hmmbngz-85h36g8xz1b4m.auth.marketingcloudapis.com/v2/token'
-  //let authUrl = jbApp.authUrl+'v2/token'
-  let authBody = {
-    "grant_type": "client_credentials",
-    "client_id": "xja05pcunay325cyg6odcyex",
-    "client_secret": "b36KqpkMECP8T3h0j2nD81Ve",
-    "account_id": "7207193"
-    }
-    
-  var authHeaders = {
-    "Accept": dataType,
-    "Content-Type": dataType
-  }
-
-  if (postDebug){
-    console.log('Auth Headers: ')
-    console.table(authHeaders)
-    console.log('Auth URL: ')
-    console.table(authUrl)
-    console.log('Auth Body: ')
-    console.table(authBody)
+  if (jbApp.token && jbApp.token.length == 0){
+    let authUrl = tokenUrl
+    let authBody = {
+      "grant_type": "client_credentials",
+      "client_id": "xja05pcunay325cyg6odcyex",
+      "client_secret": "b36KqpkMECP8T3h0j2nD81Ve",
+      "account_id": "7207193"
+      }
+      
+    var authHeaders = {
+      "Accept": dataType,
+      "Content-Type": dataType
     }
 
-  var authResponse = await fetch(authUrl, {
-      method: 'POST', 
-      mode: 'no-cors', 
-      cache: 'no-cache', 
-      credentials: 'omit', 
-      headers: authHeaders,
-      redirect: 'follow', 
-      referrerPolicy: 'no-referrer', 
-      body: JSON.stringify(authBody) 
-    }).catch((error) => {
-      // Broadcast error 
-      if (postDebug) console.log('Backend auth error:'+JSON.stringify(error));
-      return error;
-    }).then(response => response.json())
-    .then((authenticationResponse) => {  
-      if (postDebug) console.log('Requested Authentication')
-      if (authenticationResponse.hasOwnProperty('access_token')){
-        access_token = authenticationResponse.access_token
-        if (postDebug) console.log('Got Authentication: '+access_token)
-        accessToken = 'Bearer '+access_token
-        if (authenticationResponse.hasOwnProperty('rest_instance_url')){
-          restDomain = authenticationResponse.rest_instance_url
-        }
-        if (authenticationResponse.hasOwnProperty('auth_instance_url')){
-          authDomain = authenticationResponse.auth_instance_url
-        }
-        return accessToken
-      }else{
-        if (postDebug) console.log('Authentication failed: '+JSON.stringify(authResponse))
-        }
-    })
+    if (postDebug){
+      console.log('Auth Headers: ')
+      console.table(authHeaders)
+      console.log('Auth URL: ')
+      console.table(authUrl)
+      console.log('Auth Body: ')
+      console.table(authBody)
+      }
+
+    var authResponse = await fetch(authUrl, {
+        method: 'POST', 
+        mode: 'no-cors', 
+        cache: 'no-cache', 
+        credentials: 'omit', 
+        headers: authHeaders,
+        redirect: 'follow', 
+        referrerPolicy: 'no-referrer', 
+        body: JSON.stringify(authBody) 
+      }).catch((error) => {
+        // Broadcast error 
+        if (postDebug) console.log('Backend auth error:'+JSON.stringify(error));
+        return error;
+      }).then(response => response.json())
+      .then((authenticationResponse) => {  
+        if (postDebug) console.log('Requested Authentication')
+        if (authenticationResponse.hasOwnProperty('access_token')){
+          access_token = authenticationResponse.access_token
+          if (postDebug) console.log('Got Authentication: '+access_token)
+          accessToken = 'Bearer '+access_token
+          if (authenticationResponse.hasOwnProperty('rest_instance_url')){
+            restDomain = authenticationResponse.rest_instance_url
+          }
+          if (authenticationResponse.hasOwnProperty('auth_instance_url')){
+            authDomain = authenticationResponse.auth_instance_url
+          }
+          return accessToken
+        }else{
+          if (postDebug) console.log('Authentication failed: '+JSON.stringify(authResponse))
+          }
+      })
+    if (postDebug) console.log('Authentication requested')
     return authResponse
+  }else{
+    if (postDebug) console.log('Authentication cached')
+    return jbApp.token
+  }
 }
 async function getData(url = '', headers) {
   var getResponse = await fetch(url, {

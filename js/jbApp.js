@@ -330,8 +330,7 @@ const jbApp = {
                         jbApp.action = null
                         jbApp.action = action
                         var testResults = jbApp.testMessage({
-                            'pushNotificationText':'help me',
-                            'url':'https://eo2mifqm9yelk7e.m.pipedream.net'
+                            'message':'help me'
                         })
                         jbApp.pageHtml = testResults
 
