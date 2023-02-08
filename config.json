@@ -24,7 +24,7 @@
           {"message":""}
         ],
       "outArguments": [],
-      "url": "https://real-puce-raven-yoke.cyclic.app/execute",
+      "url": "https://wpp-passcreator.cyclic.app/execute",
       "verb": "POST",
       "method": "POST",
       "format": "json",
