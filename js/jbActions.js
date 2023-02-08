@@ -37,18 +37,27 @@ document.addEventListener('DOMContentLoaded', function main() {
         connection.trigger('requestSchema');
         connection.on('requestedSchema', function (data) {
             // save schema
-            console.log('*** Schema ***', JSON.stringify(data['schema']));
             jbApp.schema = data['schema']
+            console.log('*** Schema ***', JSON.stringify(jbApp.schema));
             jbApp.parseSchema()
             });
-    }
-    
+    }    
     
     if (jbApp.getInteractions){
         connection.trigger('requestInteraction');
         connection.on('requestedInteractions', function (data) {
             console.log('Requested Interaction:')
             console.table(data)
+        });
+    }    
+    
+    if (jbApp.getEndpoints){
+        connection.trigger('requestEndpoints');
+        connection.on('requestedEndpoints', function (data) {
+            console.log('Requested Endpoints:')
+            console.table(data)
+            jbApp.endpoints = data
+            jbApp.parseEndpoints()
         });
     }
     console.log('connection:')
@@ -190,9 +199,9 @@ function onDoneButtonClick() {
     }
 
     /**
-     * Determine url for user
+     * Determine endpoint for user
      */     
-    let url = jbApp.getPassEndpoint()
+    let endpoint = jbApp.getPassEndpoint()
 
     /**
      * Build external payload
@@ -200,7 +209,7 @@ function onDoneButtonClick() {
     let d = getDateTime();
     let restBody = {
         "message": jbApp.message+'|['+d.Time+']',
-        "endpoint": url
+        "endpoint": endpoint
     }
 
     /**

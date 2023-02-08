@@ -14,20 +14,23 @@
         </div>
     </div>
     <br />
-    <p>Characters: <strong><span id="charCount"></span></strong>
+    <p>Characters: <strong><span id="charCount">0/80</span></strong>
     <br />
     <small>Messages are limited to 80 characters</small>
     </p>
     <br />
     <div class="slds-col slds-size_3-of-3">
-        <button id="button1" data-action="previewMessage" onClick="jbApp.previewMessageButtonAction()" class="slds-button slds-button_brand pass_action">Select Message</button>
+        <button 
+        id="button1" 
+        data-action="previewMessage" 
+        onClick="jbApp.previewMessageButtonAction()" 
+        class="slds-button slds-button_brand pass_action">Preview Message</button>
     </div>
 </div>
 <script>
     $('#pass_message').keyup(function(){
         var editor = $(this)
         var editorText = editor.val()
-        console.log(editorText)
         var charCount = editorText.length
         // Force charCount limit of 80
         if (charCount > 80){

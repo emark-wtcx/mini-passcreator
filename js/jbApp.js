@@ -11,22 +11,19 @@ const jbApp = {
     isTest:false, 
     isLocalhost:(location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
     getSchema:true,
+    getTokens:true,
+    getEndpoints:true,
     getInteractions:false,
-    getTokens:false,
+    token:null,
     passId:null,
     currentStep:0,
     pageHtml:'',
     deStructure:{},
     message:'',
+    action:null,
     credentials:{
-        dev:{
-            'url': 'https://eol3vy07fc9qzyh.m.pipedream.net',
-            'auth': null
-        },
-        prod:{
-            'url': 'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
-            'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
-        }
+        'url': 'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
+        'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'        
     },
     system:{
         subscriber:{
@@ -41,9 +38,9 @@ const jbApp = {
         }
     },
     endpoints:{        
-        "jbMiddlewareProd":"https://eol3vy07fc9qzyh.m.pipedream.net",
-        "jbMiddlewareDev":"https://eoya8wjvw5vh5ff.m.pipedream.net",
-        "execute":"https://eol3vy07fc9qzyh.m.pipedream.net",
+        "jbMiddleware":"https://eoya8wjvw5vh5ff.m.pipedream.net",
+        "jbTest":"https://eo2mifqm9yelk7e.m.pipedream.net",
+        "execute":"https://real-puce-raven-yoke.cyclic.app/execute",
         "publish": "https://eon2nxjzthbdt2w.m.pipedream.net",
         "validate": "https://eoxsr92hcso0n3h.m.pipedream.net",
         "stop": "https://eoot1xooh8qwfa8.m.pipedream.net"
@@ -93,12 +90,18 @@ const jbApp = {
     getPassEndpoint:function(){
         if (debug) console.log('getPassEndpoint triggered')
         // Get starter URL based on isTest setting of app
-        var url = jbApp.credentials.prod.url;
+        var endpoint = jbApp.credentials.url;
         
         if (jbApp.passId != null){
-            url = url.replace('{passId}',jbApp.passId)
+            endpoint = endpoint.replace('{passId}',jbApp.passId)
         }
-        return url;
+        return endpoint;
+    },
+    parseEndpoints:function(){
+        if (jbApp.hasOwnProperty('endpoints')){
+            jbApp.restUrl = 'https://'+jbApp.endpoints.restHost+'/'
+            jbApp.authUrl = jbApp.jbHost.replace('rest','auth')
+        }
     },
     parseSchema:function(){
         if (debug) console.log('parseSchema')
@@ -244,6 +247,119 @@ const jbApp = {
                         })
                     if (debug) console.log('Bound '+action)
                 break;
+            }   
+    
+        }); 
+    },
+    bindTestMenu:function(){
+        if (debug) console.log('Binding test menu')
+        $('.test_action').each(function() {
+            let elem = $( this )
+            
+            /**
+             * Presume we'll be changing the page
+             */
+            var refreshPage=true;
+
+            /**
+             * Isolate the required action
+             */
+            let action = elem.data('action');
+            jbApp.action = null
+            jbApp.action = action
+
+            /**
+             * Bind the requested action
+             */
+            switch(action){
+
+                case 'readSendable':
+                    $(elem).on('click',function(){
+                        jbApp.action = action
+                        let customerKey = 'testing_dale'
+                        var testResults = 'Test successful'
+                        var testResults = jbApp.getDataExtensionRest(customerKey)
+                        jbApp.pageHtml = testResults
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked:readSendable | '+jbApp.action)
+
+                    });                
+                    console.log('Bound '+action) 
+                break;  
+
+                case 'authenticate':
+                    $(elem).on('click',function(){
+                        jbApp.action = null
+                        jbApp.action = action
+                        var testResults = jbApp.testAuth()
+                        jbApp.pageHtml = testResults
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked:authenticate | '+jbApp.action)
+
+                    });                
+                    console.log('Bound '+action) 
+                break;     
+
+                case 'testLog':
+                    $(elem).on('click',function(){
+                        jbApp.action = null
+                        jbApp.action = action
+                        var testResults = jbApp.testLog({'message':'help'})
+                        jbApp.pageHtml = testResults
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked:testLog | '+jbApp.action)
+
+                    });                
+                    console.log('Bound '+action) 
+                break;        
+
+                case 'testMessage':
+                    $(elem).on('click',function(){
+                        jbApp.action = null
+                        jbApp.action = action
+                        var testResults = jbApp.testMessage({
+                            'pushNotificationText':'help me',
+                            'url':'https://eo2mifqm9yelk7e.m.pipedream.net'
+                        })
+                        jbApp.pageHtml = testResults
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked:testLog | '+jbApp.action)
+
+                    });                
+                    console.log('Bound '+action) 
+                break;   
+
+                default:
+                    $(elem).on('click',function(){
+                        jbApp.action = null
+                        var testResults = 'Unconfigured test option'
+                        jbApp.pageHtml = testResults  
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked unconfigured test option:'+jbApp.action)   
+                    });    
+                break;
+
+
             }   
     
         }); 
@@ -539,8 +655,9 @@ const jbApp = {
         let messages = jbApp.getMessageOptions()
         if (debug) console.log('Messages:')
         if (debug) console.table(messages)
-    
+        
         if (messages.toString().length>0){
+            $('#messageSelector').empty()
             let count = 0
             if (debug) console.log('We have Messages:')
             for (let i in messages){
@@ -651,10 +768,112 @@ const jbApp = {
         jbApp.processPageChange(1)
     },
 
+    getDataExtensionRest:function(customerKey){
+        if (debug) console.log('getDataExtension:'+customerKey)
+        $.ajax({
+            type: "POST",
+            url: '/getde',
+            contentType: "application/json",
+            dataType: "json",
+            data: '{"customerKey":"'+customerKey+'"}',
+            success: function(result){
+                jbApp.restSuccess(result)
+            },
+            error: function(error){
+                jbApp.restError(error)
+            }
+        });
+    },
+
+    testAuth:function(){
+        $.ajax({
+            beforeSend:function(){$('#main').html('Loading')},
+            type: "POST",
+            url: '/testauth',
+            contentType: "application/json",
+            dataType: "json",
+            success: function(authResult){                        
+                jbApp.authSuccess(authResult)
+            },
+            error: function(xhr){
+                jbApp.restError(xhr)
+              }
+        });        
+    },    
+
+    testLog:function(data){
+        if (debug) console.log('testLog:')
+        if (debug) console.table(data)
+        $.ajax({
+            type: "POST",
+            url: '/testlog',
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify(data),
+            success: function(result){
+                jbApp.restSuccess(result)
+            },
+            error: function(error){
+                jbApp.restError(error)
+            }
+        });
+    },   
+
+    testMessage:function(data){
+        if (debug) console.log('testmessage:')
+        if (debug) console.table(data)
+        $.ajax({
+            type: "POST",
+            url: '/testmessage',
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify(data),
+            success: function(result){
+                jbApp.restSuccess(result)
+            },
+            error: function(error){
+                jbApp.restError(error)
+            }
+        });
+    },
+
+    getDeSuccess:function (result) {
+        if (debug) console.log('getDeSuccess Success')
+        if (debug) console.log('Call Status: '+result.status)
+        if (debug) console.log('Success data: ')
+        console.table(result.body)
+        $('#main').html(result.body)
+    },
+
+    authSuccess:function (result) {
+        if (debug) console.log('Auth Success')
+        if (debug) console.log('Success data: ')
+        console.table(result)
+        $('#main').html(result)
+    },
+
+    restSuccess:function (result) {
+        if (debug) console.log('Rest Success')
+        if (debug) console.log('Success data: ')
+        console.table(result)
+        $('#main').html(result)
+    },
+
+    restError:function(data) {
+        if (debug) console.log('Auth Error')
+        if (data.hasOwnProperty('responseText')){
+            console.log(data.responseText + " " + data.status);
+        }else if (data.hasOwnProperty('statusText')){
+            console.log(data.responseText + " " + data.statusText);
+        }else{
+            console.table(data)
+        }
+    },
+
     /**
-     * In Progress
+     * Deprecated
      */
-    getDataExtension:function(){
+    getDataExtensionSoap:function(){
         if (debug) console.log('getDataExtension')
         $.ajax({
             type: "POST",
@@ -670,17 +889,22 @@ const jbApp = {
 
     parseSoapResponse:function( response, request, settings ){
         if (debug) console.table(response)
+        return JSON.stringify(response)
     },
 
     soapSuccess:function (data, status, req) {
         if (debug) console.log('SuccessOccur')
-        if (status == "success")
-            alert(req.responseText);
+        if (data && data.hasOwnProperty('responseText') && status == "success")
+            alert(data.responseText);
     },
 
     soapError:function(data, status, req) {
         if (debug) console.log('ErrorOccur')
-        alert(req.responseText + " " + status);
+        if (data && data.hasOwnProperty('responseText')){
+        alert(data.responseText + " " + status);
+        }else{
+            console.table(data)
+        }
     },
 }
 jbApp.load(connection)
