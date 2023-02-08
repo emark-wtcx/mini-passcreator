@@ -9,7 +9,7 @@
   "type": "REST",
   "lang": {
     "en-US": {
-      "name": "PassCreator",
+      "name": "Pass Creator",
       "description": "WPP Integration for Pass Creator",
       "selectType":"Select Input Type",
       "configureMessage":"Configure Your Message",
