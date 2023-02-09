@@ -750,7 +750,10 @@ const jbApp = {
             if (connection.hasOwnProperty('version')){
                 jbApp.Version = connection.version 
             }
-            if (jbApp.getTokens) connection.trigger('requestTokens');
+            if (jbApp.getTokens && jbApp.token== '') connection.trigger('requestTokens');
+            
+            if (debug) console.log('App version:'+1.4)
+            if (debug) console.log('App token:'+jbApp.token)
         }        
 
         /**
