@@ -355,8 +355,8 @@ async function logError(message,data={}){
  *  External API call engine 
  * */
 async function getAccessToken(){
-  if (postDebug) console.log('Requesting Authentication')
   if (accessToken != ''){
+    if (postDebug) console.log('Requesting remote authentication')
     let authUrl = tokenUrl
     let authBody = {
       "grant_type": "client_credentials",
