@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', function main() {
     if (jbApp.getTokens){
         connection.trigger('requestTokens');
         connection.on('requestedTokens', function (data) {
+        }).then((data)=>{
             jbApp.token = data['token']
             console.log('*** Tokens ***', jbApp.token);
         });
