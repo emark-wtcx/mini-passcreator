@@ -191,7 +191,8 @@ async function postMessage(data){
 
   var bodyContent = {
     "pushNotificationText":messageData.message+ ' | ['+date.Time+']',   
-    "url":messageData.endpoint
+    "url":messageData.endpoint,
+    "token":jbApp.token
   }
   if (postDebug) console.log('POST bodyContent: ')
   if (postDebug) console.table(bodyContent)
