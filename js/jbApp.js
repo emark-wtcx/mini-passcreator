@@ -130,6 +130,8 @@ const jbApp = {
             }
         if (debug) console.log('jbApp.deStructure: ')
         if (debug) console.table(jbApp.deStructure)
+        if (debug) console.log('jbApp.token: ')
+        if (debug) console.table(jbApp.token)
         if (debug) console.log('jbApp.deStructure.length: '+jbApp.deStructure.toString().length)
 
         if (!jbApp.isLocalhost && typeof connection !== 'undefined'){
