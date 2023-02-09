@@ -175,7 +175,8 @@ function getDateTime(){
 }
 
 function setToken(payload){
-  accessToken = payload.token
+  access_token = payload.token
+  accessToken = 'Bearer '+access_token
 }
 
 async function postMessage(data){
@@ -355,7 +356,7 @@ async function logError(message,data={}){
  *  External API call engine 
  * */
 async function getAccessToken(){
-  if (accessToken != ''){
+  if (accessToken == ''){
     if (postDebug) console.log('Requesting remote authentication')
     let authUrl = tokenUrl
     let authBody = {
