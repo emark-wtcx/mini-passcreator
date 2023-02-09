@@ -11,8 +11,8 @@ var HOME_DIR = '/';
 var postDebug = true
 var dataType = 'application/json'
 var finalResponse = {'data':null}
-var access_token = null
-var accessToken = null
+var access_token = null /* Raw token */
+var accessToken = null /* Parsed token */
 var restDomain = null
 
 app.use(express.json())
@@ -174,6 +174,10 @@ function getDateTime(){
   }
 }
 
+function setToken(payload){
+  accessToken = payload.token
+}
+
 async function postMessage(data){
   /**
    *  The inArguments property originates in JourneyBuilder
@@ -187,6 +191,10 @@ async function postMessage(data){
     var messageData = data
     messageData.endpoint = testUrl
     }
+
+  if (data.hasOwnProperty('token')){
+    setToken(data)
+  }
     
   if (postDebug) console.log('POST messageData: ')
   if (postDebug) console.table(messageData)
@@ -348,7 +356,7 @@ async function logError(message,data={}){
  * */
 async function getAccessToken(){
   if (postDebug) console.log('Requesting Authentication')
-  if (jbApp.token && jbApp.token.length == 0){
+  if (accessToken != ''){
     let authUrl = tokenUrl
     let authBody = {
       "grant_type": "client_credentials",
@@ -406,7 +414,7 @@ async function getAccessToken(){
     return authResponse
   }else{
     if (postDebug) console.log('Authentication cached')
-    return jbApp.token
+    return accessToken
   }
 }
 async function getData(url = '', headers) {
@@ -432,6 +440,10 @@ async function getData(url = '', headers) {
 async function postData(url = '', postData=null) {
   if (url != '' && postData != null){
     // Default options are marked with *
+
+    /**
+     * TODO: Adjust to search for token in payload  
+     **/
     let postResponse = await getAccessToken()
       .then(async accessToken => {
         var headers = {
@@ -474,6 +486,7 @@ async function postData(url = '', postData=null) {
             return fetchResult
           });
         return requestResponse;
+        
       }
     );    
     return postResponse;
