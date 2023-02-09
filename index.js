@@ -175,6 +175,10 @@ function getDateTime(){
 }
 
 async function postMessage(data){
+  /**
+   *  The inArguments property originates in JourneyBuilder
+   *  if the property is missing, the request is a test
+   */
   if (data.hasOwnProperty('inArguments')
     && data.inArguments[0].hasOwnProperty('endpoint')
     ){
@@ -493,7 +497,10 @@ async function postDataToPassCreator(url = '', postData=null) {
       redirect: 'follow', 
       referrerPolicy: 'no-referrer', 
       body: JSON.stringify(postData) 
-    }).catch((error) => {
+    }).then(()=>{
+      logData('Message sent',postData)
+    })
+    .catch((error) => {
       // Broadcast error 
       if (postDebug) console.log('Backend error:'+JSON.stringify(error));
       return error;
