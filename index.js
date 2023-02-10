@@ -483,16 +483,19 @@ async function postData(url = '', postData=null) {
             // Broadcast error 
             if (postDebug) console.log('(postData) Backend error:'+errorString);
             return errorObject;
-          })
-          .then((fetchResult) => {
+          }).then((fetchResult) => {
             if (postDebug) {
               let responseString = JSON.stringify(fetchResult)
               console.log('(postData) Backend responseString:'+responseString);
             }
             return fetchResult; // return response
           }).finally((fetchResult)=>{
+            let responseString = JSON.stringify(fetchResult)
+            console.log('(postData) Backend end fetchResult:'+responseString);
             return fetchResult
           });
+        let responseString = JSON.stringify(requestResponse)
+        console.log('(postData) Backend end requestResponse:'+responseString);
         return requestResponse;
         
       }
@@ -518,7 +521,9 @@ async function postDataToPassCreator(url = '', postData=null) {
       redirect: 'follow', 
       referrerPolicy: 'no-referrer', 
       body: JSON.stringify(postData) 
-    }).then(()=>{
+    }).then((response)=>{
+      console.log('pDTPC raw response:')
+      console.table(response)
       logData('Message sent',postData)
     })
     .catch((error) => {
