@@ -199,14 +199,14 @@ async function postMessage(data){
     }
 
   if (postDebug) console.log('checking for: token')
-  if (data.hasOwnProperty('token')){
+  if (messageData.hasOwnProperty('token')){
     if (postDebug) console.log('prop found: token')
-    setToken(data)
+    setToken(messageData)
   }
   if (postDebug) console.log('checking for: restUrl')
-  if (data.hasOwnProperty('restUrl')){
+  if (messageData.hasOwnProperty('restUrl')){
     if (postDebug) console.log('prop found: restUrl')
-    setRestUrl(data)
+    setRestUrl(messageData)
   }
     
   if (postDebug) console.log('POST messageData: ')
