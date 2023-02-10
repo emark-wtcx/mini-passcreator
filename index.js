@@ -103,12 +103,18 @@ app.post('/testauth',async function (req, res, next) {
  * Test writing data to the log 
  */
 app.post('/testlog',async function (req, res, next) { 
-  if (postDebug) console.log('/testlog called') 
+  if (postDebug) console.log('(/testlog) called') 
   if (req != null){
-    await logData('Log test',req.body).then((logResponse) => {
-      if (postDebug) console.log('/testlog Response: ')
+    await logData('Log test',req.body)
+    .then((logResponse) => {
+      if (postDebug) console.log('(/testlog) Response: ')
       if (postDebug) console.table(logResponse)
       return res.send(logResponse)
+    }).catch(errorObject => {
+      let errorString = JSON.stringify(errorObject)
+      // Broadcast error 
+      if (postDebug) console.log('(/testlog) Error:'+errorString);
+      return errorString;
     })
   }else{
     return {'message':'No data submitted'}
@@ -332,13 +338,16 @@ async function logData(message,data={}){
   if (postDebug) console.log('logData items: ')
   if (postDebug) console.table(row.items)
 
-  await postData(loggingUri,row)   
-    .then(async logResponse => JSON.stringify(logResponse))
+  var logResponse = await postData(loggingUri,row)   
+    .then(async (logResponse) => JSON.stringify(logResponse))
     .then((logResponse) => {
-    if (postDebug) console.log('logData logResponse: ')
-    if (postDebug) console.table(logResponse)
+    if (postDebug){
+      console.log('logData logResponse: ')
+      console.table(logResponse)
+      }
     return logResponse
     });  
+  return logResponse;
 }
 
 
@@ -357,12 +366,16 @@ async function logError(message,data={}){
     ]
   }
 
-  await postData(loggingUri,row)
-    .then((errorResponse) => {
-      if (postDebug) console.log('logError logResponse: ')
-      if (postDebug) console.table(errorResponse)
-      return errorResponse  
-      });
+  var logResponse = await postData(loggingUri,row)   
+    .then(async (logResponse) => JSON.stringify(logResponse))
+    .then((logResponse) => {
+    if (postDebug){
+      console.log('logError logResponse: ')
+      console.table(logResponse)
+      }
+    return logResponse
+    });  
+  return logResponse;
 }
 
 /**
@@ -483,7 +496,9 @@ async function postData(url = '', postData=null) {
             // Broadcast error 
             if (postDebug) console.log('(postData) Backend error:'+errorString);
             return errorObject;
-          }).then((fetchResult) => {
+          })
+          .then(response => response.json())
+          .then((fetchResult) => {
             if (postDebug) {
               let responseString = JSON.stringify(fetchResult)
               console.log('(postData) Backend responseString:'+responseString);              
