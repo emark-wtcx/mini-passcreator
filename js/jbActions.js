@@ -204,8 +204,7 @@ function onDoneButtonClick() {
     /**
      * Build external payload
      */
-    let d = getDateTime();
-    let restBody = {
+    var restBody = {
         "message": jbApp.message,
         "endpoint": endpoint,
         "token":jbApp.token,
