@@ -26,10 +26,8 @@ document.addEventListener('DOMContentLoaded', function main() {
     if (jbApp.getTokens){
         connection.trigger('requestTokens');
         connection.on('requestedTokens', function (data) {
-            // save tokens
-            console.log('*** Data ***', JSON.stringify(data));
-            console.log('*** Tokens ***', JSON.stringify(data['token']));
             jbApp.token = data['token']
+            console.log('*** Tokens ***', jbApp.token);
         });
         }
     
@@ -57,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function main() {
             console.log('Requested Endpoints:')
             console.table(data)
             jbApp.endpoints = data
-            jbApp.parseEndpoints()
+            jbApp.parseEndpoints(data)
         });
     }
     console.log('connection:')
@@ -193,7 +191,7 @@ function onDoneButtonClick() {
      */
     if (jbApp.hasOwnProperty('payload')
     && jbApp.payload.hasOwnProperty('name')){
-        jbApp.payload.name = 'WPP Passcreator'
+        jbApp.payload.name = 'WPP Passcreator Configured'
     }else{
         console.log('missing payload or name')
     }
@@ -206,10 +204,11 @@ function onDoneButtonClick() {
     /**
      * Build external payload
      */
-    let d = getDateTime();
-    let restBody = {
-        "message": jbApp.message+'|['+d.Time+']',
-        "endpoint": endpoint
+    var restBody = {
+        "message": jbApp.message,
+        "endpoint": endpoint,
+        "token":jbApp.token,
+        "restUrl":jbApp.restUrl
     }
 
     /**

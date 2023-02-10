@@ -1,27 +1,29 @@
 const express = require('express');
 const app = express();
 const path = require('path');
-const apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
-const logDe = 'passcreator_success_log'
-const errorDe = 'passcreator_error_log'
-const testUrl = 'https://eo2mifqm9yelk7e.m.pipedream.net'
+var logDe = 'passcreator_success_log'
+var errorDe = 'passcreator_error_log'
+var testUrl = 'https://eo2mifqm9yelk7e.m.pipedream.net'
+var tokenUrl = 'https://mc3tb2-hmmbngz-85h36g8xz1b4m.auth.marketingcloudapis.com/v2/token'
+var apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
 
 var HOME_DIR = '/';
 var postDebug = true
 var dataType = 'application/json'
 var finalResponse = {'data':null}
-var access_token = null
-var accessToken = null
-var restDomain = null
-var authDomain = null
+var access_token = null /* Raw token */
+var accessToken = null /* Parsed token */
+var restDomain = null /* REST domain for logging */
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 var PORT = process.env.port || 8080;
 
 /**
- *  Front End Routes
-* */
+ *
+ * Front End Routes 
+ * 
+**/
 app.use('/', express.static(__dirname + HOME_DIR));
 
 app.get('/', function (req, res) {
@@ -37,14 +39,20 @@ app.get('/form', function (req, res) {
 
 /**
  *  Tesing area access
- * */
+ **/
 app.get('/test', function (req, res) {
   res.sendFile(path.resolve('./html/test_area.html'));
 });
 
 /**
- *  Back End Routes
-* */
+ *  
+ * Back End Routes
+ * 
+**/
+
+/**
+ * Send payload to Passcreator 
+ */
 app.post('/execute',async function (req, res, next) { 
   if (postDebug) console.log('/execute called ')
   if (req.body != null){
@@ -58,6 +66,9 @@ app.post('/execute',async function (req, res, next) {
   }
 })
 
+/**
+ * Test reading data from a DataExtension identified by CustomerKey 
+ */
 app.post('/getde',async function (req, res, next) { 
   if (postDebug) console.log('/getde called ') 
   if (postDebug) console.table(req.body)
@@ -72,6 +83,9 @@ app.post('/getde',async function (req, res, next) {
   }
 })
 
+/**
+ * Test requesting an authentication token
+ */
 app.post('/testauth',async function (req, res, next) { 
   if (postDebug) console.log('/testauth called ') 
   if (req != null){
@@ -85,19 +99,31 @@ app.post('/testauth',async function (req, res, next) {
   }
 })
 
+/**
+ * Test writing data to the log 
+ */
 app.post('/testlog',async function (req, res, next) { 
-  if (postDebug) console.log('/testlog called') 
+  if (postDebug) console.log('(/testlog) called') 
   if (req != null){
-    await logData('Log test',req.body).then((logResponse) => {
-      if (postDebug) console.log('/testlog Response: ')
+    await logData('Log test',req.body)
+    .then((logResponse) => {
+      if (postDebug) console.log('(/testlog) Response: ')
       if (postDebug) console.table(logResponse)
       return res.send(logResponse)
+    }).catch(errorObject => {
+      let errorString = JSON.stringify(errorObject)
+      // Broadcast error 
+      if (postDebug) console.log('(/testlog) Error:'+errorString);
+      return errorString;
     })
   }else{
     return {'message':'No data submitted'}
   }
 })
 
+/**
+ * Send a mock payload to the test endpoint 
+ */
 app.post('/testmessage',async function (req, res, next) { 
   if (postDebug) console.log('/testmessage called ')
   if (req.body != null){
@@ -154,7 +180,21 @@ function getDateTime(){
   }
 }
 
+function setToken(payload){
+  if (postDebug) console.log('(setToken) setting token: '+payload.token)
+  access_token = payload.token
+  accessToken = 'Bearer '+access_token
+}
+function setRestUrl(payload){
+  if (postDebug) console.log('(setRestUrl) setting restUrl: '+payload.restUrl)
+  restDomain = payload.restUrl
+}
+
 async function postMessage(data){
+  /**
+   *  The inArguments property originates in JourneyBuilder
+   *  if the property is missing, the request is a test
+   */
   if (data.hasOwnProperty('inArguments')
     && data.inArguments[0].hasOwnProperty('endpoint')
     ){
@@ -163,15 +203,31 @@ async function postMessage(data){
     var messageData = data
     messageData.endpoint = testUrl
     }
+
+  if (postDebug) console.log('checking for: token')
+  if (messageData.hasOwnProperty('token')){
+    if (postDebug) console.log('prop found: token')
+    setToken(messageData)
+  }
+  if (postDebug) console.log('checking for: restUrl')
+  if (messageData.hasOwnProperty('restUrl')){
+    if (postDebug) console.log('prop found: restUrl')
+    setRestUrl(messageData)
+  }
     
   if (postDebug) console.log('POST messageData: ')
   if (postDebug) console.table(messageData)
 
   var date = getDateTime();
-
+  /**
+   * Restructure call with 
+   * PassCreator required fields
+   */
   var bodyContent = {
     "pushNotificationText":messageData.message+ ' | ['+date.Time+']',   
-    "url":messageData.endpoint
+    "url":messageData.endpoint,
+    "token":messageData.token,
+    "restUrl":messageData.restUrl
   }
   if (postDebug) console.log('POST bodyContent: ')
   if (postDebug) console.table(bodyContent)
@@ -199,12 +255,9 @@ async function postMessage(data){
         messageResponse.status = dataResponse.status
       }
 
-      if (postDebug) console.log('pDTPC messageResponse:'); 
+      if (postDebug) console.log('pDTPC messageResponse:',messageResponse); 
       if (postDebug) console.table(messageResponse);
-      finalResponse = messageResponse
-      if (postDebug) console.log('pDTPC Final Response Called:'); 
-      if (postDebug) console.table(finalResponse)
-      return finalResponse
+      return messageResponse
     });
   return postResponse
 }
@@ -285,13 +338,16 @@ async function logData(message,data={}){
   if (postDebug) console.log('logData items: ')
   if (postDebug) console.table(row.items)
 
-  await postData(loggingUri,row)   
-    .then(async logResponse => JSON.stringify(logResponse))
+  var logResponse = await postData(loggingUri,row)   
+    .then(async (logResponse) => JSON.stringify(logResponse))
     .then((logResponse) => {
-    if (postDebug) console.log('logData logResponse: ')
-    if (postDebug) console.table(logResponse)
+    if (postDebug){
+      console.log('logData logResponse: ')
+      console.table(logResponse)
+      }
     return logResponse
     });  
+  return logResponse;
 }
 
 
@@ -310,74 +366,83 @@ async function logError(message,data={}){
     ]
   }
 
-  await postData(loggingUri,row)
-    .then((errorResponse) => {
-      if (postDebug) console.log('logError logResponse: ')
-      if (postDebug) console.table(errorResponse)
-      return errorResponse  
-      });
+  var logResponse = await postData(loggingUri,row)   
+    .then(async (logResponse) => JSON.stringify(logResponse))
+    .then((logResponse) => {
+    if (postDebug){
+      console.log('logError logResponse: ')
+      console.table(logResponse)
+      }
+    return logResponse
+    });  
+  return logResponse;
 }
 
 /**
  *  External API call engine 
  * */
 async function getAccessToken(){
-  if (postDebug) console.log('Requesting Authentication')
-  let authUrl = 'https://mc3tb2-hmmbngz-85h36g8xz1b4m.auth.marketingcloudapis.com/v2/token'
-  //let authUrl = jbApp.authUrl+'v2/token'
-  let authBody = {
-    "grant_type": "client_credentials",
-    "client_id": "xja05pcunay325cyg6odcyex",
-    "client_secret": "b36KqpkMECP8T3h0j2nD81Ve",
-    "account_id": "7207193"
-    }
-    
-  var authHeaders = {
-    "Accept": dataType,
-    "Content-Type": dataType
-  }
-
-  if (postDebug){
-    console.log('Auth Headers: ')
-    console.table(authHeaders)
-    console.log('Auth URL: ')
-    console.table(authUrl)
-    console.log('Auth Body: ')
-    console.table(authBody)
+  if (accessToken == null){
+    if (postDebug) console.log('Requesting remote authentication')
+    let authUrl = tokenUrl
+    let authBody = {
+      "grant_type": "client_credentials",
+      "client_id": "xja05pcunay325cyg6odcyex",
+      "client_secret": "b36KqpkMECP8T3h0j2nD81Ve",
+      "account_id": "7207193"
+      }
+      
+    var authHeaders = {
+      "Accept": dataType,
+      "Content-Type": dataType
     }
 
-  var authResponse = await fetch(authUrl, {
-      method: 'POST', 
-      mode: 'no-cors', 
-      cache: 'no-cache', 
-      credentials: 'omit', 
-      headers: authHeaders,
-      redirect: 'follow', 
-      referrerPolicy: 'no-referrer', 
-      body: JSON.stringify(authBody) 
-    }).catch((error) => {
-      // Broadcast error 
-      if (postDebug) console.log('Backend auth error:'+JSON.stringify(error));
-      return error;
-    }).then(response => response.json())
-    .then((authenticationResponse) => {  
-      if (postDebug) console.log('Requested Authentication')
-      if (authenticationResponse.hasOwnProperty('access_token')){
-        access_token = authenticationResponse.access_token
-        if (postDebug) console.log('Got Authentication: '+access_token)
-        accessToken = 'Bearer '+access_token
-        if (authenticationResponse.hasOwnProperty('rest_instance_url')){
-          restDomain = authenticationResponse.rest_instance_url
-        }
-        if (authenticationResponse.hasOwnProperty('auth_instance_url')){
-          authDomain = authenticationResponse.auth_instance_url
-        }
-        return accessToken
-      }else{
-        if (postDebug) console.log('Authentication failed: '+JSON.stringify(authResponse))
-        }
-    })
+    if (postDebug){
+      console.log('Auth Headers: ')
+      console.table(authHeaders)
+      console.log('Auth URL: ')
+      console.table(authUrl)
+      console.log('Auth Body: ')
+      console.table(authBody)
+      }
+
+    var authResponse = await fetch(authUrl, {
+        method: 'POST', 
+        mode: 'no-cors', 
+        cache: 'no-cache', 
+        credentials: 'omit', 
+        headers: authHeaders,
+        redirect: 'follow', 
+        referrerPolicy: 'no-referrer', 
+        body: JSON.stringify(authBody) 
+      }).catch((error) => {
+        // Broadcast error 
+        if (postDebug) console.log('Backend auth error:'+JSON.stringify(error));
+        return error;
+      }).then(response => response.json())
+      .then((authenticationResponse) => {  
+        if (postDebug) console.log('Requested Authentication')
+        if (authenticationResponse.hasOwnProperty('access_token')){
+          access_token = authenticationResponse.access_token
+          if (postDebug) console.log('Got Authentication: '+access_token)
+          accessToken = 'Bearer '+access_token
+          if (authenticationResponse.hasOwnProperty('rest_instance_url')){
+            restDomain = authenticationResponse.rest_instance_url
+          }
+          if (authenticationResponse.hasOwnProperty('auth_instance_url')){
+            authDomain = authenticationResponse.auth_instance_url
+          }
+          return accessToken
+        }else{
+          if (postDebug) console.log('Authentication failed: '+JSON.stringify(authResponse))
+          }
+      })
+    if (postDebug) console.log('Authentication requested')
     return authResponse
+  }else{
+    if (postDebug) console.log('Authentication cached')
+    return accessToken
+  }
 }
 async function getData(url = '', headers) {
   var getResponse = await fetch(url, {
@@ -401,7 +466,6 @@ async function getData(url = '', headers) {
 
 async function postData(url = '', postData=null) {
   if (url != '' && postData != null){
-    // Default options are marked with *
     let postResponse = await getAccessToken()
       .then(async accessToken => {
         var headers = {
@@ -433,20 +497,19 @@ async function postData(url = '', postData=null) {
             if (postDebug) console.log('(postData) Backend error:'+errorString);
             return errorObject;
           })
-          .then(async fetchResponse => await fetchResponse.json())
+          .then(response => response.json())
           .then((fetchResult) => {
             if (postDebug) {
               let responseString = JSON.stringify(fetchResult)
-              console.log('(postData) Backend responseString:'+responseString);
+              console.log('(postData) Backend responseString:'+responseString);              
             }
             return fetchResult; // return response
-          }).finally((fetchResult)=>{
-            return fetchResult
-          });
-        return requestResponse;
+          });  
+
+        return requestResponse // collect & pass response
       }
     );    
-    return postResponse;
+    return postResponse; // collect & return response
   }
 }
 
@@ -467,7 +530,12 @@ async function postDataToPassCreator(url = '', postData=null) {
       redirect: 'follow', 
       referrerPolicy: 'no-referrer', 
       body: JSON.stringify(postData) 
-    }).catch((error) => {
+    }).then((response)=>{
+      console.log('pDTPC raw response:')
+      console.table(response)
+      logData('Message sent',postData)
+    })
+    .catch((error) => {
       // Broadcast error 
       if (postDebug) console.log('Backend error:'+JSON.stringify(error));
       return error;

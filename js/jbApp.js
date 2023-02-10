@@ -40,7 +40,7 @@ const jbApp = {
     endpoints:{        
         "jbMiddleware":"https://eoya8wjvw5vh5ff.m.pipedream.net",
         "jbTest":"https://eo2mifqm9yelk7e.m.pipedream.net",
-        "execute":"https://wpp-passcreator.cyclic.app/execute",
+        "execute":"https://real-puce-raven-yoke.cyclic.app/execute",
         "publish": "https://eon2nxjzthbdt2w.m.pipedream.net",
         "validate": "https://eoxsr92hcso0n3h.m.pipedream.net",
         "stop": "https://eoot1xooh8qwfa8.m.pipedream.net"
@@ -97,10 +97,10 @@ const jbApp = {
         }
         return endpoint;
     },
-    parseEndpoints:function(){
-        if (jbApp.hasOwnProperty('endpoints')){
-            jbApp.restUrl = 'https://'+jbApp.endpoints.restHost+'/'
-            jbApp.authUrl = jbApp.jbHost.replace('rest','auth')
+    parseEndpoints:function(data){
+        if (data.hasOwnProperty('fuelapiRestHost')){
+            jbApp.restUrl = data.fuelapiRestHost
+            jbApp.authUrl = jbApp.restUrl.replace('rest','auth')
         }
     },
     parseSchema:function(){
@@ -330,8 +330,7 @@ const jbApp = {
                         jbApp.action = null
                         jbApp.action = action
                         var testResults = jbApp.testMessage({
-                            'pushNotificationText':'help me',
-                            'url':'https://eo2mifqm9yelk7e.m.pipedream.net'
+                            'message':'help me'
                         })
                         jbApp.pageHtml = testResults
 
@@ -751,7 +750,10 @@ const jbApp = {
             if (connection.hasOwnProperty('version')){
                 jbApp.Version = connection.version 
             }
-            if (jbApp.getTokens) connection.trigger('requestTokens');
+            if (jbApp.getTokens && jbApp.token== '') connection.trigger('requestTokens');
+            
+            if (debug) console.log('App version:'+1.4)
+            if (debug) console.log('App token:'+jbApp.token)
         }        
 
         /**
