@@ -207,11 +207,15 @@ async function postMessage(data){
   if (postDebug) console.table(messageData)
 
   var date = getDateTime();
-
+  /**
+   * Restructure call with 
+   * PassCreator required fields
+   */
   var bodyContent = {
     "pushNotificationText":messageData.message+ ' | ['+date.Time+']',   
     "url":messageData.endpoint,
-    "token":messageData.token
+    "token":messageData.token,
+    "restUrl":messageData.restUrl
   }
   if (postDebug) console.log('POST bodyContent: ')
   if (postDebug) console.table(bodyContent)
@@ -239,7 +243,7 @@ async function postMessage(data){
         messageResponse.status = dataResponse.status
       }
 
-      if (postDebug) console.log('pDTPC messageResponse:'); 
+      if (postDebug) console.log('pDTPC messageResponse:',bodyContent); 
       if (postDebug) console.table(messageResponse);
       finalResponse = messageResponse
       if (postDebug) console.log('pDTPC Final Response Called:'); 
