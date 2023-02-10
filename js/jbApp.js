@@ -98,8 +98,8 @@ const jbApp = {
         return endpoint;
     },
     parseEndpoints:function(data){
-        if (data.hasOwnProperty('restHost')){
-            jbApp.restUrl = 'https://'+data.restHost+'/'
+        if (data.hasOwnProperty('fuelapiRestHost')){
+            jbApp.restUrl = 'https://'+data.fuelapiRestHost+'/'
             jbApp.authUrl = jbApp.restUrl.replace('rest','auth')
         }
     },
