@@ -752,7 +752,7 @@ const jbApp = {
             }
             if (jbApp.getTokens && jbApp.token== '') connection.trigger('requestTokens');
             
-            if (debug) console.log('App version:'+1.4)
+            if (debug) console.log('App version:'+1.5)
             if (debug) console.log('App token:'+jbApp.token)
         }        
 

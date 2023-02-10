@@ -521,7 +521,7 @@ async function postDataToPassCreator(url = '', postData=null) {
       "Content-Type": dataType,
       "Authorization":apiKey
     }
-    const postResponse = await fetch(url, {
+    var postResponse = await fetch(url, {
       method: 'POST', 
       mode: 'no-cors', 
       cache: 'no-cache', 
@@ -533,7 +533,10 @@ async function postDataToPassCreator(url = '', postData=null) {
     }).then((response)=>{
       console.log('pDTPC raw response:')
       console.table(response)
-      logData('Message sent',postData)
+      var logResponse = logData('Message sent',postData).then((response)=>{
+        return response;
+        })
+      return logResponse
     })
     .catch((error) => {
       // Broadcast error 
