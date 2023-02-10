@@ -13,7 +13,7 @@ var dataType = 'application/json'
 var finalResponse = {'data':null}
 var access_token = null /* Raw token */
 var accessToken = null /* Parsed token */
-var restDomain = null
+var restDomain = null /* REST domain for logging */
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
@@ -175,10 +175,12 @@ function getDateTime(){
 }
 
 function setToken(payload){
+  if (postDebug) console.log('(setToken) setting token: '+payload.token)
   access_token = payload.token
   accessToken = 'Bearer '+access_token
 }
 function setRestUrl(payload){
+  if (postDebug) console.log('(setRestUrl) setting restUrl: '+payload.restUrl)
   restDomain = payload.restUrl
 }
 
@@ -196,10 +198,14 @@ async function postMessage(data){
     messageData.endpoint = testUrl
     }
 
+  if (postDebug) console.log('checking for: token')
   if (data.hasOwnProperty('token')){
+    if (postDebug) console.log('prop found: token')
     setToken(data)
   }
+  if (postDebug) console.log('checking for: restUrl')
   if (data.hasOwnProperty('restUrl')){
+    if (postDebug) console.log('prop found: restUrl')
     setRestUrl(data)
   }
     
@@ -450,11 +456,6 @@ async function getData(url = '', headers) {
 
 async function postData(url = '', postData=null) {
   if (url != '' && postData != null){
-    // Default options are marked with *
-
-    /**
-     * TODO: Adjust to search for token in payload  
-     **/
     let postResponse = await getAccessToken()
       .then(async accessToken => {
         var headers = {
