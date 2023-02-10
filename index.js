@@ -484,7 +484,6 @@ async function postData(url = '', postData=null) {
             if (postDebug) console.log('(postData) Backend error:'+errorString);
             return errorObject;
           })
-          .then(async fetchResponse => await fetchResponse.json())
           .then((fetchResult) => {
             if (postDebug) {
               let responseString = JSON.stringify(fetchResult)
