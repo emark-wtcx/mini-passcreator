@@ -179,8 +179,7 @@ function setToken(payload){
   accessToken = 'Bearer '+access_token
 }
 function setRestUrl(payload){
-  restUrl = payload.restUrl
-  accessToken = 'Bearer '+access_token
+  restDomain = payload.restUrl
 }
 
 async function postMessage(data){
