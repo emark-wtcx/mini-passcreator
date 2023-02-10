@@ -206,7 +206,7 @@ function onDoneButtonClick() {
      */
     let d = getDateTime();
     let restBody = {
-        "message": jbApp.message+'|('+d.Time+')',
+        "message": jbApp.message,
         "endpoint": endpoint,
         "token":jbApp.token,
         "restUrl":jbApp.restUrl
