@@ -100,7 +100,7 @@ const jbApp = {
     parseEndpoints:function(data){
         if (jbApp.hasOwnProperty('endpoints')){
             jbApp.restUrl = 'https://'+data.endpoints.restHost+'/'
-            jbApp.authUrl = data.jbHost.replace('rest','auth')
+            jbApp.authUrl = jbApp.restUrl.replace('rest','auth')
         }
     },
     parseSchema:function(){
