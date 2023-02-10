@@ -98,8 +98,8 @@ const jbApp = {
         return endpoint;
     },
     parseEndpoints:function(data){
-        if (jbApp.hasOwnProperty('endpoints')){
-            jbApp.restUrl = 'https://'+data.endpoints.restHost+'/'
+        if (jbApp.hasOwnProperty('restHost')){
+            jbApp.restUrl = 'https://'+data.restHost+'/'
             jbApp.authUrl = jbApp.restUrl.replace('rest','auth')
         }
     },
