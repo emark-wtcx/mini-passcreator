@@ -82,8 +82,22 @@
               }
           },
           {
-            "emailAddress": {
-              "dataType": "Email",
+            "endpoint": {
+              "dataType": "text",
+              "isNullable": false,
+              "direction": "in"
+            }
+          },
+          {
+            "token": {
+              "dataType": "text",
+              "isNullable": false,
+              "direction": "in"
+            }
+          },
+          {
+            "restUrl": {
+              "dataType": "text",
               "isNullable": false,
               "direction": "in"
             }
