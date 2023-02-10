@@ -191,7 +191,7 @@ function onDoneButtonClick() {
      */
     if (jbApp.hasOwnProperty('payload')
     && jbApp.payload.hasOwnProperty('name')){
-        jbApp.payload.name = 'WPP Passcreator | '+jbApp.restUrl
+        jbApp.payload.name = 'WPP Passcreator Configured'
     }else{
         console.log('missing payload or name')
     }
