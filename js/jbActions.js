@@ -55,7 +55,7 @@ document.addEventListener('DOMContentLoaded', function main() {
             console.log('Requested Endpoints:')
             console.table(data)
             jbApp.endpoints = data
-            jbApp.parseEndpoints()
+            jbApp.parseEndpoints(data)
         });
     }
     console.log('connection:')
@@ -208,7 +208,8 @@ function onDoneButtonClick() {
     let restBody = {
         "message": jbApp.message+'|('+d.Time+')',
         "endpoint": endpoint,
-        "token":jbApp.token
+        "token":jbApp.token,
+        "restUrl":jbApp.restUrl
     }
 
     /**

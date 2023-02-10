@@ -178,6 +178,10 @@ function setToken(payload){
   access_token = payload.token
   accessToken = 'Bearer '+access_token
 }
+function setRestUrl(payload){
+  restUrl = payload.restUrl
+  accessToken = 'Bearer '+access_token
+}
 
 async function postMessage(data){
   /**
@@ -195,6 +199,9 @@ async function postMessage(data){
 
   if (data.hasOwnProperty('token')){
     setToken(data)
+  }
+  if (data.hasOwnProperty('restUrl')){
+    setRestUrl(data)
   }
     
   if (postDebug) console.log('POST messageData: ')

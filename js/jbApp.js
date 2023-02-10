@@ -97,10 +97,10 @@ const jbApp = {
         }
         return endpoint;
     },
-    parseEndpoints:function(){
+    parseEndpoints:function(data){
         if (jbApp.hasOwnProperty('endpoints')){
-            jbApp.restUrl = 'https://'+jbApp.endpoints.restHost+'/'
-            jbApp.authUrl = jbApp.jbHost.replace('rest','auth')
+            jbApp.restUrl = 'https://'+data.endpoints.restHost+'/'
+            jbApp.authUrl = data.jbHost.replace('rest','auth')
         }
     },
     parseSchema:function(){
@@ -130,8 +130,6 @@ const jbApp = {
             }
         if (debug) console.log('jbApp.deStructure: ')
         if (debug) console.table(jbApp.deStructure)
-        if (debug) console.log('jbApp.token: ')
-        if (debug) console.table(jbApp.token)
         if (debug) console.log('jbApp.deStructure.length: '+jbApp.deStructure.toString().length)
 
         if (!jbApp.isLocalhost && typeof connection !== 'undefined'){
