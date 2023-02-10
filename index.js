@@ -249,12 +249,9 @@ async function postMessage(data){
         messageResponse.status = dataResponse.status
       }
 
-      if (postDebug) console.log('pDTPC messageResponse:',bodyContent); 
+      if (postDebug) console.log('pDTPC messageResponse:',messageResponse); 
       if (postDebug) console.table(messageResponse);
-      finalResponse = messageResponse
-      if (postDebug) console.log('pDTPC Final Response Called:'); 
-      if (postDebug) console.table(finalResponse)
-      return finalResponse
+      return messageResponse
     });
   return postResponse
 }
