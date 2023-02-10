@@ -1,11 +1,11 @@
 const express = require('express');
 const app = express();
 const path = require('path');
-const logDe = 'passcreator_success_log'
-const errorDe = 'passcreator_error_log'
-const testUrl = 'https://eo2mifqm9yelk7e.m.pipedream.net'
-const tokenUrl = 'https://mc3tb2-hmmbngz-85h36g8xz1b4m.auth.marketingcloudapis.com/v2/token'
-const apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
+var logDe = 'passcreator_success_log'
+var errorDe = 'passcreator_error_log'
+var testUrl = 'https://eo2mifqm9yelk7e.m.pipedream.net'
+var tokenUrl = 'https://mc3tb2-hmmbngz-85h36g8xz1b4m.auth.marketingcloudapis.com/v2/token'
+var apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
 
 var HOME_DIR = '/';
 var postDebug = true
@@ -369,7 +369,7 @@ async function logError(message,data={}){
  *  External API call engine 
  * */
 async function getAccessToken(){
-  if (accessToken == ''){
+  if (accessToken == null){
     if (postDebug) console.log('Requesting remote authentication')
     let authUrl = tokenUrl
     let authBody = {
@@ -486,21 +486,15 @@ async function postData(url = '', postData=null) {
           }).then((fetchResult) => {
             if (postDebug) {
               let responseString = JSON.stringify(fetchResult)
-              console.log('(postData) Backend responseString:'+responseString);
+              console.log('(postData) Backend responseString:'+responseString);              
             }
             return fetchResult; // return response
-          }).finally((fetchResult)=>{
-            let responseString = JSON.stringify(fetchResult)
-            console.log('(postData) Backend end fetchResult:'+responseString);
-            return fetchResult
-          });
-        let responseString = JSON.stringify(requestResponse)
-        console.log('(postData) Backend end requestResponse:'+responseString);
-        return requestResponse;
-        
+          });  
+
+        return requestResponse // collect & pass response
       }
     );    
-    return postResponse;
+    return postResponse; // collect & return response
   }
 }
 
