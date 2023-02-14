@@ -4,6 +4,7 @@ const path = require('path');
 var logDe = 'passcreator_success_log'
 var errorDe = 'passcreator_error_log'
 var testUrl = 'https://eo2mifqm9yelk7e.m.pipedream.net'
+var testUrl = '/execute'
 var tokenUrl = 'https://mc3tb2-hmmbngz-85h36g8xz1b4m.auth.marketingcloudapis.com/v2/token'
 var apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
 
@@ -277,7 +278,7 @@ async function getDataExtension(customerKey){
   if (postDebug) console.table(customerKey)
   
   // Perform Request
-  await getAccessToken().then(async (accessToken) => {
+  var dataResponse = await getAccessToken().then(async (accessToken) => {
     if (postDebug) console.log('getDataExtension accessToken: ')
     if (postDebug) console.table(accessToken)
 
@@ -316,6 +317,7 @@ async function getDataExtension(customerKey){
       if (postDebug) console.table(getDataResponse)
       return getDataResponse; // return response
     })
+    return dataResponse
 }
 
 async function logData(message,data={}){
@@ -530,10 +532,13 @@ async function postDataToPassCreator(url = '', postData=null) {
       redirect: 'follow', 
       referrerPolicy: 'no-referrer', 
       body: JSON.stringify(postData) 
-    }).then((response)=>{
+    })
+    .then(response => response.json())
+    .then((response)=>{
       console.log('pDTPC raw response:')
       console.table(response)
       logData('Message sent',postData)
+      return response
     })
     .catch((error) => {
       // Broadcast error 
