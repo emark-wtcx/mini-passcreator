@@ -11,7 +11,6 @@ var apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4
 var HOME_DIR = '/';
 var postDebug = true
 var dataType = 'application/json'
-var finalResponse = {'data':null}
 var access_token = null /* Raw token */
 var accessToken = null /* Parsed token */
 var restDomain = null /* REST domain for logging */
@@ -308,7 +307,7 @@ async function getDataExtension(customerKey){
         }
         if (postDebug) console.log('getDataExtension Returning:'); 
         if (postDebug) console.log(JSON.stringify(messageResponse));
-        logData('Got data extension:',customerKey)
+        logData('Got data extension:'+customerKey,JSON.stringify(messageResponse))
         return messageResponse
       }).catch((error) => {
         logError(error)
