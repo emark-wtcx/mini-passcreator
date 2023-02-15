@@ -236,6 +236,14 @@ const jbApp = {
                     });
                     if (debug) console.log('Bound '+action)
                 break;
+    
+                case 'showMessages':
+                    $(elem).on('click',function(){                        
+                        // Prepare action changes
+                        jbApp.showMessages()
+                    });
+                    if (debug) console.log('Bound '+action)
+                break;
                 
                 case 'home':
                     $(elem).on('click',function(){
@@ -385,6 +393,49 @@ const jbApp = {
         }else{            
             if(debug) console.log('processPageChange: refresh false')
         }   
+    },
+    showMessages:function(){
+        if (debug) console.log('showMessages() called')
+        $.when(jbApp.getMessageOptions()).then(function(messages){
+
+            // Format any message display
+            if (messages.toString().length > 0){
+                if (debug) console.log('showMessages() got messages')
+                var messageOutput = '<Br /><p><span class="slds-text-heading_small">Available Messages</span><ul>'
+
+                for (key in messages){
+                    var message = messages[key]
+                    var output = '<li><strong>'+key+'</strong>: '+message+'</li>'
+                    messageOutput += output
+                }
+
+                messageOutput += '</ul></p>'
+
+            }else{
+                if (debug) console.log('showMessages() No messages found ('+messages.length+') : '+JSON.stringify(messages))
+                var messageOutput = 'No messages loaded'
+            }
+
+            // Ensure we have somewhere to place the messages
+            if ($('#available_messages').length == 0){
+                $('#main').append('<div id="available_messages"></div>')
+            }
+
+            // Place the messages
+            $('#available_messages').html(messageOutput)
+
+            $('#showMessages')
+                .attr('onClick',"jbApp.closeMessages()")
+                .attr('data-action',"closeMessages")
+                .text('Close messages')
+        });        
+    },
+    closeMessages:function(){
+        $('#available_messages').html('')
+        $('#showMessages')
+                .attr('onClick',"jbApp.showMessages()")
+                .attr('data-action',"showMessages")
+                .text('Show messages')
     },
     homeButtonAction:function(){
         jbApp.pageHtml = jbApp.getHtml('home')
@@ -779,7 +830,7 @@ const jbApp = {
             dataType: "json",
             data: '{"customerKey":"'+customerKey+'"}',
             success: function(result){
-                jbApp.restSuccess(result)
+                jbApp.getDeSuccess(result)
             },
             error: function(error){
                 jbApp.restError(error)
@@ -841,10 +892,15 @@ const jbApp = {
 
     getDeSuccess:function (result) {
         if (debug) console.log('getDeSuccess Success')
-        if (debug) console.log('Call Status: '+result.status)
-        if (debug) console.log('Success data: ')
-        console.table(result.body)
-        $('#main').html(result.body)
+        switch(result.status){
+            case 200:
+                if (debug) console.log('Call Status: '+result.status)
+                if (debug) console.log('Success data: ')
+                console.table(result.body)
+                $('#main').html(result.body)
+            break;
+
+        }
     },
 
     authSuccess:function (result) {
