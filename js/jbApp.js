@@ -57,6 +57,10 @@ const jbApp = {
           "key": 'confirm'
         },
       ], 
+
+/**
+ * Core & Front End Functionality
+ */
     getPassEndpoint:function(){
         if (debug) console.log('getPassEndpoint triggered')
         // Get starter URL based on isTest setting of app
@@ -227,118 +231,6 @@ const jbApp = {
                         })
                     if (debug) console.log('Bound '+action)
                 break;
-            }   
-    
-        }); 
-    },
-    bindTestMenu:function(){
-        if (debug) console.log('Binding test menu')
-        $('.test_action').each(function() {
-            let elem = $( this )
-            
-            /**
-             * Presume we'll be changing the page
-             */
-            var refreshPage=true;
-
-            /**
-             * Isolate the required action
-             */
-            let action = elem.data('action');
-            jbApp.action = null
-            jbApp.action = action
-
-            /**
-             * Bind the requested action
-             */
-            switch(action){
-
-                case 'readSendable':
-                    $(elem).on('click',function(){
-                        jbApp.action = action
-                        let customerKey = 'testing_dale'
-                        var testResults = 'Test successful'
-                        var testResults = jbApp.getDataExtensionRest(customerKey)
-                        jbApp.pageHtml = testResults
-
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked:readSendable | '+jbApp.action)
-
-                    });                
-                    console.log('Bound '+action) 
-                break;  
-
-                case 'authenticate':
-                    $(elem).on('click',function(){
-                        jbApp.action = null
-                        jbApp.action = action
-                        var testResults = jbApp.testAuth()
-                        jbApp.pageHtml = testResults
-
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked:authenticate | '+jbApp.action)
-
-                    });                
-                    console.log('Bound '+action) 
-                break;     
-
-                case 'testLog':
-                    $(elem).on('click',function(){
-                        jbApp.action = null
-                        jbApp.action = action
-                        var testResults = jbApp.testLog({'message':'help'})
-                        jbApp.pageHtml = testResults
-
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked:testLog | '+jbApp.action)
-
-                    });                
-                    console.log('Bound '+action) 
-                break;        
-
-                case 'testMessage':
-                    $(elem).on('click',function(){
-                        jbApp.action = null
-                        jbApp.action = action
-                        var testResults = jbApp.testMessage({
-                            'message':'help me'
-                        })
-                        jbApp.pageHtml = testResults
-
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked:testLog | '+jbApp.action)
-
-                    });                
-                    console.log('Bound '+action) 
-                break;   
-
-                default:
-                    $(elem).on('click',function(){
-                        jbApp.action = null
-                        var testResults = 'Unconfigured test option'
-                        jbApp.pageHtml = testResults  
-
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked unconfigured test option:'+jbApp.action)   
-                    });    
-                break;
-
-
             }   
     
         }); 
@@ -794,6 +686,7 @@ const jbApp = {
          });
     },
     translatePage:function(html){
+        // To Do
     },    
     load:function(connection){
         if (debug) console.log('Loading jbApp')
@@ -830,6 +723,11 @@ const jbApp = {
         jbApp.pageHtml = jbApp.getHtml('home')
         jbApp.processPageChange(1)
     },
+    
+    
+/**
+ * REST functionality 
+ */
 
     getDataExtensionRest:function(customerKey){
         if (debug) console.log('getDataExtension:'+customerKey)
@@ -841,58 +739,6 @@ const jbApp = {
             data: '{"customerKey":"'+customerKey+'"}',
             done: function(result){
                 jbApp.restResponse(result)
-            }
-        });
-    },
-
-    testAuth:function(){
-        $.ajax({
-            beforeSend:function(){$('#main').html('Loading')},
-            type: "POST",
-            url: '/testauth',
-            contentType: "application/json",
-            dataType: "json",
-            success: function(authResult){                        
-                jbApp.authSuccess(authResult)
-            },
-            error: function(xhr){
-                jbApp.restError(xhr)
-              }
-        });        
-    },    
-
-    testLog:function(data){
-        if (debug) console.log('testLog:')
-        if (debug) console.table(data)
-        $.ajax({
-            type: "POST",
-            url: '/testlog',
-            contentType: "application/json",
-            dataType: "json",
-            data: JSON.stringify(data),
-            success: function(result){
-                jbApp.restSuccess(result)
-            },
-            error: function(error){
-                jbApp.restError(error)
-            }
-        });
-    },   
-
-    testMessage:function(data){
-        if (debug) console.log('testmessage:')
-        if (debug) console.table(data)
-        $.ajax({
-            type: "POST",
-            url: '/testmessage',
-            contentType: "application/json",
-            dataType: "json",
-            data: JSON.stringify(data),
-            success: function(result){
-                jbApp.restSuccess(result)
-            },
-            error: function(error){
-                jbApp.restError(error)
             }
         });
     },
@@ -955,6 +801,174 @@ const jbApp = {
         }else{
             console.table(data)
         }
+    },
+
+/**
+ * Testing functionality 
+ */
+    bindTestMenu:function(){
+        if (debug) console.log('Binding test menu')
+        $('.test_action').each(function() {
+            let elem = $( this )
+            
+            /**
+             * Presume we'll be changing the page
+             */
+            var refreshPage=true;
+
+            /**
+             * Isolate the required action
+             */
+            let action = elem.data('action');
+            jbApp.action = null
+            jbApp.action = action
+
+            /**
+             * Bind the requested action
+             */
+            switch(action){
+
+                case 'readSendable':
+                    $(elem).on('click',function(){
+                        jbApp.action = action
+                        let customerKey = 'testing_dale'
+                        var testResults = 'Test successful'
+                        var testResults = jbApp.getDataExtensionRest(customerKey)
+                        jbApp.pageHtml = testResults
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked:readSendable | '+jbApp.action)
+
+                    });                
+                    console.log('Bound '+action) 
+                break;  
+
+                case 'authenticate':
+                    $(elem).on('click',function(){
+                        jbApp.action = null
+                        jbApp.action = action
+                        var testResults = jbApp.testAuth()
+                        jbApp.pageHtml = testResults
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked:authenticate | '+jbApp.action)
+
+                    });                
+                    console.log('Bound '+action) 
+                break;     
+
+                case 'testLog':
+                    $(elem).on('click',function(){
+                        jbApp.action = null
+                        jbApp.action = action
+                        var testResults = jbApp.testLog({'message':'help'})
+                        jbApp.pageHtml = testResults
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked:testLog | '+jbApp.action)
+
+                    });                
+                    console.log('Bound '+action) 
+                break;        
+
+                case 'testMessage':
+                    $(elem).on('click',function(){
+                        jbApp.action = null
+                        jbApp.action = action
+                        var testResults = jbApp.testMessage({
+                            'message':'help me'
+                        })
+                        jbApp.pageHtml = testResults
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked:testLog | '+jbApp.action)
+
+                    });                
+                    console.log('Bound '+action) 
+                break;   
+
+                default:
+                    $(elem).on('click',function(){
+                        jbApp.action = null
+                        var testResults = 'Unconfigured test option'
+                        jbApp.pageHtml = testResults  
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked unconfigured test option:'+jbApp.action)   
+                    });    
+                break;
+
+
+            }   
+
+        }); 
+    },
+
+    testAuth:function(){
+        $.ajax({
+            beforeSend:function(){$('#main').html('Loading')},
+            type: "POST",
+            url: '/testauth',
+            contentType: "application/json",
+            dataType: "json",
+            success: function(authResult){                        
+                jbApp.authSuccess(authResult)
+            },
+            error: function(xhr){
+                jbApp.restError(xhr)
+              }
+        });        
+    },    
+
+    testLog:function(data){
+        if (debug) console.log('testLog:')
+        if (debug) console.table(data)
+        $.ajax({
+            type: "POST",
+            url: '/testlog',
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify(data),
+            success: function(result){
+                jbApp.restSuccess(result)
+            },
+            error: function(error){
+                jbApp.restError(error)
+            }
+        });
+    },   
+
+    testMessage:function(data){
+        if (debug) console.log('testmessage:')
+        if (debug) console.table(data)
+        $.ajax({
+            type: "POST",
+            url: '/testmessage',
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify(data),
+            success: function(result){
+                jbApp.restSuccess(result)
+            },
+            error: function(error){
+                jbApp.restError(error)
+            }
+        });
     }
 }
 jbApp.load(connection)
