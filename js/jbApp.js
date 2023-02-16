@@ -8,6 +8,7 @@ const connection = new Postmonger.Session();
 const debug = true;
 
 const jbApp = { 
+    apiKey:null,
     isTest:false, 
     isLocalhost:(location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
     getSchema:true,
@@ -16,15 +17,12 @@ const jbApp = {
     getInteractions:false,
     token:null,
     passId:null,
+    passUrl:'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
     currentStep:0,
     pageHtml:'',
     deStructure:{},
     message:'',
     action:null,
-    credentials:{
-        'url': 'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
-        'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'        
-    },
     system:{
         subscriber:{
             'firstname':'{{Contact.Attribute."Email Demographics".Firstname}}',
@@ -59,43 +57,18 @@ const jbApp = {
           "key": 'confirm'
         },
       ], 
-    soap:{
-        getDataExtension:`<?xml version="1.0" encoding="UTF-8"?>
-<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:u="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
-    <s:Header>
-        <a:Action s:mustUnderstand="1">Retrieve</a:Action>
-        <a:To s:mustUnderstand="1">https://{{jbApp.subdomain}}.soap.marketingcloudapis.com/Service.asmx</a:To>
-        <fueloauth xmlns="http://exacttarget.com">{{jbApp.etAccessToken}}</fueloauth>
-    </s:Header>
-    <s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-        <RetrieveRequestMsg xmlns="http://exacttarget.com/wsdl/partnerAPI">
-            <RetrieveRequest>
-                <ObjectType>DataExtension</ObjectType>
-                <Properties>ObjectID</Properties>
-                <Properties>CustomerKey</Properties>
-                <Properties>Name</Properties>
-                <Properties>IsSendable</Properties>
-                <Properties>SendableSubscriberField.Name</Properties>
-                <Filter xsi:type="SimpleFilterPart">
-                    <Property>CustomerKey</Property>
-                    <SimpleOperator>equals</SimpleOperator>
-                    <Value>postman_demographics</Value>
-                </Filter>
-            </RetrieveRequest>
-        </RetrieveRequestMsg>
-    </s:Body>
-</s:Envelope>
-        `
-    },
     getPassEndpoint:function(){
         if (debug) console.log('getPassEndpoint triggered')
         // Get starter URL based on isTest setting of app
-        var endpoint = jbApp.credentials.url;
+        var endpoint = jbApp.passUrl;
         
         if (jbApp.passId != null){
             endpoint = endpoint.replace('{passId}',jbApp.passId)
         }
         return endpoint;
+    },
+    setPassId:function(id){
+        jbApp.passId = '{{'+id+'}}';
     },
     parseEndpoints:function(data){
         if (data.hasOwnProperty('fuelapiRestHost')){
@@ -117,12 +90,11 @@ const jbApp = {
 
                     if (schemaItem.type == 'Text'
                     && schemaItem.name != 'passId'
-                    && schemaItem.length == null)
-                    {
-                    jbApp.deStructure[fieldName] = '{{'+fieldTag+'}}'
+                    && schemaItem.length == null){
+                        jbApp.deStructure[fieldName] = '{{'+fieldTag+'}}'
                     }else{
                         if (schemaItem.name == 'passId'){                            
-                            jbApp.passId = '{{'+fieldTag+'}}'
+                            jbApp.setPassId(fieldTag)
                         }
                     }
                     if (debug) console.log('['+fieldName+']:'+fieldTag)
@@ -437,6 +409,16 @@ const jbApp = {
                 .attr('data-action',"showMessages")
                 .text('Show messages')
     },
+    saveConfigButtonAction:function(){
+        let apiKey = $('#apiKey').val();
+        if (apiKey.length == 80){
+            jbApp.apiKey = apiKey
+            jbApp.homeButtonAction()
+        }else{
+            alert('The API key should be 80 characters')
+            $('#apiKey').addClass('slds-has-error')
+        }
+    },
     homeButtonAction:function(){
         jbApp.pageHtml = jbApp.getHtml('home')
         $('#jbapp__nav_home').text('Home').data('action','home')        
@@ -743,27 +725,49 @@ const jbApp = {
         html += '</div>'
         $( '#progress-holder' ).html(html)
     },    
-    getHtml:function(page,refreshPage){
-        if (refreshPage == null){
-            refreshPage = true
-        }
+    getHtml:function(page,refreshPage = true){
+        //
+        // Announce request 
+        //
         if (debug) console.log('(getHtml): '+page)
-        if (page==null 
-            || page===undefined 
-            || page=='' 
-            || page.toString().length<1
-            ){
-            page = 'error'
-        }
+        
+        //
+        // Map page names to file names
+        //
         let html={
             home:'home',
             error:'error',
             inputMessage:'input_message',
             selectMessage:'select_message',
-            ribbon:'ribbon'   
+            ribbon:'ribbon',
+            config:'config'   
         }
+        
+        //
+        // Require API Key
+        //
+        if (jbApp.apiKey == null){
+            page = 'config'
+            refreshPage = true
+        }else{
+            //
+            // Serve Error if mapping not defined
+            //
+            if (page==null 
+                || page===undefined 
+                || page=='' 
+                || page.toString().length<1
+                || html[page]===undefined 
+                ){
+                page = 'error'
+            }
+        }        
+        //
+        // Build and announce filename 
+        //
         let pageHtmlLocation = './html/'+html[page]+'.html'        
         if (debug) console.log('(getHtml) Location: '+pageHtmlLocation)
+
         //
         // Retrieve page
         //
@@ -816,7 +820,13 @@ const jbApp = {
         // Announce ready
         if (debug) console.log('App Loading Complete')
         window.jbApp = jbApp
-
+        /*
+        if (jbApp.apiKey == null){
+            jbApp.pageHtml = jbApp.getHtml('config')
+        }else{
+            jbApp.pageHtml = jbApp.getHtml('home')
+        }
+        */
         jbApp.pageHtml = jbApp.getHtml('home')
         jbApp.processPageChange(1)
     },
@@ -829,11 +839,8 @@ const jbApp = {
             contentType: "application/json",
             dataType: "json",
             data: '{"customerKey":"'+customerKey+'"}',
-            success: function(result){
-                jbApp.getDeSuccess(result)
-            },
-            error: function(error){
-                jbApp.restError(error)
+            done: function(result){
+                jbApp.restResponse(result)
             }
         });
     },
@@ -899,6 +906,11 @@ const jbApp = {
                 console.table(result.body)
                 $('#main').html(result.body)
             break;
+            case 0:
+                if (debug) console.log('Call Status: '+result.status)
+                if (debug) console.log('Success data: ')
+                console.table(result.body)
+            break
 
         }
     },
@@ -910,11 +922,28 @@ const jbApp = {
         $('#main').html(result)
     },
 
-    restSuccess:function (result) {
-        if (debug) console.log('Rest Success')
-        if (debug) console.log('Success data: ')
-        console.table(result)
-        $('#main').html(result)
+    restResponse:function (result) {
+        if (debug) console.log('Rest Success called')
+
+        if (result.hasOwnProperty('body') && !result.body.hasOwnProperty('errorcode')){
+            if (debug) console.log('Success data: ')
+            console.table(result)
+            $('#main').html(result)
+            return result
+        }else{
+            let restMessage = 'Rest Success'
+            if (debug && result.body.hasOwnProperty('errorcode')){
+                let errorCode = ' | Successful error: '+result.body.errorcode
+                restMessage += errorCode
+                console.log(errorCode)
+            }
+            if (debug && result.body.hasOwnProperty('message')){ 
+                let errorMessage = ' | Successful error: '+result.body.errorcode
+                restMessage += errorMessage
+                console.log(errorMessage)
+            }
+            return restMessage
+        }
     },
 
     restError:function(data) {
@@ -926,43 +955,6 @@ const jbApp = {
         }else{
             console.table(data)
         }
-    },
-
-    /**
-     * Deprecated
-     */
-    getDataExtensionSoap:function(){
-        if (debug) console.log('getDataExtension')
-        $.ajax({
-            type: "POST",
-            url: jbApp.webserviceUrl,
-            contentType: "text/xml",
-            dataType: "xml",
-            data: jbApp.soap.getDataExtension,
-            success: jbApp.soapSuccess(),
-            error: jbApp.soapError(),
-            done:parseSoapResponse( response, request, settings )
-        });
-    },
-
-    parseSoapResponse:function( response, request, settings ){
-        if (debug) console.table(response)
-        return JSON.stringify(response)
-    },
-
-    soapSuccess:function (data, status, req) {
-        if (debug) console.log('SuccessOccur')
-        if (data && data.hasOwnProperty('responseText') && status == "success")
-            alert(data.responseText);
-    },
-
-    soapError:function(data, status, req) {
-        if (debug) console.log('ErrorOccur')
-        if (data && data.hasOwnProperty('responseText')){
-        alert(data.responseText + " " + status);
-        }else{
-            console.table(data)
-        }
-    },
+    }
 }
 jbApp.load(connection)

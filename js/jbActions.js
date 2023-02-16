@@ -208,7 +208,8 @@ function onDoneButtonClick() {
         "message": jbApp.message,
         "endpoint": endpoint,
         "token":jbApp.token,
-        "restUrl":jbApp.restUrl
+        "restUrl":jbApp.restUrl,
+        "apiKey":jbApp.apiKey
     }
 
     /**

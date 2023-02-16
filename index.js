@@ -13,6 +13,7 @@ var postDebug = true
 var dataType = 'application/json'
 var access_token = null /* Raw token */
 var accessToken = null /* Parsed token */
+var tokenExpiry = null;
 var restDomain = null /* REST domain for logging */
 
 app.use(express.json())
@@ -302,12 +303,12 @@ async function getDataExtension(customerKey){
         //  Build response /
         var messageResponse = {
           'requestDate':date.DateTime,
-          'status':200,
+          'status':dataResponse.staus,
           'body':dataResponse
         }
         if (postDebug) console.log('getDataExtension Returning:'); 
         if (postDebug) console.log(JSON.stringify(messageResponse));
-        logData('Got data extension:'+customerKey,JSON.stringify(messageResponse))
+        //logData('Got data extension:'+customerKey,JSON.stringify(messageResponse))
         return messageResponse
       }).catch((error) => {
         logError(error)
@@ -380,11 +381,28 @@ async function logError(message,data={}){
 }
 
 /**
- *  External API call engine 
+ * 
+ *  External API call engines
+ * 
  * */
+function refreshToken(data){
+  let d = new Date();
+  let time = d.getTime()
+  tokenExpiry = parseInt(time)+parseInt(data.expires_in)
+}
+function tokenValid(){
+  if (accessToken == null) return false
+  let d = new Date();
+  let time = d.getTime()
+  return (time>tokenExpiry) ? true : false
+}
+
+/**
+ * SFMC Communication
+ */
 async function getAccessToken(){
-  if (accessToken == null){
-    if (postDebug) console.log('Requesting remote authentication')
+  if (!tokenValid()){
+    if (postDebug) console.log('Token expired: Requesting remote authentication')
     let authUrl = tokenUrl
     let authBody = {
       "grant_type": "client_credentials",
@@ -433,6 +451,9 @@ async function getAccessToken(){
           if (authenticationResponse.hasOwnProperty('auth_instance_url')){
             authDomain = authenticationResponse.auth_instance_url
           }
+          if (authenticationResponse.hasOwnProperty('expires_in')){
+            refreshToken(authenticationResponse)
+          }
           return accessToken
         }else{
           if (postDebug) console.log('Authentication failed: '+JSON.stringify(authResponse))
@@ -441,10 +462,11 @@ async function getAccessToken(){
     if (postDebug) console.log('Authentication requested')
     return authResponse
   }else{
-    if (postDebug) console.log('Authentication cached')
+    if (postDebug) console.log('Token valid: Authentication cached: '+accessToken)
     return accessToken
   }
 }
+
 async function getData(url = '', headers) {
   var getResponse = await fetch(url, {
     method: 'GET', 
@@ -458,7 +480,9 @@ async function getData(url = '', headers) {
     // Broadcast error 
     if (postDebug) console.log('Backend error:'+JSON.stringify(error));
     return error;
-  }).then(response => response.json())
+  })  
+  .then(response => response.json())
+  .then(response=>restResponse(response))
   .then((getResponse) => {
     return getResponse; // return response
   })
@@ -499,6 +523,7 @@ async function postData(url = '', postData=null) {
             return errorObject;
           })
           .then(response => response.json())
+          .then(response=>restResponse(response))
           .then((fetchResult) => {
             if (postDebug) {
               let responseString = JSON.stringify(fetchResult)
@@ -507,21 +532,30 @@ async function postData(url = '', postData=null) {
             return fetchResult; // return response
           });  
 
-        return requestResponse // collect & pass response
+        return requestResponse // transfer response
       }
     );    
     return postResponse; // collect & return response
   }
 }
 
+/**
+ * PassCreator Communication
+ */
 async function postDataToPassCreator(url = '', postData=null) {
   if (url != '' && postData != null){
-    // Default options are marked with *
+    //
+    // Set Custom Headers 
+    //
     var headers = {
       "Accept": dataType,
       "Content-Type": dataType,
       "Authorization":apiKey
     }
+
+    //
+    // Perform API Call
+    //
     var postResponse = await fetch(url, {
       method: 'POST', 
       mode: 'no-cors', 
@@ -531,14 +565,14 @@ async function postDataToPassCreator(url = '', postData=null) {
       redirect: 'follow', 
       referrerPolicy: 'no-referrer', 
       body: JSON.stringify(postData) 
-    })
+    })// Parse Response
     .then(response => response.json())
+    // Announce and log response
     .then((response)=>{
-      console.log('pDTPC raw response:')
-      console.table(response)
-      var logResponse = logData('Message sent',postData).then((response)=>{
-        return response;
-        })
+        console.log('pDTPC raw response:')
+        console.table(response)
+        var logResponse = logData('Message sent',postData)
+        .then((response)=>{return response;})
       return logResponse
     })
     .catch((error) => {
@@ -548,6 +582,29 @@ async function postDataToPassCreator(url = '', postData=null) {
     });
     return postResponse; // return response
   }
+}
+
+function restResponse(result) {
+  if (postDebug) console.log('restResponse called')
+
+  if ( (result.hasOwnProperty('body') && !result.body.hasOwnProperty('errorcode'))
+    || (!result.hasOwnProperty('body') && !result.hasOwnProperty('errorcode'))     
+    ){
+      if (postDebug) console.log('Success data: ')
+      if (postDebug) console.table(result)
+  }else{
+      let restMessage = 'Rest Error'
+      if (debug && result.body.hasOwnProperty('errorcode')){
+          let errorCode = ' | Successful error: '+result.body.errorcode
+          restMessage += errorCode
+      }
+      if (debug && result.body.hasOwnProperty('message')){ 
+          let errorMessage = ' | Successful error: '+result.body.errorcode
+          restMessage += errorMessage
+      }
+      if (postDebug) console.log(restMessage)
+  }
+  return result
 }
 
 app.listen(PORT, function () {
