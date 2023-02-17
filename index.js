@@ -5,8 +5,6 @@ var logDe = 'passcreator_success_log'
 var errorDe = 'passcreator_error_log'
 var testUrl = 'https://eo2mifqm9yelk7e.m.pipedream.net'
 var testUrl = '/execute'
-var tokenUrl = 'https://mc3tb2-hmmbngz-85h36g8xz1b4m.auth.marketingcloudapis.com/v2/token'
-var apiKey = '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'
 
 var HOME_DIR = '/';
 var postDebug = true
@@ -223,41 +221,47 @@ async function postMessage(data){
   /**
    * Restructure call with 
    * PassCreator required fields
+   * Include token for authenticating
+   * SFMC API calls and URLs in case
+   * of custom endpoints
    */
   var bodyContent = {
     "pushNotificationText":messageData.message+ ' | ['+date.Time+']',   
     "url":messageData.endpoint,
     "token":messageData.token,
+    "authUrl":messageData.authUrl,
     "restUrl":messageData.restUrl
   }
-  if (postDebug) console.log('POST bodyContent: ')
-  if (postDebug) console.table(bodyContent)
+  if (postDebug){
+    console.log('POST bodyContent: ')
+    console.table(bodyContent)
+    }
 
-  var headers = {
-    "Accept": dataType,
-    "Content-Type": dataType,
-    "Authorization":apiKey
-  }
-  if (postDebug) console.log('POST Headers: ')
-  if (postDebug) console.table(headers)
-  if (postDebug) console.log('POST Endpoint: '+messageData.endpoint)
 
   /**
-   * Transmit Message via postData function
+   * Transmit Message via postDataToPassCreator function
    */
   let postResponse = postDataToPassCreator(messageData.endpoint, bodyContent)
     .then((dataResponse) => {
-      //  Build response /
+      //
+      //  Build response 
+      //
       var messageResponse = {
         'requestDate':date.DateTime,
+        'requestData':bodyContent,
         'messageData':JSON.stringify(dataResponse)
       }
+      //
+      // Add call status if available
+      //
       if (dataResponse && dataResponse.hasOwnProperty('status')){
         messageResponse.status = dataResponse.status
       }
 
-      if (postDebug) console.log('pDTPC messageResponse:',messageResponse); 
-      if (postDebug) console.table(messageResponse);
+      if (postDebug){
+        console.log('pDTPC messageResponse:',messageResponse); 
+        console.table(messageResponse);
+      }
       return messageResponse
     });
   return postResponse

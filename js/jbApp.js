@@ -77,7 +77,11 @@ const jbApp = {
     parseEndpoints:function(data){
         if (data.hasOwnProperty('fuelapiRestHost')){
             jbApp.restUrl = data.fuelapiRestHost
-            jbApp.authUrl = jbApp.restUrl.replace('rest','auth')
+        }
+        if (data.hasOwnProperty('restHost')){
+            let protocol = 'https://'
+            jbApp.restHost = protocol+data.restHost
+            jbApp.authUrl = jbApp.restHost.replace('rest','auth')+'/v2/token'
         }
     },
     parseSchema:function(){
