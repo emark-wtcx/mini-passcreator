@@ -1,0 +1,41 @@
+<soapenv:Body>
+    <CreateRequest xmlns="http://exacttarget.com/wsdl/partnerAPI">
+        <Options></Options>
+        <Objects xmlns:ns1="http://exacttarget.com/wsdl/partnerAPI" xsi:type="ns1:DataExtension">
+            <CustomerKey>passCreator</CustomerKey>
+            <Name>passCreator</Name>
+            <IsSendable>true</IsSendable>
+            <SendableDataExtensionField>
+                <CustomerKey>EmailAddress_Key</CustomerKey>
+                <Name>EmailAddress</Name>
+                <FieldType>EmailAddress</FieldType>
+            </SendableDataExtensionField>
+            <SendableSubscriberField>
+                <Name>Email Address</Name>
+                <Value></Value>
+            </SendableSubscriberField>
+            <Fields>
+                <Field>
+                    <CustomerKey>EmailAddress_Key</CustomerKey>
+                    <Name>EmailAddress</Name>
+                    <FieldType>EmailAddress</FieldType>
+                </Field>
+                <Field>
+                    <CustomerKey>ChannelUser_Key</CustomerKey>
+                    <Name>ChannelUser</Name>
+                    <FieldType>Text</FieldType>
+                </Field>
+                <Field>
+                    <CustomerKey>ChannelUser_EmailAddress_Key</CustomerKey>
+                    <Name>ChannelUser_EmailAddress</Name>
+                    <FieldType>EmailAddress</FieldType>
+                </Field>
+                <Field>
+                    <CustomerKey>Demographic_Address_Key</CustomerKey>
+                    <Name>Demographic_Address</Name>
+                    <FieldType>Text</FieldType>
+                </Field>
+            </Fields>
+        </Objects>
+    </CreateRequest>
+</soapenv:Body>

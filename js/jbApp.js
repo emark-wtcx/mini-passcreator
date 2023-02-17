@@ -808,6 +808,73 @@ const jbApp = {
     },
 
 /**
+ * SOAP functionality 
+ */
+    /**
+ * Input required:
+ * details ={
+        CustomerKey:'',
+        Name:'',
+        IsSendable:true,
+        IsTestable:true
+    }
+    fields = [field,field]
+    field={
+        CustomerKey:'',
+        Name:'',
+        FieldType:'',
+        Length:'',            
+        IsRequired:true,
+        IsPrimaryKey:true
+    }
+    */
+    soapBuildDe:function(details,fields = [],sendableFields=[]){
+        let soapOpening = `
+    <soapenv:Body>
+        <CreateRequest xmlns="http://exacttarget.com/wsdl/partnerAPI">
+            <Options></Options>
+            <Objects xmlns:ns1="http://exacttarget.com/wsdl/partnerAPI" xsi:type="ns1:DataExtension">`
+        let soapClosing = `
+            </Objects>
+        </CreateRequest>
+    </soapenv:Body>`
+
+        let sendFields = ''
+        if (sendableFields.length > 0){
+            for (var i in sendableFields){
+                let field = sendableFields[i]                
+                let sendField=`<Field>
+                    <CustomerKey>${field.CustomerKey}</CustomerKey>
+                    <Name>${field.Name}</Name>
+                    <FieldType>EmailAddress</FieldType>
+                </Field>`
+                sendFields += sendField
+            }
+        }
+
+        let mainFields = '<Fields>'
+        if (fields.length > 0){
+            for (var i in fields){
+                let field = fields[i]                
+                let soapField=`<Field>
+                    <CustomerKey>${field.CustomerKey}</CustomerKey>
+                    <Name>${field.Name}</Name>
+                    <FieldType>EmailAddress</FieldType>
+                </Field>`
+                mainFields += soapField
+            }
+        }
+        let SOAP = soapOpening+soapDetails;
+        if (sendableFields.length && sendFields.length>0){
+            SOAP += sendFields
+        }
+        if (fields.length && mainFields.length>0){
+            SOAP += mainFields
+        }
+        return SOAP+soapClosing;
+    },
+
+/**
  * Testing functionality 
  */
     bindTestMenu:function(){
