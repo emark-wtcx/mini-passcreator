@@ -8,6 +8,7 @@ const connection = new Postmonger.Session();
 const debug = true;
 
 const jbApp = { 
+    version:1.7,
     apiKey:null,
     isTest:false, 
     isLocalhost:(location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
@@ -700,11 +701,11 @@ const jbApp = {
             if (debug) console.table(connection)
             // Inherit properties from JourneyBuilder
             if (connection.hasOwnProperty('version')){
-                jbApp.Version = connection.version 
+                jbApp.journeyVersion = connection.version 
             }
             if (jbApp.getTokens && jbApp.token== '') connection.trigger('requestTokens');
             
-            if (debug) console.log('App version:'+1.5)
+            if (debug) console.log('App version:'+jbApp.version)
             if (debug) console.log('App token:'+jbApp.token)
         }        
 
@@ -807,29 +808,20 @@ const jbApp = {
         }
     },
 
+    
 /**
  * SOAP functionality 
  */
-    /**
- * Input required:
- * details ={
-        CustomerKey:'',
-        Name:'',
-        IsSendable:true,
-        IsTestable:true
-    }
-    fields = [field,field]
-    field={
-        CustomerKey:'',
-        Name:'',
-        FieldType:'',
-        Length:'',            
-        IsRequired:true,
-        IsPrimaryKey:true
-    }
-    */
+    soapBuildTag:function(field='',value=''){
+        let xml = '<'+field+'><![CDATA['+value+']]></'+field+'>';
+        return xml
+    },
+
     soapBuildDe:function(details,fields = [],sendableFields=[]){
-        let soapOpening = `
+        /**
+         * Envelope Wrapper
+         */
+        let soapOpening = `<?xml version="1.0" encoding="UTF-8"?>
     <soapenv:Body>
         <CreateRequest xmlns="http://exacttarget.com/wsdl/partnerAPI">
             <Options></Options>
@@ -839,31 +831,52 @@ const jbApp = {
         </CreateRequest>
     </soapenv:Body>`
 
+        /**
+         * Sendable fields
+         */
         let sendFields = ''
         if (sendableFields.length > 0){
-            for (var i in sendableFields){
-                let field = sendableFields[i]                
-                let sendField=`<Field>
-                    <CustomerKey>${field.CustomerKey}</CustomerKey>
-                    <Name>${field.Name}</Name>
-                    <FieldType>EmailAddress</FieldType>
-                </Field>`
+            for (var s in sendableFields){
+                let field = sendableFields[s];
+                let sendField='<SendableDataExtensionField>';
+                for(var x in field){
+                    let prop = field[x]
+                    sendField += jbApp.soapBuildTag(x,prop)
+                }
+                sendField+='</SendableDataExtensionField>'
                 sendFields += sendField
             }
         }
 
+        /**
+         * Standard Fields
+         */
         let mainFields = '<Fields>'
         if (fields.length > 0){
-            for (var i in fields){
-                let field = fields[i]                
-                let soapField=`<Field>
-                    <CustomerKey>${field.CustomerKey}</CustomerKey>
-                    <Name>${field.Name}</Name>
-                    <FieldType>EmailAddress</FieldType>
-                </Field>`
+            for (var f in fields){
+                let field = fields[f]                
+                let soapField='<Field>';
+                for(var x in field){
+                    let prop = field[x]
+                    soapField += jbApp.soapBuildTag(x,prop)
+                }
+                soapField+='</Field>'
                 mainFields += soapField
             }
         }
+
+        /**
+         * SOAP Details
+         */        
+        let soapDetails = ''
+        for (var d in details){
+            let detail = details[d]
+            soapDetails += jbApp.soapBuildTag(d,detail)
+        }
+
+        /**
+         * Build Envelope 
+         */
         let SOAP = soapOpening+soapDetails;
         if (sendableFields.length && sendFields.length>0){
             SOAP += sendFields
@@ -872,6 +885,33 @@ const jbApp = {
             SOAP += mainFields
         }
         return SOAP+soapClosing;
+    },
+
+    getConfigXml:function(){
+        var details = {
+            CustomerKey:'passCreator_configuration',
+            Name:'passCreator_configuration',
+            isSendable:false
+        }
+        var fields = [
+        {
+            CustomerKey:'Id',
+            Name:'Id',
+            FieldType:'Text',
+            Length:36
+        },
+        {
+            CustomerKey:'APIKey',
+            Name:'APIKey',
+            FieldType:'Text',
+            Length:80
+        },{
+            CustomerKey:'DateModified',
+            Name:'DateModified',
+            FieldType:'Date'
+        },
+        ]
+        return this.soapBuildDe(details,fields)
     },
 
 /**
@@ -968,13 +1008,29 @@ const jbApp = {
 
                     });                
                     console.log('Bound '+action) 
-                break;   
+                break;  
+
+                case 'getXml':
+                    $(elem).on('click',function(){
+                        jbApp.action = action
+                        var testResults = jbApp.testConfigXml()
+                        jbApp.pageHtml = testResults
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked:getXml | '+jbApp.action)
+
+                    });                
+                    console.log('Bound '+action) 
+                break; 
 
                 default:
                     $(elem).on('click',function(){
                         jbApp.action = null
                         var testResults = 'Unconfigured test option'
-                        jbApp.pageHtml = testResults  
+                        jbApp.pageHtml = '<pre>'+testResults+'</pre>'
 
                         // Execute Action
                         jbApp.processPageChange(refreshPage)
@@ -1040,6 +1096,11 @@ const jbApp = {
                 jbApp.restError(error)
             }
         });
+    },
+
+    testConfigXml:function(){
+        let xml = jbApp.getConfigXml()
+        return xml;
     }
 }
 jbApp.load(connection)

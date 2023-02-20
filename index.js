@@ -5,6 +5,7 @@ var logDe = 'passcreator_success_log'
 var errorDe = 'passcreator_error_log'
 var testUrl = 'https://eo2mifqm9yelk7e.m.pipedream.net'
 var testUrl = '/execute'
+var tokenUrl = 'https://mc3tb2-hmmbngz-85h36g8xz1b4m.auth.marketingcloudapis.com/v2/token'
 
 var HOME_DIR = '/';
 var postDebug = true
@@ -407,7 +408,7 @@ function tokenValid(){
 async function getAccessToken(){
   if (!tokenValid()){
     if (postDebug) console.log('Token expired: Requesting remote authentication')
-    let authUrl = tokenUrl
+    var authUrl = tokenUrl
     let authBody = {
       "grant_type": "client_credentials",
       "client_id": "xja05pcunay325cyg6odcyex",
