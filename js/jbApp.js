@@ -6,6 +6,7 @@ const connection = new Postmonger.Session();
  * Show Console Output?
  */
 const debug = true;
+const br = "\n"
 
 const jbApp = { 
     version:1.7,
@@ -24,6 +25,7 @@ const jbApp = {
     deStructure:{},
     message:'',
     action:null,
+    dataExtension:null,
     system:{
         subscriber:{
             'firstname':'{{Contact.Attribute."Email Demographics".Firstname}}',
@@ -736,34 +738,23 @@ const jbApp = {
 
     getDataExtensionRest:function(customerKey){
         if (debug) console.log('getDataExtension:'+customerKey)
-        $.ajax({
+        let ajaxResponse = $.ajax({
             type: "POST",
             url: '/getde',
             contentType: "application/json",
             dataType: "json",
+            async:false,
             data: '{"customerKey":"'+customerKey+'"}',
-            done: function(result){
-                jbApp.restResponse(result)
+            success: async function(result){
+                let parsedResponse = await jbApp.restResponse(result).then((parsedResponse)=>{                    
+                    jbApp.dataExtension = parsedResponse   
+                    console.log('getDErest String: '+JSON.stringify(jbApp.dataExtension))  
+                    return parsedResponse 
+                })             
+                return parsedResponse
             }
         });
-    },
-
-    getDeSuccess:function (result) {
-        if (debug) console.log('getDeSuccess Success')
-        switch(result.status){
-            case 200:
-                if (debug) console.log('Call Status: '+result.status)
-                if (debug) console.log('Success data: ')
-                console.table(result.body)
-                $('#main').html(result.body)
-            break;
-            case 0:
-                if (debug) console.log('Call Status: '+result.status)
-                if (debug) console.log('Success data: ')
-                console.table(result.body)
-            break
-
-        }
+        return ajaxResponse
     },
 
     authSuccess:function (result) {
@@ -773,25 +764,28 @@ const jbApp = {
         $('#main').html(result)
     },
 
-    restResponse:function (result) {
+    restResponse:async function (result) {
         if (debug) console.log('Rest Success called')
 
         if (result.hasOwnProperty('body') && !result.body.hasOwnProperty('errorcode')){
             if (debug) console.log('Success data: ')
             console.table(result)
-            $('#main').html(result)
             return result
         }else{
             let restMessage = 'Rest Success'
-            if (debug && result.body.hasOwnProperty('errorcode')){
-                let errorCode = ' | Successful error: '+result.body.errorcode
-                restMessage += errorCode
-                console.log(errorCode)
-            }
-            if (debug && result.body.hasOwnProperty('message')){ 
-                let errorMessage = ' | Successful error: '+result.body.errorcode
-                restMessage += errorMessage
-                console.log(errorMessage)
+            if (result.hasOwnProperty('body')){
+                if (debug && result.body.hasOwnProperty('errorcode')){
+                    let errorCode = ' | Successful error: '+result.body.errorcode
+                    restMessage += errorCode
+                    console.log(errorCode)
+                }
+                if (debug && result.body.hasOwnProperty('message')){ 
+                    let errorMessage = ' | Successful error: '+result.body.errorcode
+                    restMessage += errorMessage
+                    console.log(errorMessage)
+                }
+            }else{
+                restMessage += ' no body'
             }
             return restMessage
         }
@@ -812,12 +806,22 @@ const jbApp = {
 /**
  * SOAP functionality 
  */
-    soapBuildTag:function(field='',value=''){
-        let xml = '<'+field+'><![CDATA['+value+']]></'+field+'>';
+    soapBuildTag:function(field='',value=null){
+        let xml = null
+        console.log('Formatting: '+field+' is '+(typeof value))
+        if (
+            typeof value === 'boolean'
+            || field == 'FieldType'
+            || field == 'Length'
+        ){
+            xml = br+'<'+field+'>'+value+'</'+field+'>';
+        }else{
+            xml = br+'<'+field+'><![CDATA['+value+']]></'+field+'>';
+        }
         return xml
     },
 
-    soapBuildDe:function(details,fields = [],sendableFields=[]){
+    soapBuildDe:function(details={},fields = [],sendableFields=[]){
         /**
          * Envelope Wrapper
          */
@@ -838,12 +842,12 @@ const jbApp = {
         if (sendableFields.length > 0){
             for (var s in sendableFields){
                 let field = sendableFields[s];
-                let sendField='<SendableDataExtensionField>';
+                let sendField=br+'<SendableDataExtensionField>'+br
                 for(var x in field){
                     let prop = field[x]
                     sendField += jbApp.soapBuildTag(x,prop)
                 }
-                sendField+='</SendableDataExtensionField>'
+                sendField+='</SendableDataExtensionField>'+br
                 sendFields += sendField
             }
         }
@@ -851,18 +855,19 @@ const jbApp = {
         /**
          * Standard Fields
          */
-        let mainFields = '<Fields>'
+        let mainFields = br+'<Fields>'+br
         if (fields.length > 0){
             for (var f in fields){
                 let field = fields[f]                
-                let soapField='<Field>';
+                let soapField='<Field>'
                 for(var x in field){
                     let prop = field[x]
                     soapField += jbApp.soapBuildTag(x,prop)
                 }
-                soapField+='</Field>'
-                mainFields += soapField
+                soapField+=br+'</Field>'
+                mainFields += soapField+br
             }
+            mainFields += '</Fields>'+br
         }
 
         /**
@@ -888,12 +893,12 @@ const jbApp = {
     },
 
     getConfigXml:function(){
-        var details = {
+        let details = {
             CustomerKey:'passCreator_configuration',
             Name:'passCreator_configuration',
             isSendable:false
         }
-        var fields = [
+        let fields = [
         {
             CustomerKey:'Id',
             Name:'Id',
@@ -910,6 +915,38 @@ const jbApp = {
             Name:'DateModified',
             FieldType:'Date'
         },
+        ]
+        return this.soapBuildDe(details,fields)
+    },
+
+    getLogXml:function(logName){
+        let details = {
+            CustomerKey:logName,
+            Name:logName,
+            isSendable:false
+        }
+        let fields = [
+        {
+            CustomerKey:'Id',
+            Name:'Id',
+            FieldType:'Text',
+            Length:36
+        },{
+            CustomerKey:'DateModified',
+            Name:'DateModified',
+            FieldType:'Date'
+        },
+        {
+            CustomerKey:'Message',
+            Name:'Message',
+            FieldType:'Text',
+            Length:4000
+        },
+        {
+            CustomerKey:'MetaData',
+            Name:'MetaData',
+            FieldType:'Text'
+        }
         ]
         return this.soapBuildDe(details,fields)
     },
@@ -941,7 +978,6 @@ const jbApp = {
 
                 case 'readSendable':
                     $(elem).on('click',function(){
-                        jbApp.action = action
                         let customerKey = 'testing_dale'
                         var testResults = 'Test successful'
                         var testResults = jbApp.getDataExtensionRest(customerKey)
@@ -957,10 +993,32 @@ const jbApp = {
                     console.log('Bound '+action) 
                 break;  
 
+                case 'getConfiguration':
+                    $(elem).on('click',async function(){
+                        let customerKey = 'passCreator_configuration'
+                        var testResults = ''                        
+                        testResults = await jbApp.getDataExtensionRest(customerKey).then((testResults)=>{
+                            return testResults
+                        });
+                        
+                        if (typeof testResults !== 'string'){
+                            jbApp.pageHtml = JSON.stringify(testResults)
+                        }else{
+                            jbApp.pageHtml = testResults
+                        }
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked:getConfiguration | '+jbApp.action+' ('+typeof testResults+')')
+
+                    });                
+                    console.log('Bound '+action) 
+                break; 
+
                 case 'authenticate':
                     $(elem).on('click',function(){
-                        jbApp.action = null
-                        jbApp.action = action
                         var testResults = jbApp.testAuth()
                         jbApp.pageHtml = testResults
 
@@ -976,8 +1034,6 @@ const jbApp = {
 
                 case 'testLog':
                     $(elem).on('click',function(){
-                        jbApp.action = null
-                        jbApp.action = action
                         var testResults = jbApp.testLog({'message':'help'})
                         jbApp.pageHtml = testResults
 
@@ -993,8 +1049,6 @@ const jbApp = {
 
                 case 'testMessage':
                     $(elem).on('click',function(){
-                        jbApp.action = null
-                        jbApp.action = action
                         var testResults = jbApp.testMessage({
                             'message':'help me'
                         })
@@ -1012,9 +1066,9 @@ const jbApp = {
 
                 case 'getXml':
                     $(elem).on('click',function(){
-                        jbApp.action = action
-                        var testResults = jbApp.testConfigXml()
-                        jbApp.pageHtml = testResults
+                        var testResults = jbApp.getConfigXml()
+                        testResults = testResults.replaceAll('<','&lt;').replaceAll('>','&gt;')
+                        jbApp.pageHtml = '<pre>'+testResults+'</pre>'
 
                         // Execute Action
                         jbApp.processPageChange(refreshPage)
@@ -1026,11 +1080,27 @@ const jbApp = {
                     console.log('Bound '+action) 
                 break; 
 
+                case 'getLogXml':
+                    $(elem).on('click',function(){
+                        var testResults = jbApp.getLogXml('passcreator_success_log')
+                        testResults = testResults.replaceAll('<','&lt;').replaceAll('>','&gt;')
+                        jbApp.pageHtml = '<pre>'+testResults+'</pre>'
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        
+                        // Accounce Click
+                        console.log('clicked:getLogXml | '+jbApp.action)
+
+                    });                
+                    console.log('Bound '+action) 
+                break; 
+
                 default:
                     $(elem).on('click',function(){
                         jbApp.action = null
-                        var testResults = 'Unconfigured test option'
-                        jbApp.pageHtml = '<pre>'+testResults+'</pre>'
+                        var testResults = '<h1>Error</h1><h2>Unconfigured test option</h2>'
+                        jbApp.pageHtml = testResults
 
                         // Execute Action
                         jbApp.processPageChange(refreshPage)

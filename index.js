@@ -73,11 +73,12 @@ app.post('/getde',async function (req, res, next) {
   if (postDebug) console.log('/getde called ') 
   if (postDebug) console.table(req.body)
   if (req.body.customerKey != null){
-    await getDataExtension(req.body.customerKey).then((getServerResponse) => {
+    let getde = await getDataExtension(req.body.customerKey).then((getServerResponse) => {
     if (postDebug) console.log('/getde Response: ')
     if (postDebug) console.table(getServerResponse)
     return res.json(getServerResponse)
     })
+  return getde
   }else{
     return {'message':'No data submitted'}
   }
@@ -359,7 +360,7 @@ async function logData(message,data={}){
 
 
 async function logError(message,data={}){
-  let loggingUri = '/data/v1/async/dataextensions/key:'+errorDe+'/rows'
+  let loggingUri = 'data/v1/async/dataextensions/key:'+errorDe+'/rows'
   let date = getDateTime();
   let logId = guid();
 
@@ -391,15 +392,34 @@ async function logError(message,data={}){
  * 
  * */
 function refreshToken(data){
-  let d = new Date();
-  let time = d.getTime()
-  tokenExpiry = parseInt(time)+parseInt(data.expires_in)
+  if (data.hasOwnProperty('access_token')){
+    access_token = data.access_token
+    if (postDebug) console.log('Got Authentication: '+access_token)
+    accessToken = 'Bearer '+access_token
+    if (postDebug) console.log('Authentication Token: '+accessToken)
+  }
+  if (data.hasOwnProperty('rest_instance_url')){
+    restDomain = data.rest_instance_url
+  }
+  if (data.hasOwnProperty('auth_instance_url')){
+    authDomain = data.auth_instance_url
+  }
+  if (data.hasOwnProperty('expires_in')){
+    let d = new Date();
+    let time = d.getTime()
+    tokenExpiry = parseInt(time)+parseInt(data.expires_in)
+  }
+  return accessToken
 }
 function tokenValid(){
-  if (accessToken == null) return false
-  let d = new Date();
-  let time = d.getTime()
-  return (time>tokenExpiry) ? true : false
+  if (accessToken == null
+    || tokenExpiry == null){
+      return false
+  }else{
+    let d = new Date();
+    let time = d.getTime()
+    return (time>tokenExpiry) ? true : false
+    }
 }
 
 /**
@@ -445,24 +465,9 @@ async function getAccessToken(){
         return error;
       }).then(response => response.json())
       .then((authenticationResponse) => {  
-        if (postDebug) console.log('Requested Authentication')
-        if (authenticationResponse.hasOwnProperty('access_token')){
-          access_token = authenticationResponse.access_token
-          if (postDebug) console.log('Got Authentication: '+access_token)
-          accessToken = 'Bearer '+access_token
-          if (authenticationResponse.hasOwnProperty('rest_instance_url')){
-            restDomain = authenticationResponse.rest_instance_url
-          }
-          if (authenticationResponse.hasOwnProperty('auth_instance_url')){
-            authDomain = authenticationResponse.auth_instance_url
-          }
-          if (authenticationResponse.hasOwnProperty('expires_in')){
-            refreshToken(authenticationResponse)
-          }
-          return accessToken
-        }else{
-          if (postDebug) console.log('Authentication failed: '+JSON.stringify(authResponse))
-          }
+        if (postDebug) console.log('Requesting Authentication')
+        let accessToken = refreshToken(authenticationResponse)
+        return accessToken
       })
     if (postDebug) console.log('Authentication requested')
     return authResponse
@@ -599,11 +604,11 @@ function restResponse(result) {
       if (postDebug) console.table(result)
   }else{
       let restMessage = 'Rest Error'
-      if (debug && result.body.hasOwnProperty('errorcode')){
+      if (postDebug && result.hasOwnProperty('body') && result.body.hasOwnProperty('errorcode')){
           let errorCode = ' | Successful error: '+result.body.errorcode
           restMessage += errorCode
       }
-      if (debug && result.body.hasOwnProperty('message')){ 
+      if (postDebug && result.hasOwnProperty('body') && result.body.hasOwnProperty('message')){ 
           let errorMessage = ' | Successful error: '+result.body.errorcode
           restMessage += errorMessage
       }
