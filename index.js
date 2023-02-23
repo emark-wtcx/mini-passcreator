@@ -70,15 +70,11 @@ app.post('/execute',async function (req, res, next) {
  * Test reading data from a DataExtension identified by CustomerKey 
  */
 app.post('/getde',async function (req, res, next) { 
-  if (postDebug) console.log('/getde called ') 
-  if (postDebug) console.table(req.body)
   if (req.body.customerKey != null){
     let getde = await getDataExtension(req.body.customerKey).then((getServerResponse) => {
-    if (postDebug) console.log('/getde Response: ')
-    if (postDebug) console.table(getServerResponse)
     return res.json(getServerResponse)
     })
-  return getde
+    return getde
   }else{
     return {'message':'No data submitted'}
   }
@@ -180,7 +176,9 @@ function getDateTime(){
     'ISODateTime':d.toISOString()
   }
 }
-
+/**
+ * Set the details from Journey Builder 
+ */
 function setToken(payload){
   if (postDebug) console.log('(setToken) setting token: '+payload.token)
   access_token = payload.token
@@ -272,12 +270,8 @@ async function postMessage(data){
 async function getDataExtension(customerKey){
   // Request setup
   var data = {}
-  //data.customerKey = 'testing_dale'
   let dePath = 'https://www.exacttargetapis.com/data/v1/customobjectdata/key/{{dataextension}}/rowset/'
   data.url = dePath.replace('{{dataextension}}',customerKey)
-
-  // Request time
-  var date = getDateTime();
 
   // Request content
   if (postDebug) console.log('getDataExtension Table by CustomerKey: ')
@@ -302,23 +296,13 @@ async function getDataExtension(customerKey){
     //
     // Request Data via getData function
     //
-    var getDataResponse = await getData(data.url,headers)
-      .then((dataResponse) => {
-        if (postDebug) console.log('getDataExtension dataResponse: ')
-        if (postDebug) console.table(dataResponse)
-        //  Build response package
-        var messageResponse = {
-          'requestDate':date.DateTime,
-          'status':dataResponse.staus,
-          'body':dataResponse
-        }
-        if (postDebug) console.log('getDataExtension Returning:'); 
-        if (postDebug) console.log(JSON.stringify(messageResponse));
-        //logData('Got data extension:'+customerKey,JSON.stringify(messageResponse))
-        return messageResponse
+    var getDataResponse = await getData(data.url,headers).then((dataResponse) => {
+        // Return result
+        return dataResponse        
       }).catch((error) => {
         console.log('getDataExtension Error:'+JSON.stringify(error))
         //logError(error)
+        return JSON.stringify(error)
       });
       if (postDebug) console.log('getDataExtension getDataResponse: ')
       if (postDebug) console.table(getDataResponse)
@@ -392,13 +376,21 @@ async function logError(message,data={}){
  *  External API call engines
  * 
  * */
+
 function refreshToken(data){
-  console.log('Refreshing Token')
+  // Response time
+  let d = new Date();
+  let time = d.getTime()
+
+  if (postDebug){
+    console.log('Refreshing Token')
+    console.log('Old Token: '+accessToken)
+    }
+
   if (data.hasOwnProperty('access_token')){
-    access_token = data.access_token
-    if (postDebug) console.log('Got Authentication: '+access_token)
+    access_token = data.access_token    
     accessToken = 'Bearer '+access_token
-    if (postDebug) console.log('Authentication Token: '+accessToken)
+    if (postDebug) console.log('Updated Authentication Token: '+accessToken)
   }
   if (data.hasOwnProperty('rest_instance_url')){
     restDomain = data.rest_instance_url
@@ -407,22 +399,29 @@ function refreshToken(data){
     authDomain = data.auth_instance_url
   }
   if (data.hasOwnProperty('expires_in')){
-    let d = new Date();
-    let time = d.getTime()
-    console.log('refreshToken : (d) | '+d)
-    console.log('refreshToken : (time) | '+time)
-    if (postDebug) console.log('Token Expires in: '+data.expires_in)
-    
-    if (postDebug) console.log('Old Token Expiry: '+tokenExpiry)
-    tokenExpiry = parseInt(time)+(parseInt(data.expires_in)*10)
-    if (postDebug) console.log('New Token Expiry: '+tokenExpiry)
+    if (postDebug){
+      
+      console.log('refreshToken : (Date) | '+d)
+      console.log('refreshToken : (Time) | '+time)
+      
+      console.log('New Token Expires after: '+data.expires_in+' seconds?')
 
-    console.log('refreshToken: token valid(time>tokenExpiry) | '+(time>tokenExpiry ? 'true':'false'))
-    let tokenTime = new Date(tokenExpiry);
-    console.log('tokenExpires | '+tokenTime)
+      let oldDate = new Date(tokenExpiry);
+      console.log('Old Token Expiry: '+oldDate)
+    }
+    
+    // Caluclate new expiry time
+    tokenExpiry = parseInt(time)+(parseInt(data.expires_in)*1000)
+
+    if (postDebug){
+      let newDate = new Date(tokenExpiry);
+      console.log('New Token Expiry: '+newDate)
+      console.log('refreshToken: token valid (time<tokenExpiry) ? '+(time>tokenExpiry ? 'true':'false'))
+    }
   }
   return accessToken
 }
+
 function tokenValid(){
   if (postDebug) console.log('Checking Token')
   if (accessToken == null
@@ -432,11 +431,11 @@ function tokenValid(){
   }else{
     let d = new Date();
     let time = d.getTime()
-    if (postDebug) console.log('checking: (time>tokenExpiry)'+time+'>'+tokenExpiry)
+    if (postDebug) console.log('checking: (time<tokenExpiry) '+time+'<'+tokenExpiry)
     //
-    // If the current time is greater than 
+    // If the current time is lower than 
     // the expiry time, the token is valid
-    return (time>tokenExpiry) ? true : false
+    return (time<tokenExpiry) ? true : false
     }
 }
 
@@ -484,7 +483,7 @@ async function getAccessToken(){
       }).then(response => response.json())
       .then((authenticationResponse) => {  
         if (postDebug) console.log('Refreshing Authentication')
-        let accessToken = refreshToken(authenticationResponse)
+        accessToken = refreshToken(authenticationResponse)
         return accessToken
       })
     if (postDebug) console.log('Authentication requested')
@@ -504,16 +503,13 @@ async function getData(url = '', headers) {
     headers: headers,
     redirect: 'follow', 
     referrerPolicy: 'no-referrer'
-  }).catch((error) => {
-    // Broadcast error 
-    if (postDebug) console.log('Backend error:'+JSON.stringify(error));
-    return error;
-  })  
-  .then(response => response.json())
-  .then(response=>parseHttpResponse(response))
-  .then((getResponse) => {
-    return getResponse; // return response
-  })
+  }).then(response => response.json())
+    .then(response=>parseHttpResponse(response))
+    .then((getResponse) => {
+      return getResponse; // return response
+    }).catch((error) => {
+      return handleError(error);
+    })
   return getResponse;
 }
 
@@ -544,21 +540,17 @@ async function postData(url = '', postData=null) {
             method: 'POST', 
             headers: headers,
             body: JSON.stringify(postData)
-          }).catch(errorObject => {
-            let errorString = JSON.stringify(errorObject)
-            // Broadcast error 
-            if (postDebug) console.log('(postData) Backend error:'+errorString);
-            return errorObject;
-          })
-          .then(response => response.json())
-          .then(response=>parseHttpResponse(response))
-          .then((fetchResult) => {
-            if (postDebug) {
-              let responseString = JSON.stringify(fetchResult)
-              console.log('(postData) Backend responseString:'+responseString);              
-            }
-            return fetchResult; // return response
-          });  
+          }).then(response => response.json())
+            .then(response=>parseHttpResponse(response))
+            .then((fetchResult) => {
+              if (postDebug) {
+                let responseString = JSON.stringify(fetchResult)
+                console.log('(postData) Backend responseString:'+responseString);              
+              }
+              return fetchResult; // return response
+            }).catch(error => {
+              return handleError(error);
+            });  
 
         return requestResponse // transfer response
       }
@@ -611,28 +603,51 @@ async function postDataToPassCreator(url = '', postData=null) {
     return postResponse; // return response
   }
 }
+function handleError(error){  
+  // Response time
+  var date = getDateTime();
 
-function parseHttpResponse(result) {
-  let d = new Date();
-  let time = d.getTime()
-  let expireDate = new Date(tokenExpiry).getTime()
-  if (postDebug){
-    console.log('parseHttpResponse : (d) | '+d)
-    console.log('parseHttpResponse : (tokenExpiry) | '+tokenExpiry)
-    console.log('parseHttpResponse : New (expireDate) | '+expireDate)
-    console.log('parseHttpResponse : (time>tokenExpiry) isValid | '+(time>tokenExpiry ? 'true':'false'))
+  if (postDebug) console.log('(handleError) '+JSON.stringify(error));
+  //
+  // Construct Standardised Response
+  //
+  var errorResponse = {
+    'requestDate':date.DateTime,
+    'status':error.status,
+    'body':(typeof error !== 'string') ? JSON.stringify(error) : error
+  }  
+  return errorResponse
+}
+function parseHttpResponse(result) {  
+  // Announce and log result
+  if (postDebug){    
     console.log('parseHttpResponse result:'+JSON.stringify(result))
-    }
+    }  
+
+  // Response time
+  var date = getDateTime();
+  
+  //
+  // Construct Standardised Response
+  //
+  var messageResponse = {
+    'requestDate':date.DateTime,
+    'status':result.status,
+    'body':null
+  }      
+  
   if (result.hasOwnProperty('errorcode')){
     if (result.hasOwnProperty('message')){
-      return result.message
+      messageResponse.body = result.message
+      return messageResponse
     }else{
-      return 'Error: '+result.errorcode
+      messageResponse.body = 'Error: '+result.errorcode
+      return messageResponse
       }
   }else{
-    return result
-  }
-  
+    messageResponse.body = result
+    return messageResponse
+  }  
 }
 app.listen(PORT, function () {
   console.log(`App listening on port ${PORT}`);

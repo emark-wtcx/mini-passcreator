@@ -744,14 +744,12 @@ const jbApp = {
             contentType: "application/json",
             dataType: "json",
             async:false,
-            data: '{"customerKey":"'+customerKey+'"}',
-            success: async function(result){
-                let parsedResponse = await jbApp.restResponse(result).then((parsedResponse)=>{                    
-                    jbApp.dataExtension = parsedResponse   
-                    console.log('getDErest String: '+JSON.stringify(jbApp.dataExtension))  
-                    return parsedResponse 
-                })             
-                return parsedResponse
+            data: '{"customerKey":"'+customerKey+'"}',            
+            success: function(result){           
+                return jbApp.restResponse(result)
+            },
+            fail:function(result){           
+                Alert(JSON.stringify(result))
             }
         });
         return ajaxResponse
@@ -764,35 +762,29 @@ const jbApp = {
         $('#main').html(result)
     },
 
-    restResponse:async function (result) {
-        if (debug) console.log('Rest Success called')
-
-        if (result.hasOwnProperty('body') && !result.body.hasOwnProperty('errorcode')){
-            if (debug) console.log('Success data: ')
-            console.table(result)
-            return result
-        }else{
-            let restMessage = 'Rest Success'
-            if (result.hasOwnProperty('body')){
-                if (debug && result.body.hasOwnProperty('errorcode')){
-                    let errorCode = ' | Successful error: '+result.body.errorcode
-                    restMessage += errorCode
-                    console.log(errorCode)
-                }
-                if (debug && result.body.hasOwnProperty('message')){ 
-                    let errorMessage = ' | Successful error: '+result.body.message
-                    restMessage += errorMessage
-                    console.log(errorMessage)
-                }
-            }else{
-                restMessage += ' | No Body'
+    restResponse:function (result) {
+        if (debug) console.log('Server response parsing starts')
+        if (result.hasOwnProperty('status')){
+            if (debug) console.log('Server response has status')
+            let status = result.status;
+            switch(status){
+                case 200:
+                    if (result.hasOwnProperty(responseJSON)){
+                        return result.responseJSON;
+                    }else{
+                        return result;
+                    }
+                break;
+                case 404:
+                    if (debug) console.log(JSON.stringify(result))
+                    return 'Server endpoint not found'
+                break;
             }
-            return restMessage
         }
     },
 
     restError:function(data) {
-        if (debug) console.log('Auth Error')
+        if (debug) console.log('Rest Error')
         if (data.hasOwnProperty('responseText')){
             console.log(data.responseText + " " + data.status);
         }else if (data.hasOwnProperty('statusText')){
@@ -992,12 +984,14 @@ const jbApp = {
 
                 case 'readSendable':
                     $(elem).on('click',function(){
+                        // Nominate table
                         let customerKey = 'testing_dale'
-                        let testResults = 'Test successful'
-                        testResults = jbApp.getDataExtensionRest(customerKey)
-                        jbApp.pageHtml = JSON.stringify(testResults)
 
-                        // Execute Action
+                        // Request Table
+                        let table = jbApp.getDataExtensionRest(customerKey)
+
+                        // Execute Action                        
+                        jbApp.pageHtml = JSON.stringify(table)
                         jbApp.processPageChange(refreshPage)
                         
                         // Accounce Click
@@ -1009,18 +1003,14 @@ const jbApp = {
 
                 case 'getLogTable':
                     $(elem).on('click',function(){
+                        // Nominate table
                         let customerKey = 'passcreator_success_log'
-                        let tableExists = jbApp.checkDeExists(customerKey)
-                        if (tableExists){
-                            let message = 'table found'
-                            console.log(message)
-                            jbApp.pageHtml = message
-                        }else{      
-                            let message = 'table not found'                      
-                            console.log(message)
-                            jbApp.pageHtml = message
-                        }
-                        // Execute Action
+
+                        // Request Table
+                        let table = jbApp.checkDeExists(customerKey)
+                        
+                        // Execute Action                        
+                        jbApp.pageHtml = JSON.stringify(table)
                         jbApp.processPageChange(refreshPage)
 
                     });                
@@ -1030,17 +1020,8 @@ const jbApp = {
                 case 'getConfiguration':
                     $(elem).on('click',async function(){
                         let customerKey = 'passCreator_configuration'                        
-                        let table = await jbApp.getDataExtensionRest(customerKey)   
-                        
-                        if (table.hasOwnProperty('body') && table.body){
-                            let message = 'table found'
-                            console.log(message)
-                            jbApp.pageHtml = message
-                        }else{      
-                            let message = 'table not found'                      
-                            console.log(message)
-                            jbApp.pageHtml = message
-                        }
+                        let table = await jbApp.getDataExtensionRest(customerKey)
+                        jbApp.pageHtml = JSON.stringify(table)
 
                         // Execute Action
                         jbApp.processPageChange(refreshPage)
@@ -1061,7 +1042,7 @@ const jbApp = {
                 case 'authenticate':
                     $(elem).on('click',function(){
                         var testResults = jbApp.testAuth()
-                        jbApp.pageHtml = testResults
+                        jbApp.pageHtml = JSON.stringify(testResults)
 
                         // Execute Action
                         jbApp.processPageChange(refreshPage)
@@ -1075,8 +1056,8 @@ const jbApp = {
 
                 case 'testLog':
                     $(elem).on('click',function(){
-                        var testResults = jbApp.testLog({'message':'help'})
-                        jbApp.pageHtml = testResults
+                        var testResults = jbApp.testLog({'message':'Test of the logging system performed at '})
+                        jbApp.pageHtml = JSON.stringify(testResults)
 
                         // Execute Action
                         jbApp.processPageChange(refreshPage)
