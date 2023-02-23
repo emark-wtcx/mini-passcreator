@@ -274,41 +274,56 @@ async function getDataExtension(customerKey){
   data.url = dePath.replace('{{dataextension}}',customerKey)
 
   // Request content
-  if (postDebug) console.log('getDataExtension Table by CustomerKey: ')
-  if (postDebug) console.table(customerKey)
+  if (postDebug){
+    console.log('getDataExtension Table by CustomerKey: ')    
+    console.table(customerKey)
+  }
   
   // Perform Request
-  var dataResponse = await getAccessToken().then(async (accessToken) => {
-    if (postDebug) console.log('getDataExtension accessToken: ')
-    if (postDebug) console.table(accessToken)
+  var ajaxResponse = await getAccessToken().then(async (accessToken) => {
+    if (postDebug){
+      console.log('getDataExtension accessToken: ')
+      console.table(accessToken)
+    }
 
     /* Get DE Headers */
-    var headers = {
+    let restHeaders = {
       "Accept": dataType,
       "Content-Type": dataType,
       "Authorization":accessToken
     }
-
-    if (postDebug) console.log('getDataExtension Headers: ')
-    if (postDebug) console.table(headers)
-    if (postDebug) console.log('getDataExtension Endpoint: '+data.url)
+    if (postDebug){
+      console.log('getDataExtension Headers: ')
+      console.table(restHeaders)
+      console.log('getDataExtension Endpoint: '+data.url)
+    }
 
     //
     // Request Data via getData function
     //
-    var getDataResponse = await getData(data.url,headers).then((dataResponse) => {
+    var getDataResponse = await getData(data.url,restHeaders)
+      .then((dataResponse) => {
+        //
         // Return result
+        //
         return dataResponse        
       }).catch((error) => {
         console.log('getDataExtension Error:'+JSON.stringify(error))
         //logError(error)
         return JSON.stringify(error)
       });
-      if (postDebug) console.log('getDataExtension getDataResponse: ')
-      if (postDebug) console.table(getDataResponse)
-      return getDataResponse; // return response
+
+    if (postDebug){
+      console.log('getDataExtension getDataResponse: ')
+      console.table(getDataResponse)
+      }
+
+    //
+    // Return response  
+    //
+    return getDataResponse; 
     })
-    return dataResponse
+  return ajaxResponse
 }
 
 async function logData(message,data={}){
@@ -342,8 +357,6 @@ async function logData(message,data={}){
     });  
   return logResponse;
 }
-
-
 async function logError(message,data={}){
   let loggingUri = 'data/v1/async/dataextensions/key:'+errorDe+'/rows'
   let date = getDateTime();
@@ -382,15 +395,9 @@ function refreshToken(data){
   let d = new Date();
   let time = d.getTime()
 
-  if (postDebug){
-    console.log('Refreshing Token')
-    console.log('Old Token: '+accessToken)
-    }
-
   if (data.hasOwnProperty('access_token')){
     access_token = data.access_token    
     accessToken = 'Bearer '+access_token
-    if (postDebug) console.log('Updated Authentication Token: '+accessToken)
   }
   if (data.hasOwnProperty('rest_instance_url')){
     restDomain = data.rest_instance_url
@@ -398,26 +405,9 @@ function refreshToken(data){
   if (data.hasOwnProperty('auth_instance_url')){
     authDomain = data.auth_instance_url
   }
-  if (data.hasOwnProperty('expires_in')){
-    if (postDebug){
-      
-      console.log('refreshToken : (Date) | '+d)
-      console.log('refreshToken : (Time) | '+time)
-      
-      console.log('New Token Expires after: '+data.expires_in+' seconds?')
-
-      let oldDate = new Date(tokenExpiry);
-      console.log('Old Token Expiry: '+oldDate)
-    }
-    
+  if (data.hasOwnProperty('expires_in')){    
     // Caluclate new expiry time
     tokenExpiry = parseInt(time)+(parseInt(data.expires_in)*1000)
-
-    if (postDebug){
-      let newDate = new Date(tokenExpiry);
-      console.log('New Token Expiry: '+newDate)
-      console.log('refreshToken: token valid (time<tokenExpiry) ? '+(time>tokenExpiry ? 'true':'false'))
-    }
   }
   return accessToken
 }
@@ -431,11 +421,16 @@ function tokenValid(){
   }else{
     let d = new Date();
     let time = d.getTime()
-    if (postDebug) console.log('checking: (time<tokenExpiry) '+time+'<'+tokenExpiry)
+    console.log('Checking: (tokenExpiry) '+tokenExpiry)
+    console.log('Checking: (time) '+time)
+    let tokenValid = (parseInt(tokenExpiry)>parseInt(time)) ? true : false
+    if (postDebug){
+      console.log('Checking: (tokenExpiry>time) '+tokenValid)
+    }
     //
-    // If the current time is lower than 
-    // the expiry time, the token is valid
-    return (time<tokenExpiry) ? true : false
+    // If the expiry time is lower than 
+    // the current time, the token is invalid
+    return tokenValid
     }
 }
 
@@ -505,9 +500,11 @@ async function getData(url = '', headers) {
     referrerPolicy: 'no-referrer'
   }).then(response => response.json())
     .then(response=>parseHttpResponse(response))
-    .then((getResponse) => {
-      return getResponse; // return response
+    .then((httpResponse) => {
+      // return response
+      return httpResponse; 
     }).catch((error) => {
+      // return error
       return handleError(error);
     })
   return getResponse;
@@ -632,9 +629,13 @@ function parseHttpResponse(result) {
   //
   var messageResponse = {
     'requestDate':date.DateTime,
-    'status':result.status,
+    'status':null,
     'body':null
   }      
+
+  if (result.hasOwnProperty('status')){
+    messageResponse.status = result.status
+  }
   
   if (result.hasOwnProperty('errorcode')){
     if (result.hasOwnProperty('message')){

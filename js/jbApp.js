@@ -755,7 +755,7 @@ const jbApp = {
         return ajaxResponse
     },
 
-    authSuccess:function (result) {
+    testAuthSuccess:function (result) {
         if (debug) console.log('Auth Success')
         if (debug) console.log('Success data: ')
         console.table(result)
@@ -764,22 +764,16 @@ const jbApp = {
 
     restResponse:function (result) {
         if (debug) console.log('Server response parsing starts')
+
         if (result.hasOwnProperty('status')){
-            if (debug) console.log('Server response has status')
             let status = result.status;
-            switch(status){
-                case 200:
-                    if (result.hasOwnProperty(responseJSON)){
-                        return result.responseJSON;
-                    }else{
-                        return result;
-                    }
-                break;
-                case 404:
-                    if (debug) console.log(JSON.stringify(result))
-                    return 'Server endpoint not found'
-                break;
-            }
+            if (debug) console.log('Server response has status: '+status)
+        }
+
+        if (result.hasOwnProperty('responseJSON')){
+            return result.responseJSON;
+        }else{
+            return result;
         }
     },
 
@@ -1146,7 +1140,7 @@ const jbApp = {
             contentType: "application/json",
             dataType: "json",
             success: function(authResult){                        
-                jbApp.authSuccess(authResult)
+                jbApp.testAuthSuccess(authResult)
             },
             error: function(xhr){
                 jbApp.restError(xhr)
