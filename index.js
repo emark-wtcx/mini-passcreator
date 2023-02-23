@@ -306,7 +306,7 @@ async function getDataExtension(customerKey){
       .then((dataResponse) => {
         if (postDebug) console.log('getDataExtension dataResponse: ')
         if (postDebug) console.table(dataResponse)
-        //  Build response /
+        //  Build response package
         var messageResponse = {
           'requestDate':date.DateTime,
           'status':dataResponse.staus,
@@ -317,7 +317,8 @@ async function getDataExtension(customerKey){
         //logData('Got data extension:'+customerKey,JSON.stringify(messageResponse))
         return messageResponse
       }).catch((error) => {
-        logError(error)
+        console.log('getDataExtension Error:'+JSON.stringify(error))
+        //logError(error)
       });
       if (postDebug) console.log('getDataExtension getDataResponse: ')
       if (postDebug) console.table(getDataResponse)
@@ -392,6 +393,7 @@ async function logError(message,data={}){
  * 
  * */
 function refreshToken(data){
+  console.log('Refreshing Token')
   if (data.hasOwnProperty('access_token')){
     access_token = data.access_token
     if (postDebug) console.log('Got Authentication: '+access_token)
@@ -407,17 +409,33 @@ function refreshToken(data){
   if (data.hasOwnProperty('expires_in')){
     let d = new Date();
     let time = d.getTime()
-    tokenExpiry = parseInt(time)+parseInt(data.expires_in)
+    console.log('refreshToken : (d) | '+d)
+    console.log('refreshToken : (time) | '+time)
+    if (postDebug) console.log('Token Expires in: '+data.expires_in)
+    
+    if (postDebug) console.log('Old Token Expiry: '+tokenExpiry)
+    tokenExpiry = parseInt(time)+(parseInt(data.expires_in)*10)
+    if (postDebug) console.log('New Token Expiry: '+tokenExpiry)
+
+    console.log('refreshToken: token valid(time>tokenExpiry) | '+(time>tokenExpiry ? 'true':'false'))
+    let tokenTime = new Date(tokenExpiry);
+    console.log('tokenExpires | '+tokenTime)
   }
   return accessToken
 }
 function tokenValid(){
+  if (postDebug) console.log('Checking Token')
   if (accessToken == null
     || tokenExpiry == null){
+      if (postDebug) console.log('No token to check')
       return false
   }else{
     let d = new Date();
     let time = d.getTime()
+    if (postDebug) console.log('checking: (time>tokenExpiry)'+time+'>'+tokenExpiry)
+    //
+    // If the current time is greater than 
+    // the expiry time, the token is valid
     return (time>tokenExpiry) ? true : false
     }
 }
@@ -465,7 +483,7 @@ async function getAccessToken(){
         return error;
       }).then(response => response.json())
       .then((authenticationResponse) => {  
-        if (postDebug) console.log('Requesting Authentication')
+        if (postDebug) console.log('Refreshing Authentication')
         let accessToken = refreshToken(authenticationResponse)
         return accessToken
       })
@@ -492,7 +510,7 @@ async function getData(url = '', headers) {
     return error;
   })  
   .then(response => response.json())
-  .then(response=>restResponse(response))
+  .then(response=>parseHttpResponse(response))
   .then((getResponse) => {
     return getResponse; // return response
   })
@@ -533,7 +551,7 @@ async function postData(url = '', postData=null) {
             return errorObject;
           })
           .then(response => response.json())
-          .then(response=>restResponse(response))
+          .then(response=>parseHttpResponse(response))
           .then((fetchResult) => {
             if (postDebug) {
               let responseString = JSON.stringify(fetchResult)
@@ -594,29 +612,28 @@ async function postDataToPassCreator(url = '', postData=null) {
   }
 }
 
-function restResponse(result) {
-  if (postDebug) console.log('restResponse called')
-
-  if ( (result.hasOwnProperty('body') && !result.body.hasOwnProperty('errorcode'))
-    || (!result.hasOwnProperty('body') && !result.hasOwnProperty('errorcode'))     
-    ){
-      if (postDebug) console.log('Success data: ')
-      if (postDebug) console.table(result)
+function parseHttpResponse(result) {
+  let d = new Date();
+  let time = d.getTime()
+  let expireDate = new Date(tokenExpiry).getTime()
+  if (postDebug){
+    console.log('parseHttpResponse : (d) | '+d)
+    console.log('parseHttpResponse : (tokenExpiry) | '+tokenExpiry)
+    console.log('parseHttpResponse : New (expireDate) | '+expireDate)
+    console.log('parseHttpResponse : (time>tokenExpiry) isValid | '+(time>tokenExpiry ? 'true':'false'))
+    console.log('parseHttpResponse result:'+JSON.stringify(result))
+    }
+  if (result.hasOwnProperty('errorcode')){
+    if (result.hasOwnProperty('message')){
+      return result.message
+    }else{
+      return 'Error: '+result.errorcode
+      }
   }else{
-      let restMessage = 'Rest Error'
-      if (postDebug && result.hasOwnProperty('body') && result.body.hasOwnProperty('errorcode')){
-          let errorCode = ' | Successful error: '+result.body.errorcode
-          restMessage += errorCode
-      }
-      if (postDebug && result.hasOwnProperty('body') && result.body.hasOwnProperty('message')){ 
-          let errorMessage = ' | Successful error: '+result.body.errorcode
-          restMessage += errorMessage
-      }
-      if (postDebug) console.log(restMessage)
+    return result
   }
-  return result
+  
 }
-
 app.listen(PORT, function () {
   console.log(`App listening on port ${PORT}`);
 });

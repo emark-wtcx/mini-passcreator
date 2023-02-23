@@ -780,12 +780,12 @@ const jbApp = {
                     console.log(errorCode)
                 }
                 if (debug && result.body.hasOwnProperty('message')){ 
-                    let errorMessage = ' | Successful error: '+result.body.errorcode
+                    let errorMessage = ' | Successful error: '+result.body.message
                     restMessage += errorMessage
                     console.log(errorMessage)
                 }
             }else{
-                restMessage += ' no body'
+                restMessage += ' | No Body'
             }
             return restMessage
         }
@@ -802,6 +802,13 @@ const jbApp = {
         }
     },
 
+    checkDeExists:function(deName=''){
+        if (deName==''){
+            deName = 'passCreator_configuration'
+        }                        
+        checkResults = jbApp.getDataExtensionRest(deName);
+        return checkResults;
+    },
     
 /**
  * SOAP functionality 
@@ -826,7 +833,13 @@ const jbApp = {
          * Envelope Wrapper
          */
         let soapOpening = `<?xml version="1.0" encoding="UTF-8"?>
-    <soapenv:Body>
+        <s:envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+        <s:header>
+          <fueloauth>
+            ${accessToken}
+          </fueloauth>
+        </s:header>
+        <s:body>
         <CreateRequest xmlns="http://exacttarget.com/wsdl/partnerAPI">
             <Options></Options>
             <Objects xmlns:ns1="http://exacttarget.com/wsdl/partnerAPI" xsi:type="ns1:DataExtension">`
@@ -951,6 +964,7 @@ const jbApp = {
         return this.soapBuildDe(details,fields)
     },
 
+
 /**
  * Testing functionality 
  */
@@ -979,9 +993,9 @@ const jbApp = {
                 case 'readSendable':
                     $(elem).on('click',function(){
                         let customerKey = 'testing_dale'
-                        var testResults = 'Test successful'
-                        var testResults = jbApp.getDataExtensionRest(customerKey)
-                        jbApp.pageHtml = testResults
+                        let testResults = 'Test successful'
+                        testResults = jbApp.getDataExtensionRest(customerKey)
+                        jbApp.pageHtml = JSON.stringify(testResults)
 
                         // Execute Action
                         jbApp.processPageChange(refreshPage)
@@ -993,29 +1007,56 @@ const jbApp = {
                     console.log('Bound '+action) 
                 break;  
 
+                case 'getLogTable':
+                    $(elem).on('click',function(){
+                        let customerKey = 'passcreator_success_log'
+                        let tableExists = jbApp.checkDeExists(customerKey)
+                        if (tableExists){
+                            let message = 'table found'
+                            console.log(message)
+                            jbApp.pageHtml = message
+                        }else{      
+                            let message = 'table not found'                      
+                            console.log(message)
+                            jbApp.pageHtml = message
+                        }
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+
+                    });                
+                    console.log('Bound '+action) 
+                break; 
+
                 case 'getConfiguration':
                     $(elem).on('click',async function(){
-                        let customerKey = 'passCreator_configuration'
-                        var testResults = ''                        
-                        testResults = await jbApp.getDataExtensionRest(customerKey).then((testResults)=>{
-                            return testResults
-                        });
+                        let customerKey = 'passCreator_configuration'                        
+                        let table = await jbApp.getDataExtensionRest(customerKey)   
                         
-                        if (typeof testResults !== 'string'){
-                            jbApp.pageHtml = JSON.stringify(testResults)
-                        }else{
-                            jbApp.pageHtml = testResults
+                        if (table.hasOwnProperty('body') && table.body){
+                            let message = 'table found'
+                            console.log(message)
+                            jbApp.pageHtml = message
+                        }else{      
+                            let message = 'table not found'                      
+                            console.log(message)
+                            jbApp.pageHtml = message
                         }
 
                         // Execute Action
                         jbApp.processPageChange(refreshPage)
                         
                         // Accounce Click
-                        console.log('clicked:getConfiguration | '+jbApp.action+' ('+typeof testResults+')')
+                        console.log('clicked:getConfiguration | '+jbApp.action+' ('+typeof table+')')
 
                     });                
                     console.log('Bound '+action) 
                 break; 
+
+                case 'buildTable':
+                    let configXml = getConfigXml()
+                    console.log('clicked:buildTable | got: '+configXml)
+                    console.log('Bound '+action) 
+                break;
 
                 case 'authenticate':
                     $(elem).on('click',function(){
