@@ -8,7 +8,7 @@ const connection = new Postmonger.Session();
 const debug = true;
 const br = "\n"
 const jbApp = { 
-    version:1.7,
+    version:1.8,
     apiKey:null,
     isTest:false, 
     isLocalhost:(location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
@@ -75,50 +75,6 @@ const jbApp = {
     },
     setPassId:function(id){
         jbApp.passId = '{{'+id+'}}';
-    },
-    parseEndpoints:function(data){
-        if (data.hasOwnProperty('fuelapiRestHost')){
-            jbApp.restUrl = data.fuelapiRestHost
-        }
-        if (data.hasOwnProperty('restHost')){
-            let protocol = 'https://'
-            jbApp.restHost = protocol+data.restHost
-            jbApp.authUrl = jbApp.restHost.replace('rest','auth')+'/v2/token'
-        }
-    },
-    parseSchema:function(){
-        if (debug) console.log('parseSchema')
-        if (
-            jbApp.hasOwnProperty('schema')
-            && jbApp.schema.length>0
-            ){
-                if (debug) console.log('schema: '+JSON.stringify(jbApp.schema))
-                for (let i in jbApp.schema){
-                    let schemaItem = jbApp.schema[i]
-                    let fieldName = schemaItem.name
-                    let fieldTag = schemaItem.key
-
-                    if (schemaItem.type == 'Text'
-                    && schemaItem.name != 'passId'
-                    && schemaItem.length == null){
-                        jbApp.deStructure[fieldName] = '{{'+fieldTag+'}}'
-                    }else{
-                        if (schemaItem.name == 'passId'){                            
-                            jbApp.setPassId(fieldTag)
-                        }
-                    }
-                    if (debug) console.log('['+fieldName+']:'+fieldTag)
-                }
-            }
-        if (debug) console.log('jbApp.deStructure: ')
-        if (debug) console.table(jbApp.deStructure)
-        if (debug) console.log('jbApp.deStructure.length: '+jbApp.deStructure.toString().length)
-
-        if (!jbApp.isLocalhost && typeof connection !== 'undefined'){
-            if (debug) console.table(connection)
-        }else{
-            if (debug) console.table('Localhost or Connection not availble')
-        }         
     },
     getCurrentStep:function(){
         return jbApp.currentStep
@@ -715,21 +671,61 @@ const jbApp = {
          * */
         jbApp.bindMenu(connection)
 
-
         // Announce ready
         if (debug) console.log('App Loading Complete')
         window.jbApp = jbApp
-        /*
-        if (jbApp.apiKey == null){
-            jbApp.pageHtml = jbApp.getHtml('config')
-        }else{
-            jbApp.pageHtml = jbApp.getHtml('home')
-        }
-        */
+        
         jbApp.pageHtml = jbApp.getHtml('home')
         jbApp.processPageChange(1)
     },
-    
+/**
+ * Journey Builder
+ */
+
+    parseEndpoints:function(data){
+        if (data.hasOwnProperty('fuelapiRestHost')){
+            jbApp.restUrl = data.fuelapiRestHost
+        }
+        if (data.hasOwnProperty('restHost')){
+            let protocol = 'https://'
+            jbApp.restHost = protocol+data.restHost
+            jbApp.authUrl = jbApp.restHost.replace('rest','auth')+'/v2/token'
+        }
+    },
+    parseSchema:function(){
+        if (debug) console.log('parseSchema')
+        if (
+            jbApp.hasOwnProperty('schema')
+            && jbApp.schema.length>0
+            ){
+                if (debug) console.log('schema: '+JSON.stringify(jbApp.schema))
+                for (let i in jbApp.schema){
+                    let schemaItem = jbApp.schema[i]
+                    let fieldName = schemaItem.name
+                    let fieldTag = schemaItem.key
+
+                    if (schemaItem.type == 'Text'
+                    && schemaItem.name != 'passId'
+                    && schemaItem.length == null){
+                        jbApp.deStructure[fieldName] = '{{'+fieldTag+'}}'
+                    }else{
+                        if (schemaItem.name == 'passId'){                            
+                            jbApp.setPassId(fieldTag)
+                        }
+                    }
+                    if (debug) console.log('['+fieldName+']:'+fieldTag)
+                }
+            }
+        if (debug) console.log('jbApp.deStructure: ')
+        if (debug) console.table(jbApp.deStructure)
+        if (debug) console.log('jbApp.deStructure.length: '+jbApp.deStructure.toString().length)
+
+        if (!jbApp.isLocalhost && typeof connection !== 'undefined'){
+            if (debug) console.table(connection)
+        }else{
+            if (debug) console.table('Localhost or Connection not availble')
+        }         
+    },
     
 /**
  * REST functionality 
@@ -995,12 +991,12 @@ const jbApp = {
                 break;  
 
                 case 'getLogTable':
-                    $(elem).on('click',function(){
+                    $(elem).on('click',async function(){
                         // Nominate table
                         let customerKey = 'passcreator_success_log'
 
                         // Request Table
-                        let table = jbApp.checkDeExists(customerKey)
+                        let table = await jbApp.checkDeExists(customerKey)
                         
                         // Execute Action                        
                         jbApp.pageHtml = JSON.stringify(table.body)

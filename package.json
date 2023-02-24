@@ -1,6 +1,6 @@
 {
   "name": "wpp_passcreator",
-  "version": "1.7",
+  "version": "1.8",
   "description": "WPP Integration for Pass Creator",
   "main": "index.js",
   "scripts": {
