@@ -7,7 +7,6 @@ const connection = new Postmonger.Session();
  */
 const debug = true;
 const br = "\n"
-
 const jbApp = { 
     version:1.7,
     apiKey:null,
@@ -891,7 +890,7 @@ const jbApp = {
         return SOAP+soapClosing;
     },
 
-    getConfigXml:function(){
+    buildConfigXml:function(){
         let details = {
             CustomerKey:'passCreator_configuration',
             Name:'passCreator_configuration',
@@ -918,7 +917,7 @@ const jbApp = {
         return this.soapBuildDe(details,fields)
     },
 
-    getLogXml:function(logName){
+    buildLogXml:function(logName){
         let details = {
             CustomerKey:logName,
             Name:logName,
@@ -977,15 +976,15 @@ const jbApp = {
             switch(action){
 
                 case 'readSendable':
-                    $(elem).on('click',function(){
+                    $(elem).on('click',async function(){
                         // Nominate table
                         let customerKey = 'testing_dale'
 
                         // Request Table
-                        let table = jbApp.getDataExtensionRest(customerKey)
+                        let table = await jbApp.getDataExtensionRest(customerKey)
 
                         // Execute Action                        
-                        jbApp.pageHtml = JSON.stringify(table)
+                        jbApp.pageHtml = JSON.stringify(table.body)
                         jbApp.processPageChange(refreshPage)
                         
                         // Accounce Click
@@ -1004,7 +1003,7 @@ const jbApp = {
                         let table = jbApp.checkDeExists(customerKey)
                         
                         // Execute Action                        
-                        jbApp.pageHtml = JSON.stringify(table)
+                        jbApp.pageHtml = JSON.stringify(table.body)
                         jbApp.processPageChange(refreshPage)
 
                     });                
@@ -1015,7 +1014,7 @@ const jbApp = {
                     $(elem).on('click',async function(){
                         let customerKey = 'passCreator_configuration'                        
                         let table = await jbApp.getDataExtensionRest(customerKey)
-                        jbApp.pageHtml = JSON.stringify(table)
+                        jbApp.pageHtml = JSON.stringify(table.body)
 
                         // Execute Action
                         jbApp.processPageChange(refreshPage)
@@ -1082,7 +1081,7 @@ const jbApp = {
 
                 case 'getXml':
                     $(elem).on('click',function(){
-                        var testResults = jbApp.getConfigXml()
+                        var testResults = jbApp.buildConfigXml()
                         testResults = testResults.replaceAll('<','&lt;').replaceAll('>','&gt;')
                         jbApp.pageHtml = '<pre>'+testResults+'</pre>'
 
@@ -1098,7 +1097,7 @@ const jbApp = {
 
                 case 'getLogXml':
                     $(elem).on('click',function(){
-                        var testResults = jbApp.getLogXml('passcreator_success_log')
+                        var testResults = jbApp.buildLogXml('passcreator_success_log')
                         testResults = testResults.replaceAll('<','&lt;').replaceAll('>','&gt;')
                         jbApp.pageHtml = '<pre>'+testResults+'</pre>'
 

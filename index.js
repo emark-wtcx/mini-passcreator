@@ -3,17 +3,32 @@ const app = express();
 const path = require('path');
 var logDe = 'passcreator_success_log'
 var errorDe = 'passcreator_error_log'
+
 var testUrl = 'https://eo2mifqm9yelk7e.m.pipedream.net'
 var testUrl = '/execute'
-var tokenUrl = 'https://mc3tb2-hmmbngz-85h36g8xz1b4m.auth.marketingcloudapis.com/v2/token'
+
+var protocol = 'https://'
+var subdomain = 'mc3tb2-hmmbngz-85h36g8xz1b4m'
+
+var isLocalhost = null
 
 var HOME_DIR = '/';
 var postDebug = true
 var dataType = 'application/json'
-var access_token = null /* Raw token */
-var accessToken = null /* Parsed token */
+
+/* Auth domain for REST */
+// Raw token 
+var access_token = null
+// Parsed token 
+var accessToken = null 
+// Token Expiry
 var tokenExpiry = null;
-var restDomain = null /* REST domain for logging */
+// Token Domain
+var tokenUrl = '/v2/token'
+var authDomain = protocol+subdomain+'.auth.marketingcloudapis.com'+tokenUrl 
+
+ /* REST domain */
+var restDomain = protocol+subdomain+'.rest.marketingcloudapis.com'
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
@@ -270,8 +285,7 @@ async function postMessage(data){
 async function getDataExtension(customerKey){
   // Request setup
   var data = {}
-  let dePath = 'https://www.exacttargetapis.com/data/v1/customobjectdata/key/{{dataextension}}/rowset/'
-  data.url = dePath.replace('{{dataextension}}',customerKey)
+  data.url = restDomain+'/data/v1/customobjectdata/key/'+customerKey+'/rowset/'
 
   // Request content
   if (postDebug){
@@ -280,50 +294,48 @@ async function getDataExtension(customerKey){
   }
   
   // Perform Request
-  var ajaxResponse = await getAccessToken().then(async (accessToken) => {
-    if (postDebug){
-      console.log('getDataExtension accessToken: ')
-      console.table(accessToken)
+  var accessToken = await getAccessToken();
+  if (postDebug){
+    console.log('getDataExtension accessToken: ')
+    console.table(accessToken)
+  }
+
+  /* Get DE Headers */
+  let restHeaders = {
+    "Accept": dataType,
+    "Content-Type": dataType,
+    "Authorization":accessToken
+  }
+  if (postDebug){
+    console.log('getDataExtension Headers: ')
+    console.table(restHeaders)
+    console.log('getDataExtension Endpoint: '+data.url)
+  }
+
+  //
+  // Request Data via getData function
+  //
+  var getDataResponse = await getData(data.url,restHeaders)
+    .then((dataResponse) => {
+      //
+      // Return result
+      //
+      return dataResponse        
+    }).catch((error) => {
+      console.log('getDataExtension Error:'+JSON.stringify(error))
+      //logError(error)
+      return JSON.stringify(error)
+    });
+
+  if (postDebug){
+    console.log('getDataExtension getDataResponse: ')
+    console.table(getDataResponse)
     }
 
-    /* Get DE Headers */
-    let restHeaders = {
-      "Accept": dataType,
-      "Content-Type": dataType,
-      "Authorization":accessToken
-    }
-    if (postDebug){
-      console.log('getDataExtension Headers: ')
-      console.table(restHeaders)
-      console.log('getDataExtension Endpoint: '+data.url)
-    }
-
-    //
-    // Request Data via getData function
-    //
-    var getDataResponse = await getData(data.url,restHeaders)
-      .then((dataResponse) => {
-        //
-        // Return result
-        //
-        return dataResponse        
-      }).catch((error) => {
-        console.log('getDataExtension Error:'+JSON.stringify(error))
-        //logError(error)
-        return JSON.stringify(error)
-      });
-
-    if (postDebug){
-      console.log('getDataExtension getDataResponse: ')
-      console.table(getDataResponse)
-      }
-
-    //
-    // Return response  
-    //
-    return getDataResponse; 
-    })
-  return ajaxResponse
+  //
+  // Return response  
+  //
+  return getDataResponse; 
 }
 
 async function logData(message,data={}){
@@ -401,6 +413,12 @@ function refreshToken(data){
   }
   if (data.hasOwnProperty('rest_instance_url')){
     restDomain = data.rest_instance_url
+
+    /* Isoltate domain parts */
+    let domainSplit = restDomain.split('//')
+    protocol = domainSplit[0]+'//'
+    let dotSplit = domainSplit[1].split('.')
+    subdomain = dotSplit[0]
   }
   if (data.hasOwnProperty('auth_instance_url')){
     authDomain = data.auth_instance_url
@@ -425,7 +443,7 @@ function tokenValid(){
     console.log('Checking: (time) '+time)
     let tokenValid = (parseInt(tokenExpiry)>parseInt(time)) ? true : false
     if (postDebug){
-      console.log('Checking: (tokenExpiry>time) '+tokenValid)
+      console.log('Checking: token is valid? '+tokenValid)
     }
     //
     // If the expiry time is lower than 
@@ -440,7 +458,7 @@ function tokenValid(){
 async function getAccessToken(){
   if (!tokenValid()){
     if (postDebug) console.log('Token expired: Requesting remote authentication')
-    var authUrl = tokenUrl
+    var authUrl = authDomain
     let authBody = {
       "grant_type": "client_credentials",
       "client_id": "xja05pcunay325cyg6odcyex",
@@ -499,7 +517,7 @@ async function getData(url = '', headers) {
     redirect: 'follow', 
     referrerPolicy: 'no-referrer'
   }).then(response => response.json())
-    .then(response=>parseHttpResponse(response))
+    .then((jsonResponse)=>parseHttpResponse((jsonResponse)))
     .then((httpResponse) => {
       // return response
       return httpResponse; 
@@ -538,10 +556,10 @@ async function postData(url = '', postData=null) {
             headers: headers,
             body: JSON.stringify(postData)
           }).then(response => response.json())
-            .then(response=>parseHttpResponse(response))
-            .then((fetchResult) => {
+            .then((jsonResponse)=>parseHttpResponse(jsonResponse))
+            .then((httpResponse) => {
               if (postDebug) {
-                let responseString = JSON.stringify(fetchResult)
+                let responseString = JSON.stringify(httpResponse)
                 console.log('(postData) Backend responseString:'+responseString);              
               }
               return fetchResult; // return response
@@ -635,6 +653,8 @@ function parseHttpResponse(result) {
 
   if (result.hasOwnProperty('status')){
     messageResponse.status = result.status
+  }else{
+    messageResponse.status = 200
   }
   
   if (result.hasOwnProperty('errorcode')){
@@ -652,4 +672,5 @@ function parseHttpResponse(result) {
 }
 app.listen(PORT, function () {
   console.log(`App listening on port ${PORT}`);
+  console.log('localhost: '+isLocalhost)
 });
