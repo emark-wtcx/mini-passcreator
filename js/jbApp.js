@@ -9,6 +9,9 @@ const debug = true;
 const br = "\n"
 const jbApp = { 
     version:1.8,
+    configurationTable:'passCreator_configuration',
+    configTable:null,
+    configExists:null,
     apiKey:null,
     isTest:false, 
     isLocalhost:(location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
@@ -267,6 +270,14 @@ const jbApp = {
         let apiKey = $('#apiKey').val();
         if (apiKey.length == 80){
             jbApp.apiKey = apiKey
+            //
+            // Save configuration
+            //
+            let configTableXml = jbApp.buildConfigXml()
+
+            //
+            // Redirect to home 
+            // 
             jbApp.homeButtonAction()
         }else{
             alert('The API key should be 80 characters')
@@ -600,7 +611,7 @@ const jbApp = {
         //
         // Require API Key
         //
-        if (jbApp.apiKey == null){
+        if (jbApp.configExists !== true){
             page = 'config'
             refreshPage = true
         }else{
@@ -649,7 +660,15 @@ const jbApp = {
     },
     translatePage:function(html){
         // To Do
-    },    
+    },   
+    isJson:function(input){
+        try {
+            JSON.parse(str);
+        } catch (e) {
+            return false;
+        }
+        return true;
+    },
     load:function(connection){
         if (debug) console.log('Loading jbApp')
         // If JourneyBuilder available
@@ -671,6 +690,9 @@ const jbApp = {
          * */
         jbApp.bindMenu(connection)
 
+        // Perform install test
+        jbApp.testConfigurationExists()
+
         // Announce ready
         if (debug) console.log('App Loading Complete')
         window.jbApp = jbApp
@@ -678,18 +700,23 @@ const jbApp = {
         jbApp.pageHtml = jbApp.getHtml('home')
         jbApp.processPageChange(1)
     },
+
 /**
  * Journey Builder
  */
 
     parseEndpoints:function(data){
+        let protocol = 'https://'
         if (data.hasOwnProperty('fuelapiRestHost')){
             jbApp.restUrl = data.fuelapiRestHost
         }
         if (data.hasOwnProperty('restHost')){
-            let protocol = 'https://'
             jbApp.restHost = protocol+data.restHost
             jbApp.authUrl = jbApp.restHost.replace('rest','auth')+'/v2/token'
+        }
+        if (data.hasOwnProperty('soapHost')){
+            jbApp.soapHost = protocol+data.soapHost
+            jbApp.soapUrl = jbApp.soapHost+'/Service.asmx'
         }
     },
     parseSchema:function(){
@@ -725,6 +752,92 @@ const jbApp = {
         }else{
             if (debug) console.table('Localhost or Connection not availble')
         }         
+    },
+
+    testConfigurationExists:async function(){
+        let tableStaus = await jbApp.checkDeExists(jbApp.configurationTable)
+        console.log('testConfigurationExists: '+tableStaus.toString())
+        jbApp.configExists = tableStaus
+        return tableStaus        
+    },
+    testInstall:async function(){
+        if (jbApp.configExists){
+            console.log('Configuration table exists')
+            // Check for API Key
+            // if key is configured return true
+            // else 
+            // populate table
+            // return
+        }else{
+            console.log('Configuration table doesn\'t exist')
+            let test = false
+            let configXml = jbApp.buildConfigXml()
+            
+            let type = {dataType:'text',contentType:'text/xml'}
+            //let parsedXml = jQuery.parseXML(configXml)
+            //console.log('parsedXml: '+parsedXml)
+            if (!test){
+                let ajaxResponse = await jbApp.callBackend('/install',configXml)
+                console.log('Install server response: '+JSON.stringify(ajaxResponse))
+            }else{                
+                console.log('configXml: '+configXml)
+
+                if (jbApp.isJson(configXml) == true){
+                    configXml = JSON.stringify(configXml)
+                    console.log('callBackend: JSON.stringify()')
+                }else{                    
+                    console.log('callBackend: isn\'t JSON')
+                } 
+                if (typeof configXml !== 'string'){
+                    configXml = configXml.toString()
+                    console.log('callBackend: body.toString()')
+                }else{
+                    console.log('callBackend: is already a string')
+                }
+                }
+            // Populate config table
+            // Install log
+            // Install error log
+        }
+    },
+
+    callBackend:async function(url=null,body=null,type={dataType:'json',contentType:'application/json'}){        
+        /* DataType Setup */
+        let dataType = ''
+        let contentType = ''
+        if (type.hasOwnProperty('contentType') && type.hasOwnProperty('dataType')){
+            contentType = type.contentType
+            dataType = type.dataType
+        }else{
+            if (debug){
+                console.log('Call backend, Type error')
+                return false;
+            }
+        }
+
+        let xml=body
+        let payload = {"soap":xml}     
+        
+        if (debug){
+            console.log('types: Data: '+dataType+' | Content-Type: '+contentType)        
+            console.log('callBackend: typeof body | '+typeof payload)
+            console.table(payload)
+            }
+        let ajaxResponse = await $.ajax({
+            type: "POST",
+            url: url,
+            contentType: contentType,
+            dataType: dataType,
+            async:false,
+            data: JSON.stringify(payload),            
+            success: function(result){           
+                return jbApp.restResponse(result)
+            },
+            fail:function(result){           
+                Alert(JSON.stringify(result))
+            }
+        });
+        return ajaxResponse;
     },
     
 /**
@@ -783,12 +896,9 @@ const jbApp = {
         }
     },
 
-    checkDeExists:function(deName=''){
-        if (deName==''){
-            deName = 'passCreator_configuration'
-        }                        
-        checkResults = jbApp.getDataExtensionRest(deName);
-        return checkResults;
+    checkDeExists:async function(customerKey=''){        
+        let table = await jbApp.getDataExtensionRest(customerKey)
+        return (table.status == 200) ? true : false  
     },
     
 /**
@@ -814,20 +924,21 @@ const jbApp = {
          * Envelope Wrapper
          */
         let soapOpening = `<?xml version="1.0" encoding="UTF-8"?>
-        <s:envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
-        <s:header>
-          <fueloauth>
-            ${accessToken}
-          </fueloauth>
-        </s:header>
-        <s:body>
-        <CreateRequest xmlns="http://exacttarget.com/wsdl/partnerAPI">
-            <Options></Options>
-            <Objects xmlns:ns1="http://exacttarget.com/wsdl/partnerAPI" xsi:type="ns1:DataExtension">`
+<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:u="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+    <s:header>
+        <a:Action s:mustUnderstand="1">Create</a:Action>
+        <a:To s:mustUnderstand="1">{{url}}Service.asmx</a:To>
+        <fueloauth xmlns="http://exacttarget.com">{{access_token}}</fueloauth>
+    </s:header>
+    <s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+    <CreateRequest xmlns="http://exacttarget.com/wsdl/partnerAPI">
+        <Options></Options>
+        <Objects xsi:type="DataExtension">` 
         let soapClosing = `
             </Objects>
         </CreateRequest>
-    </soapenv:Body>`
+    </s:Body>
+</s:Envelope>`
 
         /**
          * Sendable fields
@@ -853,11 +964,20 @@ const jbApp = {
         if (fields.length > 0){
             for (var f in fields){
                 let field = fields[f]                
-                let soapField='<Field>'
+                let soapField='<Field xsi:type="ns2:DataExtensionField">'
                 for(var x in field){
                     let prop = field[x]
                     soapField += jbApp.soapBuildTag(x,prop)
                 }
+
+                // PK & Nullable application
+                let primaryKey = (field.PrimaryKey===true) ? true:false;
+                let required = (field.Required===true) ? true:false;
+                
+                soapField+=br+`<IsRequired>${required}</IsRequired>`
+                soapField+=br+`<IsPrimaryKey>${primaryKey}</IsPrimaryKey>`
+                // End PK & Nullable application
+
                 soapField+=br+'</Field>'
                 mainFields += soapField+br
             }
@@ -888,8 +1008,8 @@ const jbApp = {
 
     buildConfigXml:function(){
         let details = {
-            CustomerKey:'passCreator_configuration',
-            Name:'passCreator_configuration',
+            CustomerKey:jbApp.configurationTable,
+            Name:jbApp.configurationTable,
             isSendable:false
         }
         let fields = [
@@ -897,17 +1017,22 @@ const jbApp = {
             CustomerKey:'Id',
             Name:'Id',
             FieldType:'Text',
-            Length:36
-        },
-        {
+            Length:36,
+            Required:true,
+            PrimaryKey:true
+        },{
             CustomerKey:'APIKey',
             Name:'APIKey',
             FieldType:'Text',
-            Length:80
+            Length:80,
+            Required:false,
+            PrimaryKey:false
         },{
             CustomerKey:'DateModified',
             Name:'DateModified',
-            FieldType:'Date'
+            FieldType:'Date',
+            Required:false,
+            PrimaryKey:false
         },
         ]
         return this.soapBuildDe(details,fields)
@@ -924,27 +1049,34 @@ const jbApp = {
             CustomerKey:'Id',
             Name:'Id',
             FieldType:'Text',
-            Length:36
+            Length:36,
+            Required:true,
+            PrimaryKey:true
         },{
             CustomerKey:'DateModified',
             Name:'DateModified',
-            FieldType:'Date'
+            FieldType:'Date',
+            Required:false,
+            PrimaryKey:false
         },
         {
             CustomerKey:'Message',
             Name:'Message',
             FieldType:'Text',
-            Length:4000
+            Length:4000,
+            Required:false,
+            PrimaryKey:false
         },
         {
             CustomerKey:'MetaData',
             Name:'MetaData',
-            FieldType:'Text'
+            FieldType:'Text',
+            Required:false,
+            PrimaryKey:false
         }
         ]
         return this.soapBuildDe(details,fields)
     },
-
 
 /**
  * Testing functionality 
@@ -1107,6 +1239,12 @@ const jbApp = {
                     console.log('Bound '+action) 
                 break; 
 
+                case 'testInstall':                    
+                    $(elem).on('click',function(){
+                        jbApp.testInstall()
+                    });
+                    console.log('Bound '+action) 
+                    break;
                 default:
                     $(elem).on('click',function(){
                         jbApp.action = null
@@ -1183,5 +1321,8 @@ const jbApp = {
         let xml = jbApp.getConfigXml()
         return xml;
     }
+
+    
+
 }
 jbApp.load(connection)

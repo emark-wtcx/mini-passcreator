@@ -17,18 +17,17 @@ var postDebug = true
 var dataType = 'application/json'
 
 /* Auth domain for REST */
-// Raw token 
-var access_token = null
-// Parsed token 
-var accessToken = null 
-// Token Expiry
-var tokenExpiry = null;
+// Raw properties
+var access_token,accessToken,tokenExpiry,MID = null
+
 // Token Domain
 var tokenUrl = '/v2/token'
 var authDomain = protocol+subdomain+'.auth.marketingcloudapis.com'+tokenUrl 
 
- /* REST domain */
+/* REST domain */
 var restDomain = protocol+subdomain+'.rest.marketingcloudapis.com'
+/* SOAP domain */
+var soapDomain = protocol+subdomain+'.soap.marketingcloudapis.com/Service.asmx'
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
@@ -90,6 +89,38 @@ app.post('/getde',async function (req, res, next) {
     return res.json(getServerResponse)
     })
     return getde
+  }else{
+    return {'message':'No data submitted'}
+  }
+})
+
+/**
+ * Test requesting an authentication token
+ * SOAP Envellope for table expected
+ */
+app.post('/install',async function (req, res, next) { 
+  if (postDebug) console.log('/install route called ') 
+  if (req != null){
+    let soap = req.body.soap
+    if (!soap){
+      console.log('No SOAP received')
+      console.table(req.toString())
+      return false
+    }else{
+      soap = req.body.soap
+      console.log('SOAP received: '+soap)
+    }
+    if (postDebug){
+      console.log('Install Request: ')
+      console.table(req.body.data)
+      console.log('Decoded Request: ')
+      console.table(decodeURI(req.body.data))
+    }
+    let soapResponse = await soapRequest(soap)
+      .then((getSoapResponse) => {
+        return res.json(getSoapResponse)
+        })    
+    return soapResponse;
   }else{
     return {'message':'No data submitted'}
   }
@@ -423,6 +454,9 @@ function refreshToken(data){
   if (data.hasOwnProperty('auth_instance_url')){
     authDomain = data.auth_instance_url
   }
+  if (data.hasOwnProperty('soap_instance_url')){
+    soapDomain = data.soap_instance_url
+  }
   if (data.hasOwnProperty('expires_in')){    
     // Caluclate new expiry time
     tokenExpiry = parseInt(time)+(parseInt(data.expires_in)*1000)
@@ -562,7 +596,7 @@ async function postData(url = '', postData=null) {
                 let responseString = JSON.stringify(httpResponse)
                 console.log('(postData) Backend responseString:'+responseString);              
               }
-              return fetchResult; // return response
+              return httpResponse; // return response
             }).catch(error => {
               return handleError(error);
             });  
@@ -572,6 +606,50 @@ async function postData(url = '', postData=null) {
     );    
     return postResponse; // collect & return response
   }
+}
+
+async function soapRequest(soapEnv=''){
+  if (soapEnv==null || soapEnv=='' || soapEnv=={}){
+    console.log('No SOAP provided')
+    return false;
+  }
+  // Setup call
+  let accessToken = await getAccessToken();
+  soapEnv = soapEnv.replace('{{access_token}}',access_token)
+  soapEnv = soapEnv.replace('{{url}}',soapDomain)
+  soapEnv = soapEnv.replace('{{mid}}',MID)
+
+  let url = soapDomain
+  let headers = {
+    "Accept": "*/*",
+    "Content-Type": 'application/xml',
+    "Authorization":accessToken
+  }
+  if (postDebug){
+    console.log('(soapRequest) url:'+url)
+    console.log('(soapRequest) headers: '+JSON.stringify(headers))
+    console.log('(soapRequest) soapEnv: '+soapEnv)
+  }
+  return {'soapEnv':soapEnv};
+  /* Testing
+  // Perform Call
+  let soapRequest = fetch(url, {
+    method: 'POST', 
+    headers: headers,
+    body: JSON.stringify(soapEnv)
+  }).then(response => response.json())
+    .then((jsonResponse)=>parseHttpResponse(jsonResponse))
+    .then((httpResponse) => {
+      if (postDebug) {
+        let responseString = JSON.stringify(httpResponse)
+        console.log('(soapRequest) Backend responseString:'+responseString);              
+      }
+      return httpResponse; // return response
+    }).catch((error) => {
+      return handleError(error);
+    });  
+  return soapRequest;
+    */
 }
 
 /**
@@ -656,15 +734,14 @@ function parseHttpResponse(result) {
   }else{
     messageResponse.status = 200
   }
-  
   if (result.hasOwnProperty('errorcode')){
     if (result.hasOwnProperty('message')){
-      messageResponse.body = result.message
-      return messageResponse
-    }else{
-      messageResponse.body = 'Error: '+result.errorcode
-      return messageResponse
+        messageResponse.body = result.message
       }
+    if (result.hasOwnProperty('errorcode')){
+        messageResponse.status = result.errorcode
+        }
+    return messageResponse
   }else{
     messageResponse.body = result
     return messageResponse
