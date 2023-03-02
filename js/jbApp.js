@@ -925,11 +925,11 @@ const jbApp = {
          */
         let soapOpening = `<?xml version="1.0" encoding="UTF-8"?>
 <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:u="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
-    <s:header>
+    <s:Header>
         <a:Action s:mustUnderstand="1">Create</a:Action>
         <a:To s:mustUnderstand="1">{{url}}Service.asmx</a:To>
         <fueloauth xmlns="http://exacttarget.com">{{access_token}}</fueloauth>
-    </s:header>
+    </s:Header>
     <s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
     <CreateRequest xmlns="http://exacttarget.com/wsdl/partnerAPI">
         <Options></Options>
@@ -964,18 +964,11 @@ const jbApp = {
         if (fields.length > 0){
             for (var f in fields){
                 let field = fields[f]                
-                let soapField='<Field xsi:type="ns2:DataExtensionField">'
+                let soapField='<Field>'
                 for(var x in field){
                     let prop = field[x]
                     soapField += jbApp.soapBuildTag(x,prop)
                 }
-
-                // PK & Nullable application
-                let primaryKey = (field.PrimaryKey===true) ? true:false;
-                let required = (field.Required===true) ? true:false;
-                
-                soapField+=br+`<IsRequired>${required}</IsRequired>`
-                soapField+=br+`<IsPrimaryKey>${primaryKey}</IsPrimaryKey>`
                 // End PK & Nullable application
 
                 soapField+=br+'</Field>'
@@ -1018,21 +1011,21 @@ const jbApp = {
             Name:'Id',
             FieldType:'Text',
             Length:36,
-            Required:true,
-            PrimaryKey:true
+            isRequired:true,
+            isPrimaryKey:true
         },{
             CustomerKey:'APIKey',
             Name:'APIKey',
             FieldType:'Text',
             Length:80,
-            Required:false,
-            PrimaryKey:false
+            isRequired:false,
+            isPrimaryKey:false
         },{
             CustomerKey:'DateModified',
             Name:'DateModified',
             FieldType:'Date',
-            Required:false,
-            PrimaryKey:false
+            isRequired:false,
+            isPrimaryKey:false
         },
         ]
         return this.soapBuildDe(details,fields)
@@ -1050,29 +1043,29 @@ const jbApp = {
             Name:'Id',
             FieldType:'Text',
             Length:36,
-            Required:true,
-            PrimaryKey:true
+            isRequired:true,
+            isPrimaryKey:true
         },{
             CustomerKey:'DateModified',
             Name:'DateModified',
             FieldType:'Date',
-            Required:false,
-            PrimaryKey:false
+            isRequired:false,
+            isPrimaryKey:false
         },
         {
             CustomerKey:'Message',
             Name:'Message',
             FieldType:'Text',
             Length:4000,
-            Required:false,
-            PrimaryKey:false
+            isRequired:false,
+            isPrimaryKey:false
         },
         {
             CustomerKey:'MetaData',
             Name:'MetaData',
             FieldType:'Text',
-            Required:false,
-            PrimaryKey:false
+            isRequired:false,
+            isPrimaryKey:false
         }
         ]
         return this.soapBuildDe(details,fields)

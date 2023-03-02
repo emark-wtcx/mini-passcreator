@@ -103,23 +103,18 @@ app.post('/install',async function (req, res, next) {
   if (req != null){
     let soap = req.body.soap
     if (!soap){
-      console.log('No SOAP received')
+      console.log('/install route No SOAP received')
       console.table(req.toString())
       return false
     }else{
       soap = req.body.soap
-      console.log('SOAP received: '+soap)
-    }
-    if (postDebug){
-      console.log('Install Request: ')
-      console.table(req.body.data)
-      console.log('Decoded Request: ')
-      console.table(decodeURI(req.body.data))
+      console.log('/install route SOAP received: '+soap)
     }
     let soapResponse = await soapRequest(soap)
       .then((getSoapResponse) => {
-        return res.json(getSoapResponse)
-        })    
+        let jsonResponse = res.send(getSoapResponse)
+        return jsonResponse
+        })       
     return soapResponse;
   }else{
     return {'message':'No data submitted'}
@@ -449,7 +444,7 @@ function refreshToken(data){
     let domainSplit = restDomain.split('//')
     protocol = domainSplit[0]+'//'
     let dotSplit = domainSplit[1].split('.')
-    subdomain = dotSplit[0]
+    subdomain = dotSplit[0]    
   }
   if (data.hasOwnProperty('auth_instance_url')){
     authDomain = data.auth_instance_url
@@ -497,7 +492,7 @@ async function getAccessToken(){
       "grant_type": "client_credentials",
       "client_id": "xja05pcunay325cyg6odcyex",
       "client_secret": "b36KqpkMECP8T3h0j2nD81Ve",
-      "account_id": "7207193"
+      "account_id": "518006076"
       }
       
     var authHeaders = {
@@ -609,20 +604,22 @@ async function postData(url = '', postData=null) {
 }
 
 async function soapRequest(soapEnv=''){
+  if (postDebug==false) console.log('(soapRequest)')
   if (soapEnv==null || soapEnv=='' || soapEnv=={}){
-    console.log('No SOAP provided')
+    console.log('(soapRequest) No SOAP provided')
     return false;
+  }else{
+    console.log('(soapRequest) SOAP provided')
   }
   // Setup call
   let accessToken = await getAccessToken();
   soapEnv = soapEnv.replace('{{access_token}}',access_token)
   soapEnv = soapEnv.replace('{{url}}',soapDomain)
-  soapEnv = soapEnv.replace('{{mid}}',MID)
 
   let url = soapDomain
   let headers = {
     "Accept": "*/*",
-    "Content-Type": 'application/xml',
+    "Content-Type": 'application/soap+xml',
     "Authorization":accessToken
   }
   if (postDebug){
@@ -630,26 +627,34 @@ async function soapRequest(soapEnv=''){
     console.log('(soapRequest) headers: '+JSON.stringify(headers))
     console.log('(soapRequest) soapEnv: '+soapEnv)
   }
-  return {'soapEnv':soapEnv};
-  /* Testing
+  //return {'soapEnv':soapEnv};
+  /**
+   *  Testing 
+   **/
   // Perform Call
   let soapRequest = fetch(url, {
     method: 'POST', 
     headers: headers,
-    body: JSON.stringify(soapEnv)
-  }).then(response => response.json())
-    .then((jsonResponse)=>parseHttpResponse(jsonResponse))
+    body: soapEnv
+  })
+  //.then(response => response.json())
+  .then((jsonResponse)=>parseHttpResponse(jsonResponse))
     .then((httpResponse) => {
       if (postDebug) {
+        console.log('(soapRequest) Backend httpResponse:'+httpResponse);   
+        if (httpResponse.hasOwnProperty('soap')){
+        console.log('(soapRequest) Backend httpResponse.soap:'+httpResponse.soap);   
+        }
+        
         let responseString = JSON.stringify(httpResponse)
-        console.log('(soapRequest) Backend responseString:'+responseString);              
+        console.log('(soapRequest) Backend responseString:'+responseString);           
       }
       return httpResponse; // return response
     }).catch((error) => {
-      return handleError(error);
+      return handleError(JSON.stringify(error));
     });  
   return soapRequest;
-    */
+    
 }
 
 /**
