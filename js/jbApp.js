@@ -611,10 +611,10 @@ const jbApp = {
         //
         // Require API Key
         //
-        if (jbApp.configExists !== true){
-            page = 'config'
-            refreshPage = true
-        }else{
+        //if (jbApp.configExists !== true){
+        //    page = 'config'
+        //    refreshPage = true
+        //}else{
             //
             // Serve Error if mapping not defined
             //
@@ -626,7 +626,7 @@ const jbApp = {
                 ){
                 page = 'error'
             }
-        }        
+        //}        
         //
         // Build and announce filename 
         //
