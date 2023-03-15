@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const path = require('path');
+var configDe = 'passCreator_configuration'
 var logDe = 'passcreator_success_log'
 var errorDe = 'passcreator_error_log'
 
@@ -95,13 +96,12 @@ app.post('/getde',async function (req, res, next) {
 })
 
 /**
- * Test requesting an authentication token
- * SOAP Envellope for table expected
+ * Route to install config table
  */
 app.post('/install',async function (req, res, next) { 
   if (postDebug) console.log('/install route called ') 
   if (req != null){
-    let soap = req.body.soap
+    let soap = req.body
     if (!soap){
       console.log('/install route No SOAP received')
       console.table(req.toString())
@@ -116,6 +116,30 @@ app.post('/install',async function (req, res, next) {
         return jsonResponse
         })       
     return soapResponse;
+  }else{
+    return {'message':'No data submitted'}
+  }
+})
+
+/**
+ * Route to install config table
+ */
+app.post('/saveConfig',async function (req, res, next) { 
+  if (postDebug) console.log('/install route called ') 
+  if (req != null){
+    let data = req.body
+    if (!data){
+      console.log('/install route No SOAP received')
+      console.table(req.toString())
+      return false
+    }
+
+    let response = await writeConfigData(data)
+      .then((getResponse) => {
+        let jsonResponse = res.send(getResponse)
+        return jsonResponse
+        })       
+    return response;
   }else{
     return {'message':'No data submitted'}
   }
@@ -363,7 +387,36 @@ async function getDataExtension(customerKey){
   //
   return getDataResponse; 
 }
+async function writeConfigData(data={}){
+  if (postDebug) console.log('logData called')
+  let date = getDateTime();
+  let logId = guid();
+  let loggingUri = 'data/v1/async/dataextensions/key:'+configDe+'/rows'
 
+  let row = {'items':[
+    {
+      'Id':logId,
+      'DateModified':date.ISODateTime,
+      'APIKey':data.apiKey
+    }
+    ]
+  }
+  
+  if (postDebug) console.log('writeConfigData loggingUrl: '+loggingUri)
+  if (postDebug) console.log('writeConfigData items: ')
+  if (postDebug) console.table(row.items)
+
+  let response = await postData(loggingUri,row)   
+    .then(async (response) => JSON.stringify(response))
+    .then((response) => {
+    if (postDebug){
+      console.log('writeConfigData response: ')
+      console.table(response)
+      }
+    return response
+    });  
+  return response;
+}
 async function logData(message,data={}){
   if (postDebug) console.log('logData called')
   let date = getDateTime();
@@ -415,6 +468,30 @@ async function logError(message,data={}){
     .then((logResponse) => {
     if (postDebug){
       console.log('logError logResponse: ')
+      console.table(logResponse)
+      }
+    return logResponse
+    });  
+  return logResponse;
+}
+
+async function writeData(targetDe,data={}){
+  if (postDebug) console.log('writeData ('+targetDe+') called')
+  let date = getDateTime();
+  let logId = guid();
+  let loggingUri = 'data/v1/async/dataextensions/key:'+targetDe+'/rows'
+
+  let row = data
+  
+  if (postDebug) console.log('logData loggingUrl: '+loggingUri)
+  if (postDebug) console.log('logData items: ')
+  if (postDebug) console.table(row.items)
+
+  var logResponse = await postData(loggingUri,row)   
+    .then(async (logResponse) => JSON.stringify(logResponse))
+    .then((logResponse) => {
+    if (postDebug){
+      console.log('logData logResponse: ')
       console.table(logResponse)
       }
     return logResponse
@@ -627,33 +704,38 @@ async function soapRequest(soapEnv=''){
     console.log('(soapRequest) headers: '+JSON.stringify(headers))
     console.log('(soapRequest) soapEnv: '+soapEnv)
   }
-  //return {'soapEnv':soapEnv};
+  
   /**
    *  Testing 
    **/
   // Perform Call
-  let soapRequest = fetch(url, {
+  let soapRequest = await fetch(url, {
     method: 'POST', 
     headers: headers,
     body: soapEnv
-  })
-  //.then(response => response.json())
-  .then((jsonResponse)=>parseHttpResponse(jsonResponse))
-    .then((httpResponse) => {
+    })  
+    .then((xmlResponse)=> {
+      let parser = new DOMParser();
+      let xml = parser.parseFromString(xmlResponse, "application/xml");
+      return xml
+    })  
+    .then((soapResponse)=>parseSoapResponse(soapResponse))
+    .then((parsedResponse) => {
       if (postDebug) {
-        console.log('(soapRequest) Backend httpResponse:'+httpResponse);   
-        if (httpResponse.hasOwnProperty('soap')){
-        console.log('(soapRequest) Backend httpResponse.soap:'+httpResponse.soap);   
+        console.log('(soapRequest) Backend parsedResponse:'+parsedResponse);   
+        if (parsedResponse.hasOwnProperty('soap')){
+        console.log('(soapRequest) Backend parsedResponse.soap:'+parsedResponse.soap);   
         }
         
-        let responseString = JSON.stringify(httpResponse)
+        let responseString = parsedResponse
         console.log('(soapRequest) Backend responseString:'+responseString);           
       }
-      return httpResponse; // return response
+      return parsedResponse; // return response
     }).catch((error) => {
-      return handleError(JSON.stringify(error));
-    });  
-  return soapRequest;
+      let errorResponse = `Error: ${error}`
+      return handleError(errorResponse);
+  });  
+return soapRequest;
     
 }
 
@@ -751,6 +833,58 @@ function parseHttpResponse(result) {
     messageResponse.body = result
     return messageResponse
   }  
+}
+function parseSoapResponse(result) {  
+  // Announce and log result
+  if (postDebug){    
+    console.log('parseSoapResponse result:'+JSON.stringify(result))
+    }  
+
+  // Response time
+  var date = getDateTime();
+  
+  //
+  // Construct Standardised Response
+  //
+  var messageResponse = {
+    'requestDate':date.DateTime,
+    'status':null,
+    'body':null
+  }      
+  
+  /* Error Response Handling */
+  if (result.hasOwnProperty('body')
+    && result.body.hasOwnProperty('resultMessages')
+    && result.body.resultMessages.hasOwnProperty('resultClass')
+    && result.body.resultMessages.resultClass == 'Error'){
+    console.log('parseSoapResponse Error Response')
+    let messageResponse = {
+      'requestDate':date.DateTime,
+      'status':result.body.resultCode,
+      'body':result.body.resultMessages.message
+    }  
+    return messageResponse
+  }else{
+    console.log('parseSoapResponse Standard Response')
+    /* Standard Response Handling */
+    if (result.hasOwnProperty('status')){
+      messageResponse.status = result.status
+    }else{
+      messageResponse.status = 200
+    }
+    if (result.hasOwnProperty('errorcode')){
+      if (result.hasOwnProperty('message')){
+          messageResponse.body = result.message
+        }
+      if (result.hasOwnProperty('errorcode')){
+          messageResponse.status = result.errorcode
+          }
+      return messageResponse
+    }else{
+      messageResponse.body = result
+      return messageResponse
+    }  
+  }
 }
 app.listen(PORT, function () {
   console.log(`App listening on port ${PORT}`);

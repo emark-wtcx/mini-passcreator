@@ -8,10 +8,11 @@ const connection = new Postmonger.Session();
 const debug = true;
 const br = "\n"
 const jbApp = { 
-    version:1.8,
+    version:2.0,
     configurationTable:'passCreator_configuration',
     configTable:null,
     configExists:null,
+    configReady:false,
     apiKey:null,
     isTest:false, 
     isLocalhost:(location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
@@ -66,6 +67,21 @@ const jbApp = {
 /**
  * Core & Front End Functionality
  */
+    guid:function() { 
+        var d = new Date().getTime();//Timestamp
+        var d2 = (performance && performance.now && (performance.now()*1000)) || 0;//Time in microseconds since page-load or 0 if unsupported
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16;//random number between 0 and 16
+            if(d > 0){//Use timestamp until depleted
+                r = (d + r)%16 | 0;
+                d = Math.floor(d/16);
+            } else {//Use microseconds since page-load if supported
+                r = (d2 + r)%16 | 0;
+                d2 = Math.floor(d2/16);
+            }
+            return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+    },
     getPassEndpoint:function(){
         if (debug) console.log('getPassEndpoint triggered')
         // Get starter URL based on isTest setting of app
@@ -266,19 +282,56 @@ const jbApp = {
                 .attr('data-action',"showMessages")
                 .text('Show messages')
     },
-    saveConfigButtonAction:function(){
+    saveConfigButtonAction:async function(){
         let apiKey = $('#apiKey').val();
         if (apiKey.length == 80){
             jbApp.apiKey = apiKey
             //
-            // Save configuration
+            // Build configuration
             //
-            let configTableXml = jbApp.buildConfigXml()
+            var configTableXml = ''
+            if (!jbApp.configExists){
+                var configTableXml = jbApp.buildConfigXml()
+            }
 
+            //
+            // Install table
+            // If it doesn't exist already
+            //
+            if(configTableXml != ''){
+                let tableInstall = await jbApp.callBackend('/install',configTableXml)
+                if (!tableInstall){
+                    console.log('Table install failed:'+JSON.stringify(tableInstall))
+                }else{                
+                    console.log('Table install success:'+JSON.stringify(tableInstall))
+                }
+            }
+
+            //
+            // Save config
+            //
+            var saveData = {'apiKey':jbApp.apiKey}
+            let saveConfig = await jbApp.callBackend('/saveConfig',saveData)
+            if (!saveConfig){
+                console.log('APIKey install failed:'+JSON.stringify(saveConfig))
+            }else{    
+                console.log('APIKey install success:'+JSON.stringify(saveConfig))
+                if (saveConfig.hasOwnProperty('status')){
+                    if (saveConfig.status == 200){
+                        return true;
+                    }else{
+                        return false
+                    }            
+                }else{
+                    console.log('APIKey install unrecognised response')
+                    return false
+                }
+            }
             //
             // Redirect to home 
             // 
             jbApp.homeButtonAction()
+            return configTableXml.toString();
         }else{
             alert('The API key should be 80 characters')
             $('#apiKey').addClass('slds-has-error')
@@ -611,10 +664,10 @@ const jbApp = {
         //
         // Require API Key
         //
-        //if (jbApp.configExists !== true){
-        //    page = 'config'
-        //    refreshPage = true
-        //}else{
+        if (!jbApp.configReady){
+            page = 'config'
+            refreshPage = true
+        }else{
             //
             // Serve Error if mapping not defined
             //
@@ -626,7 +679,7 @@ const jbApp = {
                 ){
                 page = 'error'
             }
-        //}        
+        }        
         //
         // Build and announce filename 
         //
@@ -669,7 +722,7 @@ const jbApp = {
         }
         return true;
     },
-    load:function(connection){
+    load:async function(connection){
         if (debug) console.log('Loading jbApp')
         // If JourneyBuilder available
         if (connection){            
@@ -691,7 +744,7 @@ const jbApp = {
         jbApp.bindMenu(connection)
 
         // Perform install test
-        jbApp.testConfigurationExists()
+        await jbApp.testInstall()
 
         // Announce ready
         if (debug) console.log('App Loading Complete')
@@ -753,52 +806,39 @@ const jbApp = {
             if (debug) console.table('Localhost or Connection not availble')
         }         
     },
-
+    /**
+     * Test to ensure the config table exists
+     */
     testConfigurationExists:async function(){
         let tableStaus = await jbApp.checkDeExists(jbApp.configurationTable)
         console.log('testConfigurationExists: '+tableStaus.toString())
         jbApp.configExists = tableStaus
         return tableStaus        
     },
-    testInstall:async function(){
-        if (jbApp.configExists){
-            console.log('Configuration table exists')
-            // Check for API Key
-            // if key is configured return true
-            // else 
-            // populate table
-            // return
-        }else{
-            console.log('Configuration table doesn\'t exist')
-            let test = false
-            let configXml = jbApp.buildConfigXml()
-            
-            let type = {dataType:'text',contentType:'text/xml'}
-            //let parsedXml = jQuery.parseXML(configXml)
-            //console.log('parsedXml: '+parsedXml)
-            if (!test){
-                let ajaxResponse = await jbApp.callBackend('/install',configXml)
-                console.log('Install server response: '+JSON.stringify(ajaxResponse))
-            }else{                
-                console.log('configXml: '+configXml)
-
-                if (jbApp.isJson(configXml) == true){
-                    configXml = JSON.stringify(configXml)
-                    console.log('callBackend: JSON.stringify()')
-                }else{                    
-                    console.log('callBackend: isn\'t JSON')
-                } 
-                if (typeof configXml !== 'string'){
-                    configXml = configXml.toString()
-                    console.log('callBackend: body.toString()')
-                }else{
-                    console.log('callBackend: is already a string')
+    /**
+     * Test to ensure the config table is populated correctly
+     */
+    testConfiguration:async function(){
+        console.log('Testing Configuration');
+        if (jbApp.testConfigurationExists()){
+            let configArray = await jbApp.getDataExtensionRest(jbApp.configurationTable)
+            if (configArray.count > 0){
+                let config = configArray.items[0]
+                if (config.APIKey.length == 80){
+                    console.log('Configuration is fine, current key: '+config.APIKey)
+                    return true
                 }
-                }
-            // Populate config table
-            // Install log
-            // Install error log
+            }else{
+                console.log('Configuration is not complete')
+                return false
+            }
         }
+    },
+
+    testInstall:async function(){        
+        let installStatus = await jbApp.testConfiguration()
+        jbApp.configReady = installStatus
+        return installStatus
     },
 
     callBackend:async function(url=null,body=null,type={dataType:'json',contentType:'application/json'}){        
@@ -815,8 +855,7 @@ const jbApp = {
             }
         }
 
-        let xml=body
-        let payload = {"soap":xml}     
+        let payload = body  
         
         if (debug){
             console.log('types: Data: '+dataType+' | Content-Type: '+contentType)        
@@ -941,6 +980,20 @@ const jbApp = {
 </s:Envelope>`
 
         /**
+         * SOAP Envelope
+         */     
+        let SOAP = soapOpening;
+
+        /**
+         * SOAP Details
+         */        
+        let soapDetails = ''
+        for (var d in details){
+            let detail = details[d]
+            soapDetails += jbApp.soapBuildTag(d,detail)
+        }
+
+        /**
          * Sendable fields
          */
         let sendFields = ''
@@ -956,12 +1009,16 @@ const jbApp = {
                 sendFields += sendField
             }
         }
+        if (sendFields != '' ){
+            SOAP += br+sendFields+br
+        }
 
         /**
          * Standard Fields
          */
-        let mainFields = br+'<Fields>'+br
+        let mainFields = ''
         if (fields.length > 0){
+            mainFields += br+'<Fields>'+br
             for (var f in fields){
                 let field = fields[f]                
                 let soapField='<Field>'
@@ -978,25 +1035,28 @@ const jbApp = {
         }
 
         /**
-         * SOAP Details
-         */        
-        let soapDetails = ''
-        for (var d in details){
-            let detail = details[d]
-            soapDetails += jbApp.soapBuildTag(d,detail)
-        }
-
-        /**
          * Build Envelope 
          */
-        let SOAP = soapOpening+soapDetails;
-        if (sendableFields.length && sendFields.length>0){
+        if (soapDetails!=''){
+            SOAP += soapDetails
+        }
+        if (sendableFields.length && sendFields!=''){
             SOAP += sendFields
         }
-        if (fields.length && mainFields.length>0){
+        if (fields.length && mainFields != ''){
             SOAP += mainFields
         }
         return SOAP+soapClosing;
+    },
+
+    saveConfig:async function(apiKey){
+        let config = {
+            'Id':jbApp.guid(),
+            'APIKey':apiKey,
+            'DateModified':jbApp.getDateTime()
+        }
+        saveResult = await jbApp.callBackend('/saveConfig',config)
+        return saveResult;
     },
 
     buildConfigXml:function(){
