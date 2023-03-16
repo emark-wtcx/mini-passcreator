@@ -113,6 +113,11 @@ const jbApp = {
     },
     bindMenu:function(connection){
         if (debug) console.log('Binding menu')
+        // Place menu html
+        let nav = jbApp.getHtml('nav', false)
+        $('#nav').html(nav)
+
+        // Bind menu actions        
         $('.pass_action').each(function() {
             let elem = $( this )
             
@@ -643,11 +648,11 @@ const jbApp = {
         html += '</div>'
         $( '#progress-holder' ).html(html)
     },    
-    getHtml:function(page,refreshPage = true){
+    getHtml:async function(page,refreshPage = true){
         //
         // Announce request 
         //
-        if (debug) console.log('(getHtml): '+page)
+        if (debug) console.log('(getHtml) Looking for: '+page)
         
         //
         // Map page names to file names
@@ -658,7 +663,8 @@ const jbApp = {
             inputMessage:'input_message',
             selectMessage:'select_message',
             ribbon:'ribbon',
-            config:'config'   
+            config:'config',
+            nav:'nav'
         }
         
         //
@@ -684,17 +690,17 @@ const jbApp = {
         // Build and announce filename 
         //
         let pageHtmlLocation = './html/'+html[page]+'.html'        
-        if (debug) console.log('(getHtml) Location: '+pageHtmlLocation)
+        if (debug) console.log('(getHtml) Loading '+page+': '+pageHtmlLocation)
 
         //
         // Retrieve page
         //
-        $.ajax({
+        let htmlResult = await $.ajax({
             type: "GET",
             url: pageHtmlLocation,
             async: false,
             success: function(response) {                 
-                jbApp.pageHtml = response; 
+                jbApp.pageHtml = response;
                 if (refreshPage == true){
                     //
                     // Refreshing page
@@ -706,14 +712,16 @@ const jbApp = {
                     // Returning page
                     //
                     if (debug)console.log('(getHtml) Returning HTML')
-                    return jbApp.pageHtml;
+                    return response;
                 }
              }
-         });
+         })
+         .then((htmlResult)=>{return htmlResult});;
+         return htmlResult
     },
     translatePage:function(html){
         // To Do
-    },   
+    }, 
     isJson:function(input){
         try {
             JSON.parse(str);
@@ -741,14 +749,20 @@ const jbApp = {
         /**
          *  Setup 
          * */
-        jbApp.bindMenu(connection)
-
         // Perform install test
         await jbApp.testInstall()
+
+        jbApp.bindMenu(connection)
 
         // Announce ready
         if (debug) console.log('App Loading Complete')
         window.jbApp = jbApp
+
+        if (debug) console.log('Nav Loading Started')
+        await jbApp.getHtml('nav')
+        let nav = jbApp.pageHtml
+        if (debug) console.log('Nav Loading Complete:'+nav)
+        $('#nav').html(nav)
         
         jbApp.pageHtml = jbApp.getHtml('home')
         jbApp.processPageChange(1)
@@ -806,41 +820,7 @@ const jbApp = {
             if (debug) console.table('Localhost or Connection not availble')
         }         
     },
-    /**
-     * Test to ensure the config table exists
-     */
-    testConfigurationExists:async function(){
-        let tableStaus = await jbApp.checkDeExists(jbApp.configurationTable)
-        console.log('testConfigurationExists: '+tableStaus.toString())
-        jbApp.configExists = tableStaus
-        return tableStaus        
-    },
-    /**
-     * Test to ensure the config table is populated correctly
-     */
-    testConfiguration:async function(){
-        console.log('Testing Configuration');
-        if (jbApp.testConfigurationExists()){
-            let configArray = await jbApp.getDataExtensionRest(jbApp.configurationTable)
-            if (configArray.count > 0){
-                let config = configArray.items[0]
-                if (config.APIKey.length == 80){
-                    console.log('Configuration is fine, current key: '+config.APIKey)
-                    return true
-                }
-            }else{
-                console.log('Configuration is not complete')
-                return false
-            }
-        }
-    },
-
-    testInstall:async function(){        
-        let installStatus = await jbApp.testConfiguration()
-        jbApp.configReady = installStatus
-        return installStatus
-    },
-
+    /* Transmit between front and back ends */
     callBackend:async function(url=null,body=null,type={dataType:'json',contentType:'application/json'}){        
         /* DataType Setup */
         let dataType = ''
@@ -882,6 +862,39 @@ const jbApp = {
 /**
  * REST functionality 
  */
+    /* Loads config into into jbApp.configTable */
+    getConfiguration:async function(){
+        if (jbApp.configTable == null){
+            let request = await jbApp.getDataExtensionRest(jbApp.configurationTable)
+            let configuration = request.body
+            jbApp.configTable = configuration
+            if (configuration.hasOwnProperty('items')
+                && configuration.items[0].hasOwnProperty('values')            
+                ){
+                    jbApp.configTable = configuration.items[0].values
+                }
+        }
+        return jbApp.configTable;
+    },
+
+    getApiKey:function(){
+        let functionName = '(getApiKey) '
+        
+        if (jbApp.configExists 
+            && jbApp.hasOwnProperty('configTable')
+            ){
+                console.log(functionName+'looking for apiKey in: ')
+                console.table(jbApp.configTable)
+                let config = jbApp.configTable
+                console.log(functionName+'Seaching values: ')
+                console.table(config)
+                let apiKey = config.apikey
+                return apiKey;
+        }else{
+            console.log(functionName+'App has no config table: ')
+            return false;
+        }
+    },
 
     getDataExtensionRest:function(customerKey){
         if (debug) console.log('getDataExtension:'+customerKey)
@@ -897,16 +910,10 @@ const jbApp = {
             },
             fail:function(result){           
                 Alert(JSON.stringify(result))
+                return false;
             }
         });
         return ajaxResponse
-    },
-
-    testAuthSuccess:function (result) {
-        if (debug) console.log('Auth Success')
-        if (debug) console.log('Success data: ')
-        console.table(result)
-        $('#main').html(result)
     },
 
     restResponse:function (result) {
@@ -937,6 +944,11 @@ const jbApp = {
 
     checkDeExists:async function(customerKey=''){        
         let table = await jbApp.getDataExtensionRest(customerKey)
+        // If we're checking on the config table
+        // store table for later use
+        if (customerKey == jbApp.configurationTable){
+            jbApp.configTable = table.body
+        }
         return (table.status == 200) ? true : false  
     },
     
@@ -1298,6 +1310,17 @@ const jbApp = {
                     });
                     console.log('Bound '+action) 
                     break;
+
+                case 'getApiKey':
+                    $(elem).on('click',function(){
+                        let apiKey = jbApp.getApiKey()
+                        console.log('Action Get APIKey: '+apiKey)
+                        jbApp.pageHtml = '<pre>'+apiKey+'</pre>'
+
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        });
+                    break;
                 default:
                     $(elem).on('click',function(){
                         jbApp.action = null
@@ -1373,7 +1396,29 @@ const jbApp = {
     testConfigXml:function(){
         let xml = jbApp.getConfigXml()
         return xml;
-    }
+    },
+    /**
+     * Test to ensure the config table exists
+     * Defines the Boolean jbApp.configExists
+     */
+    testConfigurationExists:async function(){
+        console.log('testConfigurationExists')
+        if (jbApp.configTable == null){
+            var config = jbApp.getConfiguration()     
+        }else{
+            var config = jbApp.configTable
+        }
+        jbApp.configExists = config.toString() == '' ? false : true
+        return jbApp.configExists
+
+    },
+    
+    testInstall:async function(){     
+        let installStatus = await jbApp.testConfigurationExists()
+        console.log('Install status: '+installStatus)
+        jbApp.configReady = installStatus
+        return installStatus
+    },
 
     
 
