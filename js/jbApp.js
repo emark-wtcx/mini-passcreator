@@ -229,7 +229,7 @@ const jbApp = {
     
         }); 
     },
-    processPageChange(refreshPage){
+    async processPageChange(refreshPage){
         /** 
          * Process any page changes
          */
@@ -248,6 +248,15 @@ const jbApp = {
             if (jbApp.action == 'selectMessage'){
                 jbApp.buildMessageOptions()
             }   
+            if ($('#apiKeyDisplay')){
+                await jbApp.getApiKey().then((apiKey)=>{                
+                    if (apiKey != null){
+                        $('#apiKeyDisplay').html(apiKey)
+                    }else{
+                        $('#apiKeyDisplay').html('apiKey not found')
+                    }
+                });
+            }
         }else{            
             if(debug) console.log('processPageChange: refresh false')
         }   
@@ -302,29 +311,17 @@ const jbApp = {
             //
             // Build configuration
             //
-            var configTableXml = ''
+            var configTableXml = null
             if (!jbApp.configExists){
-                var configTableXml = jbApp.buildConfigXml()
-            }
-
-            //
-            // Install table
-            // If it doesn't exist already
-            //
-            if(configTableXml != ''){
-                let tableInstall = await jbApp.callBackend('/install',configTableXml)
-                if (!tableInstall){
-                    console.log('Table install failed:'+JSON.stringify(tableInstall))
-                }else{                
-                    console.log('Table install success:'+JSON.stringify(tableInstall))
-                }
+                var configTableXml = await jbApp.buildConfigXml()
             }
 
             //
             // Save config
             //
             var saveData = {'apiKey':jbApp.apiKey}
-            let saveConfig = await jbApp.callBackend('/saveConfig',saveData)
+            let saveConfig = null
+            saveConfig = await jbApp.callBackend('/saveConfig',saveData)
             if (!saveConfig){
                 console.log('APIKey install failed:'+JSON.stringify(saveConfig))
             }else{    
@@ -684,7 +681,7 @@ const jbApp = {
         //
         // Require API Key
         //
-        if (!jbApp.configReady){
+        if (!jbApp.configReady && html[page] != 'nav'){
             page = 'config'
             refreshPage = true
         }else{
@@ -732,23 +729,10 @@ const jbApp = {
              }
          })
          .then((htmlResult)=>{
-            return jbApp.translatePage(htmlResult)
+            return htmlResult
         });
         return htmlResult
     },
-    translatePage:function(html){
-        console.log('Translate Page')
-        if (jbApp.page = 'config'){            
-            console.log('Config Page looking for ('+jbApp.apiKey+')')
-            if (jbApp.apiKey != ''){
-                var keyReplacement = '<p>Current Key:</p><p>'+jbApp.apiKey+'</p>'
-            }else{
-                var keyReplacement = '<p>Current Key:</p><p>missing</p>'                
-            }
-            html = html.replace('{{apiKey}}',keyReplacement)
-        }
-        return html
-    }, 
     isJson:function(input){
         try {
             JSON.parse(str);
@@ -890,33 +874,37 @@ const jbApp = {
     /* Loads config into into jbApp.configTable */
     getConfiguration:async function(){
         if (jbApp.configTable == null){
-            await jbApp.getDataExtensionRest(jbApp.configurationTable)
-            .then((request)=>{
-                let configuration = request.body
+            let table = await jbApp.getDataExtensionRest(jbApp.configurationTable)
+                .then((config)=>{
+                let configuration = config.body
                 jbApp.configTable = configuration
                 if (configuration.hasOwnProperty('items')
                     && configuration.items[0].hasOwnProperty('values')            
                     ){
                         jbApp.configTable = configuration.items[0].values
+                }else{
+                    if (jbApp.configTable.hasOwnProperty('count') && jbApp.configTable.count>0){
+                        return jbApp.configTable
+                    }else{
+                        return false
                     }
+                }                
                 return configuration
             });
+            return table;
+        }else{
+            return jbApp.configTable
         }
-        return jbApp.configTable;
     },
 
     getApiKey: async function(){
         let functionName = '(getApiKey) '
         
-        if (jbApp.configExists 
-            && jbApp.hasOwnProperty('configTable')
-            ){
+        if (jbApp.hasOwnProperty('configTable')){
                 console.log(functionName+'looking for apiKey in: ')
                 console.table(jbApp.configTable)
-                let config = jbApp.configTable
-                console.log(functionName+'Seaching values: ')
-                console.table(config)
-                let apiKey = config.apikey
+                let apiKey = jbApp.configTable.apikey
+                console.log(functionName+'apiKey in: '+apiKey)
                 return apiKey;
         }else{
             console.log(functionName+'App has no config table: ')
@@ -926,7 +914,7 @@ const jbApp = {
 
     getDataExtensionRest:function(customerKey){
         if (debug) console.log('getDataExtension:'+customerKey)
-        let ajaxResponse = $.ajax({
+        let requestResponse = $.ajax({
             type: "POST",
             url: '/getde',
             contentType: "application/json",
@@ -940,8 +928,11 @@ const jbApp = {
                 Alert(JSON.stringify(result))
                 return false;
             }
-        }).then((ajaxResponse)=>{return ajaxResponse;});;
-        return ajaxResponse
+        })
+        .then((ajaxResponse)=>{
+            return ajaxResponse;
+        });
+        return requestResponse
     },
 
     restResponse:function (result) {
@@ -971,12 +962,7 @@ const jbApp = {
     },
 
     checkDeExists:async function(customerKey=''){        
-        let table = await jbApp.getDataExtensionRest(customerKey)
-        // If we're checking on the config table
-        // store table for later use
-        if (customerKey == jbApp.configurationTable){
-            jbApp.configTable = table.body
-        }
+        let table = await jbApp.getDataExtensionRest(customerKey)        
         return (table.status == 200) ? true : false  
     },
     
@@ -1340,13 +1326,14 @@ const jbApp = {
                     break;
 
                 case 'getApiKey':
-                    $(elem).on('click',function(){
-                        let apiKey = jbApp.getApiKey()
-                        console.log('Action Get APIKey: '+apiKey)
-                        jbApp.pageHtml = '<pre>'+apiKey+'</pre>'
+                    $(elem).on('click',async function(){
+                        await jbApp.getApiKey().then((apiKey)=>{
+                            console.log('Action Get APIKey: '+apiKey)
+                            jbApp.pageHtml = '<pre>'+apiKey+'</pre>'
 
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
+                            // Execute Action
+                            jbApp.processPageChange(refreshPage)
+                            });
                         });
                     break;
                 default:
@@ -1431,27 +1418,40 @@ const jbApp = {
      */
     testConfigurationExists:async function(){
         console.log('testConfigurationExists')
+        let config = null
         if (jbApp.configTable == null){
-            var config = jbApp.getConfiguration()     
+            config = await jbApp.getConfiguration().then((result) =>{
+                return result
+            });
         }else{
-            var config = jbApp.configTable
+            config = jbApp.configTable
         }
-        jbApp.configExists = config.toString() == '' ? false : true
-        if (jbApp.configExists===true){
+        jbApp.configExists = (config.hasOwnProperty('count') && config.count > 0) ? true:false
+        
+        if (jbApp.configExists===true
+            && config.hasOwnProperty('apikey')
+            && config.apikey.length == 80){
+            // Assign API to property
             jbApp.apiKey = config.apikey
+
+            // Report success
             console.log('testConfigurationExists assigning apiKey'+config.toString())
-        }else{
-            console.log('testConfigurationExists could not find apiKey')
+
+        }else{            
+            // Report failure
+            console.log('testConfigurationExists could not find apiKey'+config.toString())
         }
+        // Return test result
         return jbApp.configExists
 
     },
     
     testInstall:async function(){     
-        let installStatus = await jbApp.testConfigurationExists()
+        return await jbApp.testConfigurationExists().then((installStatus)=>{
         console.log('Install status: '+installStatus)
         jbApp.configReady = installStatus
         return installStatus
+        });
     },
 
     
