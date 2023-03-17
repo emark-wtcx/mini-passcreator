@@ -699,7 +699,8 @@ const jbApp = {
                 ){
                 page = 'error'
             }
-        }        
+        }   
+        jbApp.page = page;     
         //
         // Build and announce filename 
         //
@@ -730,11 +731,23 @@ const jbApp = {
                 }
              }
          })
-         .then((htmlResult)=>{return htmlResult});;
-         return htmlResult
+         .then((htmlResult)=>{
+            return jbApp.translatePage(htmlResult)
+        });
+        return htmlResult
     },
     translatePage:function(html){
-        // To Do
+        console.log('Translate Page')
+        if (jbApp.page = 'config'){            
+            console.log('Config Page looking for ('+jbApp.apiKey+')')
+            if (jbApp.apiKey != ''){
+                var keyReplacement = '<p>Current Key:</p><p>'+jbApp.apiKey+'</p>'
+            }else{
+                var keyReplacement = '<p>Current Key:</p><p>missing</p>'                
+            }
+            html = html.replace('{{apiKey}}',keyReplacement)
+        }
+        return html
     }, 
     isJson:function(input){
         try {
@@ -769,15 +782,10 @@ const jbApp = {
         // Announce ready
         if (debug) console.log('App Loading Complete')
         window.jbApp = jbApp
-        
-
-        if (debug) console.log('Nav Loading Started')
-        
+                
         await jbApp.getHtml('nav',false).then((nav)=>{
             $('#nav').html(nav)
-            if (debug) console.log('Nav Loading Complete:'+nav)
         });        
-        if (debug) console.log('Nav Loaded Content: '+$('#nav').html())
 
         jbApp.bindMenu(connection) /* Order of operations issue */
         
@@ -882,19 +890,22 @@ const jbApp = {
     /* Loads config into into jbApp.configTable */
     getConfiguration:async function(){
         if (jbApp.configTable == null){
-            let request = await jbApp.getDataExtensionRest(jbApp.configurationTable)
-            let configuration = request.body
-            jbApp.configTable = configuration
-            if (configuration.hasOwnProperty('items')
-                && configuration.items[0].hasOwnProperty('values')            
-                ){
-                    jbApp.configTable = configuration.items[0].values
-                }
+            await jbApp.getDataExtensionRest(jbApp.configurationTable)
+            .then((request)=>{
+                let configuration = request.body
+                jbApp.configTable = configuration
+                if (configuration.hasOwnProperty('items')
+                    && configuration.items[0].hasOwnProperty('values')            
+                    ){
+                        jbApp.configTable = configuration.items[0].values
+                    }
+                return configuration
+            });
         }
         return jbApp.configTable;
     },
 
-    getApiKey:function(){
+    getApiKey: async function(){
         let functionName = '(getApiKey) '
         
         if (jbApp.configExists 
@@ -929,7 +940,7 @@ const jbApp = {
                 Alert(JSON.stringify(result))
                 return false;
             }
-        });
+        }).then((ajaxResponse)=>{return ajaxResponse;});;
         return ajaxResponse
     },
 
@@ -1426,6 +1437,12 @@ const jbApp = {
             var config = jbApp.configTable
         }
         jbApp.configExists = config.toString() == '' ? false : true
+        if (jbApp.configExists===true){
+            jbApp.apiKey = config.apikey
+            console.log('testConfigurationExists assigning apiKey'+config.toString())
+        }else{
+            console.log('testConfigurationExists could not find apiKey')
+        }
         return jbApp.configExists
 
     },
