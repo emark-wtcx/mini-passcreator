@@ -113,9 +113,6 @@ const jbApp = {
     },
     bindMenu:function(connection){
         if (debug) console.log('Binding menu')
-        // Place menu html
-        let nav = jbApp.getHtml('nav', false)
-        $('#nav').html(nav)
 
         // Bind menu actions        
         $('.pass_action').each(function() {
@@ -211,6 +208,17 @@ const jbApp = {
                     $(elem).on('click',function(){
                         // Prepare action changes
                         jbApp.homeButtonAction()
+                        
+                        // Execute Action
+                        jbApp.processPageChange(refreshPage)
+                        })
+                    if (debug) console.log('Bound '+action)
+                break;
+                
+                case 'settings':
+                    $(elem).on('click',function(){
+                        // Prepare action changes
+                        jbApp.settingsButtonAction()
                         
                         // Execute Action
                         jbApp.processPageChange(refreshPage)
@@ -354,6 +362,12 @@ const jbApp = {
         }else{            
             if (debug) console.log('Local Step: 1')
         }
+    },
+    settingsButtonAction:function(){
+        jbApp.pageHtml = jbApp.getHtml('config')
+        $('#jbapp__nav_home').text('Back').data('action','home')        
+        jbApp.setProgress(0)
+        jbApp.currentStep = 0
     },
     inputMessageButtonAction:function(){
         // Setup the required HTML
@@ -752,19 +766,22 @@ const jbApp = {
         // Perform install test
         await jbApp.testInstall()
 
-        jbApp.bindMenu(connection)
-
         // Announce ready
         if (debug) console.log('App Loading Complete')
         window.jbApp = jbApp
+        
 
         if (debug) console.log('Nav Loading Started')
-        await jbApp.getHtml('nav')
-        let nav = jbApp.pageHtml
-        if (debug) console.log('Nav Loading Complete:'+nav)
-        $('#nav').html(nav)
         
-        jbApp.pageHtml = jbApp.getHtml('home')
+        await jbApp.getHtml('nav',false).then((nav)=>{
+            $('#nav').html(nav)
+            if (debug) console.log('Nav Loading Complete:'+nav)
+        });        
+        if (debug) console.log('Nav Loaded Content: '+$('#nav').html())
+
+        jbApp.bindMenu(connection) /* Order of operations issue */
+        
+        jbApp.pageHtml = jbApp.getHtml('home',false)
         jbApp.processPageChange(1)
     },
 
