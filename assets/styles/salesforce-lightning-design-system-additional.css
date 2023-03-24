@@ -1,0 +1,79 @@
+div#logo{
+  padding: 0 2em 2em 2em;
+}
+div#progress-holder{
+  margin-bottom: 1.9em;
+}
+.slds-container_x-large, .slds-container--x-large{
+  max-width: 100%;
+}
+.slds-grid{
+  flex-direction: column-reverse;
+}
+.slds-size_1-of-4, .slds-size--1-of-4{
+  width: 100%;
+}
+.slds-gutters .slds-col{
+  padding: 5px 2em;
+}
+#jbapp__nav_home, #showMessages{
+  background: transparent;
+  border: 0;
+  color: #0176d3;
+  text-decoration: underline;
+  padding: 0;
+}
+#jbapp__nav_home:hover, #jbapp__nav_home:focus, #showMessages:hover, #showMessages:focus{
+  -webkit-box-shadow:var(--slds-c-button-shadow-focus, var(--sds-c-button-shadow-focus, 0 0 3px transparent));
+  box-shadow:var(--slds-c-button-shadow-focus, var(--sds-c-button-shadow-focus, 0 0 3px transparent));
+outline:0;
+}
+button.selected, button.selected:hover, button.selected:focus{
+  background: #ffffff;
+  color: #0176d3;
+  cursor: none;
+}
+button.selected:hover{
+  pointer-events: none;
+}
+#main{
+  padding: 2em;
+}
+h1{
+  padding-bottom: 5px;
+}
+p{
+  padding: 5px 0 10px 0;
+}
+small{
+  font-style: italic;
+}
+.slds-textarea, .slds-form-element select{
+  border: 1px solid #1ab9ff;
+}
+.slds-form-element{
+  margin-bottom: 5px;
+}
+#selectNac div{
+  margin: 5px 0;
+}
+.slds-notify__content{
+  padding: 3em 0 2em 0;
+}
+.slds-notify_toast, .slds-notify--toast{
+  background: #f3f3f3;
+  border: 1px solid #c9c9c9;
+  color: #000000;
+}
+.slds-icon{
+  fill: #c9c9c9;
+}
+.slds-button_icon-inverse{
+  color: #c9c9c9;
+}
+#available_messages{
+  background: #f3f3f3;
+  border: 1px solid #c9c9c9;
+  margin-top: 1em;
+  padding: 0.5em 2em 1em 2em;
+}
