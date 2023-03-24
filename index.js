@@ -1,12 +1,21 @@
 const express = require('express');
 const app = express();
 const path = require('path');
+const fetchResponse = response => {
+  if (!response.ok) { 
+     throw Error(response.statusText);
+  } else {
+     return response.json();
+  }
+};
+
 var configDe = 'passCreator_configuration'
 var logDe = 'passcreator_success_log'
 var errorDe = 'passcreator_error_log'
 
 var testUrl = 'https://eo2mifqm9yelk7e.m.pipedream.net'
 var testUrl = '/execute'
+var testUrl = 'https://app.passcreator.com/api/pass/f2235798-6df8-4c85-97b3-a8b0ce26351a/sendpushnotification'
 
 var protocol = 'https://'
 var subdomain = 'mc3tb2-hmmbngz-85h36g8xz1b4m'
@@ -146,6 +155,23 @@ app.post('/saveConfig',async function (req, res, next) {
 })
 
 /**
+ * Route to Write data to the log 
+ */
+app.post('/log',async function (req, res, next) { 
+  if (postDebug) console.log('(/log) called') 
+  if (req != null){
+    return await logData(req.body)
+      .then((logResponse) => {
+        if (postDebug) console.log('(/log) Response: ')
+        if (postDebug) console.table(logResponse)
+        return res.send(logResponse)
+      })
+  }else{
+    return {'message':'No data submitted'}
+  }
+})
+
+/**
  * Test requesting an authentication token
  */
 app.post('/testauth',async function (req, res, next) { 
@@ -162,38 +188,16 @@ app.post('/testauth',async function (req, res, next) {
 })
 
 /**
- * Test writing data to the log 
- */
-app.post('/testlog',async function (req, res, next) { 
-  if (postDebug) console.log('(/testlog) called') 
-  if (req != null){
-    await logData('Log test',req.body)
-    .then((logResponse) => {
-      if (postDebug) console.log('(/testlog) Response: ')
-      if (postDebug) console.table(logResponse)
-      return res.send(logResponse)
-    }).catch(errorObject => {
-      let errorString = JSON.stringify(errorObject)
-      // Broadcast error 
-      if (postDebug) console.log('(/testlog) Error:'+errorString);
-      return errorString;
-    })
-  }else{
-    return {'message':'No data submitted'}
-  }
-})
-
-/**
  * Send a mock payload to the test endpoint 
  */
 app.post('/testmessage',async function (req, res, next) { 
   if (postDebug) console.log('/testmessage called ')
   if (req.body != null){
     await postMessage(req.body).then((serverResponse) => {
-    if (postDebug) console.log('/testmessage Response: ')
-    if (postDebug) console.table(serverResponse)
-    return res.json(serverResponse)
-    })
+      if (postDebug) console.log('/testmessage Response: ')
+      if (postDebug) console.table(serverResponse)
+      return serverResponse
+      })
   }else{
     return {'message':'No data submitted'}
   }
@@ -268,18 +272,18 @@ async function postMessage(data){
     messageData.endpoint = testUrl
     }
 
-  if (postDebug) console.log('checking for: token')
+  if (postDebug) console.log('(postMessage)checking for: token')
   if (messageData.hasOwnProperty('token')){
     if (postDebug) console.log('prop found: token')
     setToken(messageData)
   }
-  if (postDebug) console.log('checking for: restUrl')
+  if (postDebug) console.log('(postMessage)checking for: restUrl')
   if (messageData.hasOwnProperty('restUrl')){
     if (postDebug) console.log('prop found: restUrl')
     setRestUrl(messageData)
   }
     
-  if (postDebug) console.log('POST messageData: ')
+  if (postDebug) console.log('(postMessage) messageData: ')
   if (postDebug) console.table(messageData)
 
   var date = getDateTime();
@@ -292,13 +296,14 @@ async function postMessage(data){
    */
   var bodyContent = {
     "pushNotificationText":messageData.message+ ' | ['+date.Time+']',   
-    "url":messageData.endpoint,
+    "endpoint":messageData.endpoint,
     "token":messageData.token,
     "authUrl":messageData.authUrl,
-    "restUrl":messageData.restUrl
+    "restUrl":messageData.restUrl,
+    "apiKey":messageData.apiKey
   }
   if (postDebug){
-    console.log('POST bodyContent: ')
+    console.log('(postMessage) bodyContent: ')
     console.table(bodyContent)
     }
 
@@ -306,7 +311,7 @@ async function postMessage(data){
   /**
    * Transmit Message via postDataToPassCreator function
    */
-  let postResponse = postDataToPassCreator(messageData.endpoint, bodyContent)
+  let postResponse = await postDataToPassCreator(messageData.endpoint, bodyContent)
     .then((dataResponse) => {
       //
       //  Build response 
@@ -324,7 +329,7 @@ async function postMessage(data){
       }
 
       if (postDebug){
-        console.log('pDTPC messageResponse:',messageResponse); 
+        console.log('(postMessage)=>(pDTPC) messageResponse:',messageResponse); 
         console.table(messageResponse);
       }
       return messageResponse
@@ -417,7 +422,7 @@ async function writeConfigData(data={}){
     });  
   return response;
 }
-async function logData(message,data={}){
+async function logData(data={}){
   if (postDebug) console.log('logData called')
   let date = getDateTime();
   let logId = guid();
@@ -427,7 +432,7 @@ async function logData(message,data={}){
     {
       'Id':logId,
       'DateTime':date.ISODateTime,
-      'Message':message,
+      'Message':(data.hasOwnProperty('message') ? data.message : JSON.stringify(data)),
       'MetaData':JSON.stringify(data)
     }
     ]
@@ -437,16 +442,10 @@ async function logData(message,data={}){
   if (postDebug) console.log('logData items: ')
   if (postDebug) console.table(row.items)
 
-  var logResponse = await postData(loggingUri,row)   
-    .then(async (logResponse) => JSON.stringify(logResponse))
-    .then((logResponse) => {
-    if (postDebug){
-      console.log('logData logResponse: ')
-      console.table(logResponse)
-      }
-    return logResponse
-    });  
-  return logResponse;
+  return await postData(loggingUri,row)   
+    .then((postDataResponse)=>{
+      return postDataResponse
+    });
 }
 async function logError(message,data={}){
   let loggingUri = 'data/v1/async/dataextensions/key:'+errorDe+'/rows'
@@ -547,7 +546,7 @@ function tokenValid(){
     let time = d.getTime()
     console.log('Checking: (tokenExpiry) '+tokenExpiry)
     console.log('Checking: (time) '+time)
-    let tokenValid = (parseInt(tokenExpiry)>parseInt(time)) ? true : false
+    let tokenValid = (accessToken != null && parseInt(tokenExpiry)>parseInt(time)) ? true : false
     if (postDebug){
       console.log('Checking: token is valid? '+tokenValid)
     }
@@ -633,7 +632,10 @@ async function getData(url = '', headers) {
     })
   return getResponse;
 }
-
+/**
+ * Specific header setup for
+ * POSTing data to SFMC via REST
+ */
 async function postData(url = '', postData=null) {
   if (url != '' && postData != null){
     let postResponse = await getAccessToken()
@@ -650,36 +652,33 @@ async function postData(url = '', postData=null) {
         }
 
         if (postDebug) {
-          console.log('postData postDataUrl: '+url)
-          console.log('postData headers: ')
+          console.log('(postData) url: '+url)
+          console.log('(postData) headers: ')
           console.table(headers)
-          console.log('postData data: ')
+          console.log('(postData) data: ')
           console.log(JSON.stringify(postData))
         }
 
-        let requestResponse = fetch(url, {
+        return await fetch(url, {
             method: 'POST', 
             headers: headers,
             body: JSON.stringify(postData)
-          }).then(response => response.json())
-            .then((jsonResponse)=>parseHttpResponse(jsonResponse))
-            .then((httpResponse) => {
-              if (postDebug) {
-                let responseString = JSON.stringify(httpResponse)
-                console.log('(postData) Backend responseString:'+responseString);              
-              }
-              return httpResponse; // return response
-            }).catch(error => {
+            })
+          .then((response)=>{return fetchResponse(response)})
+          .then((finalResponse)=>{return finalResponse})
+          .catch((error) => {
               return handleError(error);
             });  
-
-        return requestResponse // transfer response
       }
     );    
     return postResponse; // collect & return response
   }
 }
 
+/**
+ * Specific header setup for
+ * POSTing data to SFMC via SOAP
+ */
 async function soapRequest(soapEnv=''){
   if (postDebug==false) console.log('(soapRequest)')
   if (soapEnv==null || soapEnv=='' || soapEnv=={}){
@@ -740,7 +739,8 @@ return soapRequest;
 }
 
 /**
- * PassCreator Communication
+ * Specific header setup for
+ * POSTing data to PassCreator
  */
 async function postDataToPassCreator(url = '', postData=null) {
   if (url != '' && postData != null){
@@ -750,9 +750,14 @@ async function postDataToPassCreator(url = '', postData=null) {
     var headers = {
       "Accept": dataType,
       "Content-Type": dataType,
-      "Authorization":apiKey
+      "Authorization":postData.apiKey
     }
 
+    console.log('(pDTPC) Input headers:')
+    console.table(headers)
+    
+    console.log('(pDTPC) Input Data:')
+    console.table(postData)
     //
     // Perform API Call
     //
@@ -766,15 +771,9 @@ async function postDataToPassCreator(url = '', postData=null) {
       referrerPolicy: 'no-referrer', 
       body: JSON.stringify(postData) 
     })// Parse Response
-    .then(response => response.json())
+    .then(fetchResponse)
+    .then((finalResponse)=>{return finalResponse})
     // Announce and log response
-    .then((response)=>{
-        console.log('pDTPC raw response:')
-        console.table(response)
-        var logResponse = logData('Message sent',postData)
-        .then((response)=>{return response;})
-      return logResponse
-    })
     .catch((error) => {
       // Broadcast error 
       if (postDebug) console.log('Backend error:'+JSON.stringify(error));
@@ -783,26 +782,32 @@ async function postDataToPassCreator(url = '', postData=null) {
     return postResponse; // return response
   }
 }
+
+
 function handleError(error){  
   // Response time
   var date = getDateTime();
 
-  if (postDebug) console.log('(handleError) '+JSON.stringify(error));
+  if (postDebug) console.log('(handleError) Error:');
+  console.table(error)
   //
   // Construct Standardised Response
   //
   var errorResponse = {
     'requestDate':date.DateTime,
-    'status':error.status,
+    'type':typeof error,
     'body':(typeof error !== 'string') ? JSON.stringify(error) : error
   }  
+  // Append Error Status (if defined)
+  errorResponse.status = (error.hasOwnProperty('status') ? error.status:null)
+  
   return errorResponse
 }
 function parseHttpResponse(result) {  
   // Announce and log result
   if (postDebug){    
-    console.log('parseHttpResponse result:'+JSON.stringify(result))
-    }  
+    console.log('(parseHttpResponse) Input result:'+JSON.stringify(result))
+    }    
 
   // Response time
   var date = getDateTime();
@@ -812,14 +817,17 @@ function parseHttpResponse(result) {
   //
   var messageResponse = {
     'requestDate':date.DateTime,
-    'status':null,
     'body':null
   }      
-
+  
   if (result.hasOwnProperty('status')){
     messageResponse.status = result.status
   }else{
-    messageResponse.status = 200
+    if (result.hasOwnProperty('ok')){
+      messageResponse.status = 200
+    }else{
+      messageResponse.status = 202
+    }
   }
   if (result.hasOwnProperty('errorcode')){
     if (result.hasOwnProperty('message')){

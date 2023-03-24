@@ -11,7 +11,7 @@ const jbApp = {
     version:2.0,
     configurationTable:'passCreator_configuration',
     configTable:null,
-    configExists:null,
+    configExists:false,
     configReady:false,
     apiKey:null,
     isTest:false, 
@@ -81,6 +81,35 @@ const jbApp = {
             }
             return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
         });
+    },
+    log:function(data){
+        if (debug) console.log('testLog:')
+        if (debug) console.table(data)
+        return $.ajax({
+            type: "POST",
+            url: '/log',
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify(data),
+            success: function(result){
+                return jbApp.restResponse(result)
+            },
+            error: function(error){
+                return jbApp.restError(error)
+            }
+        });
+    }, 
+    getDateTime:async function(){
+        let d = new Date();
+        var requestDate = d.toLocaleDateString()
+        var requestTime = d.toLocaleTimeString()
+        var dateTime = requestDate+'-'+requestTime;
+        return {
+            'Date':requestDate,
+            'Time':requestTime,
+            'DateTime':dateTime,
+            'ISODateTime':d.toISOString()
+        }
     },
     getPassEndpoint:function(){
         if (debug) console.log('getPassEndpoint triggered')
@@ -680,8 +709,10 @@ const jbApp = {
         
         //
         // Require API Key
+        // Omit nav to
+        // allow menu usage
         //
-        if (!jbApp.configReady && html[page] != 'nav'){
+        if (jbApp.configReady == false && html[page] != 'nav'){
             page = 'config'
             refreshPage = true
         }else{
@@ -871,27 +902,40 @@ const jbApp = {
 /**
  * REST functionality 
  */
-    /* Loads config into into jbApp.configTable */
+    /**
+     * Load configuration into app
+     * 
+     * Defines:
+     * jbApp.configExists = true/false
+     * jbApp.configTable = object of values
+     * 
+     * Returns:    
+     * jbApp.getDataExtensionRest(jbApp.configurationTable)
+     * Return Object - described in below comment
+     */
     getConfiguration:async function(){
         if (jbApp.configTable == null){
-            let table = await jbApp.getDataExtensionRest(jbApp.configurationTable)
+            return await jbApp.getDataExtensionRest(jbApp.configurationTable)
                 .then((config)=>{
-                let configuration = config.body
-                jbApp.configTable = configuration
-                if (configuration.hasOwnProperty('items')
+                var configuration = config.body
+
+                if (configuration.hasOwnProperty('count') 
+                    && configuration.count>0
+                    && configuration.hasOwnProperty('items')
                     && configuration.items[0].hasOwnProperty('values')            
                     ){
+                        jbApp.configExists = true                        
+                        console.log('(getConfiguration) assigning configuration')
+                        console.table(configuration)
                         jbApp.configTable = configuration.items[0].values
+                        return configuration;
                 }else{
-                    if (jbApp.configTable.hasOwnProperty('count') && jbApp.configTable.count>0){
-                        return jbApp.configTable
-                    }else{
-                        return false
-                    }
-                }                
-                return configuration
+                    console.log('(getConfiguration) can\'t assign configuration')
+                    jbApp.configExists = false
+                    console.table(configuration)
+                    return false
+                }     
             });
-            return table;
         }else{
             return jbApp.configTable
         }
@@ -900,7 +944,7 @@ const jbApp = {
     getApiKey: async function(){
         let functionName = '(getApiKey) '
         
-        if (jbApp.hasOwnProperty('configTable')){
+        if (jbApp.hasOwnProperty('configTable') && jbApp.configTable != null){
                 console.log(functionName+'looking for apiKey in: ')
                 console.table(jbApp.configTable)
                 let apiKey = jbApp.configTable.apikey
@@ -911,9 +955,29 @@ const jbApp = {
             return false;
         }
     },
+    
+    /**
+     * AJAX function to request DE by CustomerKey
+     * 
+     * Input: customerKey
+     * 
+     * Successful Return Object: {
+        "requestToken":"",
+        "tokenExpireDateUtc":"",
+        "customObjectId":"",
+        "customObjectKey":"",
+        "pageSize":2500,
+        "page":1,
+        "count":1,
+        "top":0,
+        "items":[]
+        }
 
+     * Failure: false
+     *
+    */
     getDataExtensionRest:function(customerKey){
-        if (debug) console.log('getDataExtension:'+customerKey)
+        if (debug) console.log('(getDataExtension):'+customerKey)
         let requestResponse = $.ajax({
             type: "POST",
             url: '/getde',
@@ -938,7 +1002,7 @@ const jbApp = {
     restResponse:function (result) {
         if (debug) console.log('Server response parsing starts')
 
-        if (result.hasOwnProperty('status')){
+        if (result.hasOwnProperty('status') && result.status != null){
             let status = result.status;
             if (debug) console.log('Server response has status: '+status)
         }
@@ -1079,7 +1143,7 @@ const jbApp = {
         let config = {
             'Id':jbApp.guid(),
             'APIKey':apiKey,
-            'DateModified':jbApp.getDateTime()
+            'DateModified':jbApp.getDateTime().DateTime
         }
         saveResult = await jbApp.callBackend('/saveConfig',config)
         return saveResult;
@@ -1158,292 +1222,43 @@ const jbApp = {
     },
 
 /**
- * Testing functionality 
+ * Main tests run at startup
  */
-    bindTestMenu:function(){
-        if (debug) console.log('Binding test menu')
-        $('.test_action').each(function() {
-            let elem = $( this )
-            
-            /**
-             * Presume we'll be changing the page
-             */
-            var refreshPage=true;
-
-            /**
-             * Isolate the required action
-             */
-            let action = elem.data('action');
-            jbApp.action = null
-            jbApp.action = action
-
-            /**
-             * Bind the requested action
-             */
-            switch(action){
-
-                case 'readSendable':
-                    $(elem).on('click',async function(){
-                        // Nominate table
-                        let customerKey = 'testing_dale'
-
-                        // Request Table
-                        let table = await jbApp.getDataExtensionRest(customerKey)
-
-                        // Execute Action                        
-                        jbApp.pageHtml = JSON.stringify(table.body)
-                        jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked:readSendable | '+jbApp.action)
-
-                    });                
-                    console.log('Bound '+action) 
-                break;  
-
-                case 'getLogTable':
-                    $(elem).on('click',async function(){
-                        // Nominate table
-                        let customerKey = 'passcreator_success_log'
-
-                        // Request Table
-                        let table = await jbApp.checkDeExists(customerKey)
-                        
-                        // Execute Action                        
-                        jbApp.pageHtml = JSON.stringify(table.body)
-                        jbApp.processPageChange(refreshPage)
-
-                    });                
-                    console.log('Bound '+action) 
-                break; 
-
-                case 'getConfiguration':
-                    $(elem).on('click',async function(){
-                        let customerKey = 'passCreator_configuration'                        
-                        let table = await jbApp.getDataExtensionRest(customerKey)
-                        jbApp.pageHtml = JSON.stringify(table.body)
-
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked:getConfiguration | '+jbApp.action+' ('+typeof table+')')
-
-                    });                
-                    console.log('Bound '+action) 
-                break; 
-
-                case 'buildTable':
-                    let configXml = getConfigXml()
-                    console.log('clicked:buildTable | got: '+configXml)
-                    console.log('Bound '+action) 
-                break;
-
-                case 'authenticate':
-                    $(elem).on('click',function(){
-                        var testResults = jbApp.testAuth()
-                        jbApp.pageHtml = JSON.stringify(testResults)
-
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked:authenticate | '+jbApp.action)
-
-                    });                
-                    console.log('Bound '+action) 
-                break;     
-
-                case 'testLog':
-                    $(elem).on('click',function(){
-                        var testResults = jbApp.testLog({'message':'Test of the logging system performed at '})
-                        jbApp.pageHtml = JSON.stringify(testResults)
-
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked:testLog | '+jbApp.action)
-
-                    });                
-                    console.log('Bound '+action) 
-                break;        
-
-                case 'testMessage':
-                    $(elem).on('click',function(){
-                        var testResults = jbApp.testMessage({
-                            'message':'help me'
-                        })
-                        jbApp.pageHtml = testResults
-
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked:testLog | '+jbApp.action)
-
-                    });                
-                    console.log('Bound '+action) 
-                break;  
-
-                case 'getXml':
-                    $(elem).on('click',function(){
-                        var testResults = jbApp.buildConfigXml()
-                        testResults = testResults.replaceAll('<','&lt;').replaceAll('>','&gt;')
-                        jbApp.pageHtml = '<pre>'+testResults+'</pre>'
-
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked:getXml | '+jbApp.action)
-
-                    });                
-                    console.log('Bound '+action) 
-                break; 
-
-                case 'getLogXml':
-                    $(elem).on('click',function(){
-                        var testResults = jbApp.buildLogXml('passcreator_success_log')
-                        testResults = testResults.replaceAll('<','&lt;').replaceAll('>','&gt;')
-                        jbApp.pageHtml = '<pre>'+testResults+'</pre>'
-
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked:getLogXml | '+jbApp.action)
-
-                    });                
-                    console.log('Bound '+action) 
-                break; 
-
-                case 'testInstall':                    
-                    $(elem).on('click',function(){
-                        jbApp.testInstall()
-                    });
-                    console.log('Bound '+action) 
-                    break;
-
-                case 'getApiKey':
-                    $(elem).on('click',async function(){
-                        await jbApp.getApiKey().then((apiKey)=>{
-                            console.log('Action Get APIKey: '+apiKey)
-                            jbApp.pageHtml = '<pre>'+apiKey+'</pre>'
-
-                            // Execute Action
-                            jbApp.processPageChange(refreshPage)
-                            });
-                        });
-                    break;
-                default:
-                    $(elem).on('click',function(){
-                        jbApp.action = null
-                        var testResults = '<h1>Error</h1><h2>Unconfigured test option</h2>'
-                        jbApp.pageHtml = testResults
-
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked unconfigured test option:'+jbApp.action)   
-                    });    
-                break;
-
-
-            }   
-
-        }); 
-    },
-
-    testAuth:function(){
-        $.ajax({
-            beforeSend:function(){$('#main').html('Loading')},
-            type: "POST",
-            url: '/testauth',
-            contentType: "application/json",
-            dataType: "json",
-            success: function(authResult){                        
-                jbApp.testAuthSuccess(authResult)
-            },
-            error: function(xhr){
-                jbApp.restError(xhr)
-              }
-        });        
-    },    
-
-    testLog:function(data){
-        if (debug) console.log('testLog:')
-        if (debug) console.table(data)
-        $.ajax({
-            type: "POST",
-            url: '/testlog',
-            contentType: "application/json",
-            dataType: "json",
-            data: JSON.stringify(data),
-            success: function(result){
-                jbApp.restSuccess(result)
-            },
-            error: function(error){
-                jbApp.restError(error)
-            }
-        });
-    },   
-
-    testMessage:function(data){
-        if (debug) console.log('testmessage:')
-        if (debug) console.table(data)
-        $.ajax({
-            type: "POST",
-            url: '/testmessage',
-            contentType: "application/json",
-            dataType: "json",
-            data: JSON.stringify(data),
-            success: function(result){
-                jbApp.restSuccess(result)
-            },
-            error: function(error){
-                jbApp.restError(error)
-            }
-        });
-    },
-
-    testConfigXml:function(){
-        let xml = jbApp.getConfigXml()
-        return xml;
-    },
-    /**
-     * Test to ensure the config table exists
-     * Defines the Boolean jbApp.configExists
-     */
     testConfigurationExists:async function(){
-        console.log('testConfigurationExists')
-        let config = null
-        if (jbApp.configTable == null){
-            config = await jbApp.getConfiguration().then((result) =>{
-                return result
-            });
-        }else{
-            config = jbApp.configTable
-        }
-        jbApp.configExists = (config.hasOwnProperty('count') && config.count > 0) ? true:false
+        console.log('testing configExists:'+jbApp.configExists.toString())
+
+        let configTest = false
         
-        if (jbApp.configExists===true
-            && config.hasOwnProperty('apikey')
-            && config.apikey.length == 80){
-            // Assign API to property
-            jbApp.apiKey = config.apikey
-
-            // Report success
-            console.log('testConfigurationExists assigning apiKey'+config.toString())
-
-        }else{            
-            // Report failure
-            console.log('testConfigurationExists could not find apiKey'+config.toString())
-        }
+        if (jbApp.configExists == true){
+            return true;
+        }else{
+            configTest = await jbApp.getConfiguration()
+            .then((config) =>{
+                if (config != null){ 
+                    console.log('(testConfigurationExists) got config: '+JSON.stringify(config))
+                    if (jbApp.configTable != null
+                        && jbApp.configTable.hasOwnProperty('apikey')
+                        && jbApp.configTable.apikey != ''){
+                        // Assign API to property
+                        jbApp.apiKey = config.apikey
+        
+                        // Report success
+                        console.log('testConfigurationExists assigning apiKey'+JSON.stringify(jbApp.configTable))
+        
+                    }else{            
+                        // Report failure
+                        console.log('testConfigurationExists could not find apiKey'+JSON.stringify(jbApp.configTable))
+                    }
+                }else{            
+                    // Report failure
+                    console.log('testConfigurationExists could not find config'+JSON.stringify(jbApp.configTable))
+                }
+                return (config ? true:false);
+            });     
+        
         // Return test result
-        return jbApp.configExists
-
+        return configTest
+        }   
     },
     
     testInstall:async function(){     
@@ -1454,7 +1269,191 @@ const jbApp = {
         });
     },
 
-    
+    // Test Object
+    // Replaces functionality of bindTestMenu
+    // 
+    Test:{
+        readSendable:async function(){
+            // Nominate table
+            let customerKey = 'testing_dale'
 
+            // Request Table
+            let table = await jbApp.getDataExtensionRest(customerKey)
+
+            // Execute Action                        
+            jbApp.pageHtml = JSON.stringify(table.body)
+            jbApp.processPageChange(true)
+            
+            // Accounce Click
+            console.log('testing:readSendable')
+        },
+        getLogTable: async function(){
+            // Nominate table
+            let customerKey = 'passcreator_success_log'
+
+            // Request Table
+            let table = await jbApp.checkDeExists(customerKey)
+            
+            // Execute Action                        
+            jbApp.pageHtml = JSON.stringify(table.body)
+            jbApp.processPageChange(true)
+            
+            // Accounce Click
+            console.log('testing:getLogTable')
+        },
+        getConfiguration:async function(){
+            let customerKey = 'passCreator_configuration'                        
+            let table = await jbApp.getDataExtensionRest(customerKey)
+            jbApp.pageHtml = JSON.stringify(table.body)
+
+            // Execute Action
+            jbApp.processPageChange(true)
+            
+            // Accounce Click
+            console.log('testing:getConfiguration')
+        },
+        buildTable:function(){
+            let configXml = getConfigXml()
+            console.log('testing:buildTable')
+            console.log('Bound '+action) 
+
+        },
+        authenticate:function(){
+            var testResults = jbApp.testAuth()
+            jbApp.pageHtml = JSON.stringify(testResults)
+
+            // Execute Action
+            jbApp.processPageChange(true)
+            
+            // Accounce Click
+            console.log('testing:authenticate')
+
+        },
+        testLog:async function(){
+            dateTime = await jbApp.getDateTime()
+            let message = 'Test of the logging system performed at '+dateTime.DateTime
+            console.log(message)
+
+            var testResults = jbApp.log({'message':message})
+            jbApp.pageHtml = JSON.stringify(testResults)
+
+            // Execute Action
+            jbApp.processPageChange(true)
+            
+            // Accounce Click
+            console.log('testing:testLog | '+jbApp.action)
+
+        },
+        testMessage:async function(){
+            var testData = {
+                'message':'help me',
+                'apiKey':jbApp.configTable.apikey,
+                "token":jbApp.token,
+                "authUrl":jbApp.authUrl,
+                "restUrl":jbApp.restUrl
+            }
+
+            await jbApp.testMessage(testData).then((testResults)=>{
+                jbApp.pageHtml = testResults
+
+                // Execute Action
+                jbApp.processPageChange(true)
+
+                // Accounce Click
+                console.log('testing:testMessage | '+JSON.stringify(testData))
+                console.log('testResults | '+JSON.stringify(testResults))
+                return JSON.stringify(testResults)
+                });
+        },
+        getXml:function(){
+            var testResults = jbApp.buildConfigXml()
+            testResults = testResults.replaceAll('<','&lt;').replaceAll('>','&gt;')
+            jbApp.pageHtml = '<pre>'+testResults+'</pre>'
+
+            // Execute Action
+            jbApp.processPageChange(true)
+            
+            // Accounce Click
+            console.log('testing:getXml | '+jbApp.action)
+
+        },
+        getLogXml:function(){
+            var testResults = jbApp.buildLogXml('passcreator_success_log')
+            testResults = testResults.replaceAll('<','&lt;').replaceAll('>','&gt;')
+            jbApp.pageHtml = '<pre>'+testResults+'</pre>'
+
+            // Execute Action
+            jbApp.processPageChange(true)
+            
+            // Accounce Click
+            console.log('testing:getLogXml | '+jbApp.action)
+
+        },
+        testInstall:function(){        
+            $(elem).on('click',function(){
+                jbApp.testInstall()
+            });
+            console.log('Bound '+action) 
+            
+            // Accounce Click
+            console.log('testing:testInstall | '+jbApp.action)
+
+        },
+        getApiKey:async function(){
+            await jbApp.getApiKey().then((apiKey)=>{
+                console.log('Action Get APIKey: '+apiKey)
+                jbApp.pageHtml = '<pre>'+apiKey+'</pre>'
+                jbApp.apiKey = apiKey
+                // Execute Action
+                jbApp.processPageChange(true)
+                });
+            
+            // Accounce Click
+            console.log('testing:getApiKey | '+jbApp.action)
+        }
+
+    },
+    /**
+     * Helper functions for
+     * Test child object 
+     */
+    testAuth:function(){
+        $.ajax({
+            beforeSend:function(){$('#main').html('Loading')},
+            type: "POST",
+            url: '/testauth',
+            contentType: "application/json",
+            dataType: "json",
+            success: function(authResult){                        
+                 return jbApp.restResponse(authResult)
+            },
+            error: function(xhr){
+                jbApp.restError(xhr)
+              }
+        });        
+    },  
+
+    testMessage:function(data){
+        if (debug) console.log('testmessage:')
+        if (debug) console.table(data)
+        return $.ajax({
+            type: "POST",
+            url: '/testmessage',
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify(data),
+            success: function(result){
+                return jbApp.restSuccess(result)
+            },
+            error: function(error){
+                return jbApp.restError(error)
+            }
+        });
+    },
+
+    testConfigXml:function(){
+        let xml = jbApp.getConfigXml()
+        return xml;
+    },
 }
 jbApp.load(connection)
