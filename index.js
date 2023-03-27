@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const path = require('path');
+const br = "\n"
 const fetchResponse = response => {
   if (!response.ok) { 
      throw Error(response.statusText);
@@ -8,7 +9,192 @@ const fetchResponse = response => {
      return response.json();
   }
 };
+const XML = {
+  soapBuildTag:function(field='',value=null){
+    let xml = null
+    console.log('Formatting: '+field+' is '+(typeof value))
+    if (
+        typeof value === 'boolean'
+        || field == 'FieldType'
+        || field == 'Length'
+    ){
+        xml = br+'<'+field+'>'+value+'</'+field+'>';
+    }else{
+        xml = br+'<'+field+'><![CDATA['+value+']]></'+field+'>';
+    }
+    return xml
+  },
 
+  soapBuildDe:async function(details={},fields = [],sendableFields=[]){
+      /**
+       * Envelope Wrapper
+       */
+      let soapOpening = `<?xml version="1.0" encoding="UTF-8"?>
+  <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:u="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
+  <s:Header>
+      <a:Action s:mustUnderstand="1">Create</a:Action>
+      <a:To s:mustUnderstand="1">{{url}}Service.asmx</a:To>
+      <fueloauth xmlns="http://exacttarget.com">{{access_token}}</fueloauth>
+  </s:Header>
+  <s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <CreateRequest xmlns="http://exacttarget.com/wsdl/partnerAPI">
+      <Options></Options>
+      <Objects xsi:type="DataExtension">` 
+      let soapClosing = `
+          </Objects>
+      </CreateRequest>
+  </s:Body>
+  </s:Envelope>`
+
+      /**
+       * SOAP Envelope
+       */     
+      let SOAP = soapOpening;
+
+      /**
+       * SOAP Details
+       */        
+      let soapDetails = ''
+      for (var d in details){
+          let detail = details[d]
+          soapDetails += XML.soapBuildTag(d,detail)
+      }
+
+      /**
+       * Sendable fields
+       */
+      let sendFields = ''
+      if (sendableFields.length > 0){
+          for (var s in sendableFields){
+              let field = sendableFields[s];
+              let sendField=br+'<SendableDataExtensionField>'+br
+              for(var x in field){
+                  let prop = field[x]
+                  sendField += XML.soapBuildTag(x,prop)
+              }
+              sendField+='</SendableDataExtensionField>'+br
+              sendFields += sendField
+          }
+      }
+      if (sendFields != '' ){
+          SOAP += br+sendFields+br
+      }
+
+      /**
+       * Standard Fields
+       */
+      let mainFields = ''
+      if (fields.length > 0){
+          mainFields += br+'<Fields>'+br
+          for (var f in fields){
+              let field = fields[f]                
+              let soapField='<Field>'
+              for(var x in field){
+                  let prop = field[x]
+                  soapField += XML.soapBuildTag(x,prop)
+              }
+              // End PK & Nullable application
+
+              soapField+=br+'</Field>'
+              mainFields += soapField+br
+          }
+          mainFields += '</Fields>'+br
+      }
+
+      /**
+       * Build Envelope 
+       */
+      if (soapDetails!=''){
+          SOAP += soapDetails
+      }
+      if (sendableFields.length && sendFields!=''){
+          SOAP += sendFields
+      }
+      if (fields.length && mainFields != ''){
+          SOAP += mainFields
+      }
+      return SOAP+soapClosing;
+  },
+
+  buildConfigXml:async function(){
+      let details = {
+          CustomerKey:jbApp.configurationTable,
+          Name:jbApp.configurationTable,
+          isSendable:false
+      }
+      let fields = [
+      {
+          CustomerKey:'Id',
+          Name:'Id',
+          FieldType:'Text',
+          Length:36,
+          isRequired:true,
+          isPrimaryKey:true
+      },{
+          CustomerKey:'APIKey',
+          Name:'APIKey',
+          FieldType:'Text',
+          Length:80,
+          isRequired:false,
+          isPrimaryKey:false
+      },{
+          CustomerKey:'logo_url',
+          Name:'logo_url',
+          FieldType:'Text',
+          Length:500,
+          isRequired:false,
+          isPrimaryKey:false
+      },{
+          CustomerKey:'DateModified',
+          Name:'DateModified',
+          FieldType:'Date',
+          isRequired:false,
+          isPrimaryKey:false
+      },
+      ]
+      return this.soapBuildDe(details,fields)
+  },
+
+  buildLogXml:async function(logName){
+      let details = {
+          CustomerKey:logName,
+          Name:logName,
+          isSendable:false
+      }
+      let fields = [
+      {
+          CustomerKey:'Id',
+          Name:'Id',
+          FieldType:'Text',
+          Length:36,
+          isRequired:true,
+          isPrimaryKey:true
+      },{
+          CustomerKey:'DateModified',
+          Name:'DateModified',
+          FieldType:'Date',
+          isRequired:false,
+          isPrimaryKey:false
+      },
+      {
+          CustomerKey:'Message',
+          Name:'Message',
+          FieldType:'Text',
+          Length:4000,
+          isRequired:false,
+          isPrimaryKey:false
+      },
+      {
+          CustomerKey:'MetaData',
+          Name:'MetaData',
+          FieldType:'Text',
+          isRequired:false,
+          isPrimaryKey:false
+      }
+      ]
+      return this.soapBuildDe(details,fields)
+  },
+}
 var configDe = 'passCreator_configuration'
 var logDe = 'passcreator_success_log'
 var errorDe = 'passcreator_error_log'
@@ -110,32 +296,38 @@ app.post('/getde',async function (req, res, next) {
 app.post('/install',async function (req, res, next) { 
   if (postDebug) console.log('/install route called ') 
   if (req != null && typeof req !== 'undefined'){
-    let soap = null
-    if (req.hasOwnProperty('body')){
-      soap = req.body
-    }else{
-      soap = req
-    }
 
-    if (soap == null){
-      console.log('/install route No SOAP received')
+    if (req == null || req == false){
+      console.log('/install route request received')
       console.table(req.toString())
       return false
     }else{
-      soap = req.body.soap
-      console.log('/install route SOAP received: '+soap)
+      console.log('/install request was received: ')
+      console.table(req.body)
+      let xml = req.body
+      let configXml = await XML.soapBuildDe(xml.details,xml.fields)
+      
+      console.log('/install request was built: ')
+      console.table(configXml)   
+      
+      await soapRequest(configXml)
+        .then((getSoapResponse) => {
+          let jsonResponse = res.send(getSoapResponse)
+          if (postDebug) console.log('/install route end ') 
+          return jsonResponse
+          }).catch((error)=>{ 
+            if (postDebug) console.log('/install route end ') 
+            console.log('/install route error')         
+            console.table(error)
+            return false
+          });    
     }
     /*
-    return soapResponse = await soapRequest(soap)
-      .then((getSoapResponse) => {
-        let jsonResponse = res.send(getSoapResponse)
-        return jsonResponse
-        }).catch((error)=>{ 
-          console.log('/install route error')         
-          console.table(error)
-          return false
-        });    
-        */   
+    for (key in req){
+      console.log('key: '+key)
+      console.table(req[key])
+    }
+    */ 
   }else{
     return {'message':'No data submitted'}
   }
@@ -422,7 +614,7 @@ async function writeConfigData(data={}){
   if (postDebug) console.log('writeConfigData items: ')
   if (postDebug) console.table(row.items)
 
-  let response = await postData(loggingUri,row)   
+  return await postData(loggingUri,row)   
     .then(async (response) => JSON.stringify(response))
     .then((response) => {
     if (postDebug){
@@ -431,7 +623,6 @@ async function writeConfigData(data={}){
       }
     return response
     });  
-  return response;
 }
 async function logData(data={}){
   if (postDebug) console.log('logData called')
@@ -632,8 +823,7 @@ async function getData(url = '', headers) {
     headers: headers,
     redirect: 'follow', 
     referrerPolicy: 'no-referrer'
-  }).then(response => response.json())
-    .then((jsonResponse)=>parseHttpResponse((jsonResponse)))
+  }).then((jsonResponse)=>parseHttpResponse((jsonResponse)))
     .then((httpResponse) => {
       // return response
       return httpResponse; 
@@ -692,11 +882,11 @@ async function postData(url = '', postData=null) {
  */
 async function soapRequest(soapEnv=''){
   if (postDebug==false) console.log('(soapRequest)')
-  if (soapEnv==null || soapEnv=='' || soapEnv=={}){
+  if (soapEnv==''){
     console.log('(soapRequest) No SOAP provided')
     return false;
   }else{
-    console.log('(soapRequest) SOAP provided')
+    console.log('(soapRequest) SOAP provided:'+soapEnv)
   }
   // Setup call
   let accessToken = await getAccessToken();
@@ -706,7 +896,7 @@ async function soapRequest(soapEnv=''){
   let url = soapDomain
   let headers = {
     "Accept": "*/*",
-    "Content-Type": 'application/soap+xml',
+    "Content-Type": 'application/xml',
     "Authorization":accessToken
   }
   if (postDebug){
@@ -745,6 +935,7 @@ async function soapRequest(soapEnv=''){
       let errorResponse = `Error: ${error}`
       return handleError(errorResponse);
   });  
+  res.send(soapRequest)
 return soapRequest;
     
 }

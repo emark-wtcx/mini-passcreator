@@ -1,7 +1,7 @@
-const connection = new Postmonger.Session();
 /**
  * Create a new connection for this session.
  */
+const connection = new Postmonger.Session();
 /**
  * Show Console Output?
  */
@@ -15,7 +15,7 @@ const jbApp = {
     configReady:false,
     apiKey:null,
     isTest:false, 
-    isLocalhost:(location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
+    isLocalhost:((typeof location !== 'undefined') ? location.hostname === 'localhost' || location.hostname === '127.0.0.1' : false ),
     getSchema:true,
     getTokens:true,
     getEndpoints:true,
@@ -817,7 +817,11 @@ const jbApp = {
             $('#nav').html(nav)
         });        
 
+        if (typeof connection !== 'undefined'){
         jbApp.bindMenu(connection) /* Order of operations issue */
+        }else{
+            jbApp.bindMenu(false)
+        }
         
         jbApp.pageHtml = jbApp.getHtml('home',false)
         jbApp.processPageChange(1)
@@ -945,7 +949,7 @@ const jbApp = {
                             jbApp.configTable = configuration.items[0].values
                             return configuration;
                     }else{
-                        console.log('(getConfiguration) can\'t assign configuration')
+                        console.log('(getConfiguration) can\'t find configuration')
                         jbApp.configExists = false
                         console.table(configuration)
                         return false
@@ -1067,7 +1071,7 @@ const jbApp = {
         return xml
     },
 
-    soapBuildDe:function(details={},fields = [],sendableFields=[]){
+    soapBuildDe:async function(details={},fields = [],sendableFields=[]){
         /**
          * Envelope Wrapper
          */
@@ -1252,15 +1256,13 @@ const jbApp = {
  */
     testConfigurationExists:async function(){
         console.log('(testConfigurationExists) configExists:'+jbApp.configExists.toString())
-
-        let configTest = false
         
         if (jbApp.configExists == true){
             return true;
         }else{
-            configTest = await jbApp.getConfiguration()
+            return await jbApp.getConfiguration()
             .then((config) =>{
-                if (config != null){ 
+                if (config != false){ 
                     console.log('(testConfigurationExists) got config: '+JSON.stringify(config))
                     if (jbApp.configTable != null
                         && jbApp.configTable.hasOwnProperty('apikey')
@@ -1281,9 +1283,6 @@ const jbApp = {
                 }
                 return (config ? true:false);
             });     
-        
-        // Return test result
-        return configTest
         }   
     },
     
@@ -1333,16 +1332,53 @@ const jbApp = {
     },
     installConfigTable:async function(){
         if (!jbApp.configExists){
-            return await jbApp.buildConfigXml()
-            .then(async (configTableXml)=>{
-                return await jbApp.callBackend('/install',configTableXml,{dataType:'xml',contentType:'application/xml'})
+            return await jbApp.buildConfigStructure()
+            .then(async (configTableStructure)=>{
+                return await jbApp.callBackend('/install',configTableStructure)
             }).catch(error=>{
                 console.log(error)
                 return error
             });
         }
     },
-    
+    buildConfigStructure:async function(){
+        let details = {
+            CustomerKey:jbApp.configurationTable,
+            Name:jbApp.configurationTable,
+            isSendable:false
+        }
+        let fields = [
+        {
+            CustomerKey:'Id',
+            Name:'Id',
+            FieldType:'Text',
+            Length:36,
+            isRequired:true,
+            isPrimaryKey:true
+        },{
+            CustomerKey:'APIKey',
+            Name:'APIKey',
+            FieldType:'Text',
+            Length:80,
+            isRequired:false,
+            isPrimaryKey:false
+        },{
+            CustomerKey:'logo_url',
+            Name:'logo_url',
+            FieldType:'Text',
+            Length:500,
+            isRequired:false,
+            isPrimaryKey:false
+        },{
+            CustomerKey:'DateModified',
+            Name:'DateModified',
+            FieldType:'Date',
+            isRequired:false,
+            isPrimaryKey:false
+        },
+        ]
+        return {'details':details,'fields':fields}
+    },
     /**
      *  Test Object
      */
@@ -1463,16 +1499,6 @@ const jbApp = {
             console.log('testing:getLogXml | '+jbApp.action)
 
         },
-        testInstall:function(){        
-            $(elem).on('click',function(){
-                jbApp.testInstall()
-            });
-            console.log('Bound '+action) 
-            
-            // Accounce Click
-            console.log('testing:testInstall | '+jbApp.action)
-
-        },
         getApiKey:async function(){
             await jbApp.getApiKey().then((apiKey)=>{
                 console.log('Action Get APIKey: '+apiKey)
@@ -1487,8 +1513,16 @@ const jbApp = {
         },
         installTable:async function(){
             return jbApp.installConfigTable()
-        }
+        },
+        testInstall:function(){        
+            jbApp.testInstall()
+            
+            // Accounce Click
+            console.log('testing:testInstall | '+jbApp.action)
+
+        },
 
     },
 }
-jbApp.load(connection)
+
+jbApp.load(false)
