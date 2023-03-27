@@ -109,9 +109,15 @@ app.post('/getde',async function (req, res, next) {
  */
 app.post('/install',async function (req, res, next) { 
   if (postDebug) console.log('/install route called ') 
-  if (req != null){
-    let soap = req.body
-    if (!soap){
+  if (req != null && typeof req !== 'undefined'){
+    let soap = null
+    if (req.hasOwnProperty('body')){
+      soap = req.body
+    }else{
+      soap = req
+    }
+
+    if (soap == null){
       console.log('/install route No SOAP received')
       console.table(req.toString())
       return false
@@ -119,12 +125,17 @@ app.post('/install',async function (req, res, next) {
       soap = req.body.soap
       console.log('/install route SOAP received: '+soap)
     }
-    let soapResponse = await soapRequest(soap)
+    /*
+    return soapResponse = await soapRequest(soap)
       .then((getSoapResponse) => {
         let jsonResponse = res.send(getSoapResponse)
         return jsonResponse
-        })       
-    return soapResponse;
+        }).catch((error)=>{ 
+          console.log('/install route error')         
+          console.table(error)
+          return false
+        });    
+        */   
   }else{
     return {'message':'No data submitted'}
   }

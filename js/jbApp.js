@@ -334,43 +334,58 @@ const jbApp = {
                 .text('Show messages')
     },
     saveConfigButtonAction:async function(){
+        let functionName = '(saveConfigButtonAction) '
         let apiKey = $('#apiKey').val();
+        let logo_url = $('#logo_url').val();
         if (apiKey.length == 80){
             jbApp.apiKey = apiKey
+
             //
             // Build configuration
             //
             var configTableXml = null
             if (!jbApp.configExists){
-                var configTableXml = await jbApp.buildConfigXml()
+                await jbApp.installConfigTable()
+                    .then((installResult)=>{
+                        console.log(functionName+'install result: '+JSON.stringify(installResult))
+                    }).catch((error)=>{
+                        console.log(functionName+'install result: '+JSON.stringify(error))
+                    });
+            }else{
+                console.log(functionName+'install not required')
             }
 
             //
             // Save config
             //
-            var saveData = {'apiKey':jbApp.apiKey}
-            let saveConfig = null
-            saveConfig = await jbApp.callBackend('/saveConfig',saveData)
-            if (!saveConfig){
-                console.log('APIKey install failed:'+JSON.stringify(saveConfig))
-            }else{    
-                console.log('APIKey install success:'+JSON.stringify(saveConfig))
-                if (saveConfig.hasOwnProperty('status')){
-                    if (saveConfig.status == 200){
-                        return true;
-                    }else{
-                        return false
-                    }            
-                }else{
-                    console.log('APIKey install unrecognised response')
-                    return false
-                }
+            var saveData = {
+                'apiKey':jbApp.apiKey,
+                'logo_url':logo_url
             }
-            //
-            // Redirect to home 
-            // 
-            jbApp.homeButtonAction()
-            return configTableXml.toString();
+            await jbApp.callBackend('/saveConfig',saveData).then((saveConfig)=>{
+                if (!saveConfig){
+                    console.log(functionName+'APIKey install failed:'+JSON.stringify(saveConfig))
+                }else{    
+                    console.log(functionName+'APIKey install success:'+JSON.stringify(saveConfig))
+                    if (saveConfig.hasOwnProperty('status')){
+                        if (saveConfig.status == 200){
+                            return true;
+                        }else{
+                            return false
+                        }            
+                    }else{
+                        console.log(functionName+'APIKey install unrecognised response')
+                        return false
+                    }
+                }
+                //
+                // Redirect to home 
+                // 
+                jbApp.homeButtonAction()
+                return configTableXml.toString();
+            }).catch((error)=>{
+                Alert(error)
+                })
         }else{
             alert('The API key should be 80 characters')
             $('#apiKey').addClass('slds-has-error')
@@ -882,7 +897,7 @@ const jbApp = {
             console.log('callBackend: typeof body | '+typeof payload)
             console.table(payload)
             }
-        let ajaxResponse = await $.ajax({
+        return await $.ajax({
             type: "POST",
             url: url,
             contentType: contentType,
@@ -896,7 +911,6 @@ const jbApp = {
                 Alert(JSON.stringify(result))
             }
         });
-        return ajaxResponse;
     },
     
 /**
@@ -917,24 +931,29 @@ const jbApp = {
         if (jbApp.configTable == null){
             return await jbApp.getDataExtensionRest(jbApp.configurationTable)
                 .then((config)=>{
-                var configuration = config.body
+                if (config != false){
+                    var configuration = config.body
 
-                if (configuration.hasOwnProperty('count') 
-                    && configuration.count>0
-                    && configuration.hasOwnProperty('items')
-                    && configuration.items[0].hasOwnProperty('values')            
-                    ){
-                        jbApp.configExists = true                        
-                        console.log('(getConfiguration) assigning configuration')
+                    if (configuration.hasOwnProperty('count') 
+                        && configuration.count>0
+                        && configuration.hasOwnProperty('items')
+                        && configuration.items[0].hasOwnProperty('values')            
+                        ){
+                            jbApp.configExists = true                        
+                            console.log('(getConfiguration) assigning configuration')
+                            console.table(configuration)
+                            jbApp.configTable = configuration.items[0].values
+                            return configuration;
+                    }else{
+                        console.log('(getConfiguration) can\'t assign configuration')
+                        jbApp.configExists = false
                         console.table(configuration)
-                        jbApp.configTable = configuration.items[0].values
-                        return configuration;
+                        return false
+                    }     
                 }else{
-                    console.log('(getConfiguration) can\'t assign configuration')
                     jbApp.configExists = false
-                    console.table(configuration)
                     return false
-                }     
+                }
             });
         }else{
             return jbApp.configTable
@@ -1149,7 +1168,7 @@ const jbApp = {
         return saveResult;
     },
 
-    buildConfigXml:function(){
+    buildConfigXml:async function(){
         let details = {
             CustomerKey:jbApp.configurationTable,
             Name:jbApp.configurationTable,
@@ -1171,6 +1190,13 @@ const jbApp = {
             isRequired:false,
             isPrimaryKey:false
         },{
+            CustomerKey:'logo_url',
+            Name:'logo_url',
+            FieldType:'Text',
+            Length:500,
+            isRequired:false,
+            isPrimaryKey:false
+        },{
             CustomerKey:'DateModified',
             Name:'DateModified',
             FieldType:'Date',
@@ -1181,7 +1207,7 @@ const jbApp = {
         return this.soapBuildDe(details,fields)
     },
 
-    buildLogXml:function(logName){
+    buildLogXml:async function(logName){
         let details = {
             CustomerKey:logName,
             Name:logName,
@@ -1225,7 +1251,7 @@ const jbApp = {
  * Main tests run at startup
  */
     testConfigurationExists:async function(){
-        console.log('testing configExists:'+jbApp.configExists.toString())
+        console.log('(testConfigurationExists) configExists:'+jbApp.configExists.toString())
 
         let configTest = false
         
@@ -1243,15 +1269,15 @@ const jbApp = {
                         jbApp.apiKey = config.apikey
         
                         // Report success
-                        console.log('testConfigurationExists assigning apiKey'+JSON.stringify(jbApp.configTable))
+                        console.log('(testConfigurationExists) assigning apiKey'+JSON.stringify(jbApp.configTable))
         
                     }else{            
                         // Report failure
-                        console.log('testConfigurationExists could not find apiKey'+JSON.stringify(jbApp.configTable))
+                        console.log('(testConfigurationExists) could not find apiKey'+JSON.stringify(jbApp.configTable))
                     }
                 }else{            
                     // Report failure
-                    console.log('testConfigurationExists could not find config'+JSON.stringify(jbApp.configTable))
+                    console.log('(testConfigurationExists) could not find config'+JSON.stringify(jbApp.configTable))
                 }
                 return (config ? true:false);
             });     
@@ -1263,15 +1289,63 @@ const jbApp = {
     
     testInstall:async function(){     
         return await jbApp.testConfigurationExists().then((installStatus)=>{
-        console.log('Install status: '+installStatus)
+        console.log('(testInstall) Install status: '+installStatus)
         jbApp.configReady = installStatus
         return installStatus
         });
     },
+    /**
+     * Helper functions for
+     * Test child object 
+     */
+    testAuthentication:function(){
+        $.ajax({
+            beforeSend:function(){$('#main').html('Loading')},
+            type: "POST",
+            url: '/testauth',
+            contentType: "application/json",
+            dataType: "json",
+            success: function(authResult){                        
+                 return jbApp.restResponse(authResult)
+            },
+            error: function(xhr){
+                jbApp.restError(xhr)
+              }
+        });        
+    },  
 
-    // Test Object
-    // Replaces functionality of bindTestMenu
-    // 
+    sendTestMessage:function(data){
+        if (debug) console.log('testmessage:')
+        if (debug) console.table(data)
+        return $.ajax({
+            type: "POST",
+            url: '/testmessage',
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify(data),
+            success: function(result){
+                return jbApp.restSuccess(result)
+            },
+            error: function(error){
+                return jbApp.restError(error)
+            }
+        });
+    },
+    installConfigTable:async function(){
+        if (!jbApp.configExists){
+            return await jbApp.buildConfigXml()
+            .then(async (configTableXml)=>{
+                return await jbApp.callBackend('/install',configTableXml,{dataType:'xml',contentType:'application/xml'})
+            }).catch(error=>{
+                console.log(error)
+                return error
+            });
+        }
+    },
+    
+    /**
+     *  Test Object
+     */
     Test:{
         readSendable:async function(){
             // Nominate table
@@ -1319,7 +1393,7 @@ const jbApp = {
 
         },
         authenticate:function(){
-            var testResults = jbApp.testAuth()
+            var testResults = jbApp.testAuthentication()
             jbApp.pageHtml = JSON.stringify(testResults)
 
             // Execute Action
@@ -1353,7 +1427,7 @@ const jbApp = {
                 "restUrl":jbApp.restUrl
             }
 
-            await jbApp.testMessage(testData).then((testResults)=>{
+            await jbApp.sendTestMessage(testData).then((testResults)=>{
                 jbApp.pageHtml = testResults
 
                 // Execute Action
@@ -1410,50 +1484,11 @@ const jbApp = {
             
             // Accounce Click
             console.log('testing:getApiKey | '+jbApp.action)
+        },
+        installTable:async function(){
+            return jbApp.installConfigTable()
         }
 
-    },
-    /**
-     * Helper functions for
-     * Test child object 
-     */
-    testAuth:function(){
-        $.ajax({
-            beforeSend:function(){$('#main').html('Loading')},
-            type: "POST",
-            url: '/testauth',
-            contentType: "application/json",
-            dataType: "json",
-            success: function(authResult){                        
-                 return jbApp.restResponse(authResult)
-            },
-            error: function(xhr){
-                jbApp.restError(xhr)
-              }
-        });        
-    },  
-
-    testMessage:function(data){
-        if (debug) console.log('testmessage:')
-        if (debug) console.table(data)
-        return $.ajax({
-            type: "POST",
-            url: '/testmessage',
-            contentType: "application/json",
-            dataType: "json",
-            data: JSON.stringify(data),
-            success: function(result){
-                return jbApp.restSuccess(result)
-            },
-            error: function(error){
-                return jbApp.restError(error)
-            }
-        });
-    },
-
-    testConfigXml:function(){
-        let xml = jbApp.getConfigXml()
-        return xml;
     },
 }
 jbApp.load(connection)
