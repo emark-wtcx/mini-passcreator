@@ -7,7 +7,7 @@ const fetchResponse = response => {
   if (!response.ok) { 
      throw Error(response.statusText);
   } else {
-     return response.json();
+     return (isJson(response) ? response.json() : response);
   }
 };
 const XML = {
@@ -34,7 +34,7 @@ const XML = {
   <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:u="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
   <s:Header>
       <a:Action s:mustUnderstand="1">Create</a:Action>
-      <a:To s:mustUnderstand="1">{{url}}Service.asmx</a:To>
+      <a:To s:mustUnderstand="1">{{url}}</a:To>
       <fueloauth xmlns="http://exacttarget.com">{{access_token}}</fueloauth>
   </s:Header>
   <s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
@@ -411,7 +411,15 @@ app.use(function (err, req, res, next) {
 /**
  *  Back End Functions
 * */
-
+function isJson(input){
+  try {
+      console.log('(isJson) true')
+  } catch (e) {
+      console.log('(isJson) false '+JSON.stringify(e))
+      return false;
+  }
+  return true;
+}
 function guid() { 
   var d = new Date().getTime();//Timestamp
   var d2 = (performance && performance.now && (performance.now()*1000)) || 0;//Time in microseconds since page-load or 0 if unsupported
@@ -539,14 +547,14 @@ async function getDataExtension(customerKey){
 
   // Request content
   if (postDebug){
-    console.log('getDataExtension Table by CustomerKey: ')    
+    console.log('(getDataExtension) Table by CustomerKey: ')    
     console.table(customerKey)
   }
   
   // Perform Request
   var accessToken = await getAccessToken();
   if (postDebug){
-    console.log('getDataExtension accessToken: ')
+    console.log('(getDataExtension) accessToken: ')
     console.table(accessToken)
   }
 
@@ -565,25 +573,17 @@ async function getDataExtension(customerKey){
   //
   // Request Data via getData function
   //
-  var getDataResponse = await getData(data.url,restHeaders)
+  return await getData(data.url,restHeaders)
     .then((dataResponse) => {
-      //
-      // Return result
-      //
+      if (postDebug){
+        console.log('(getDataExtension) dataResponse: ')
+        console.table(dataResponse)
+        }
       return dataResponse        
     }).catch((error) => {
       return handleError(error);
     }); 
 
-  if (postDebug){
-    console.log('getDataExtension getDataResponse: ')
-    console.table(getDataResponse)
-    }
-
-  //
-  // Return response  
-  //
-  return getDataResponse; 
 }
 async function writeConfigData(data={}){
   if (postDebug) console.log('logData called')
@@ -702,7 +702,7 @@ async function writeData(targetDe,data={}){
   // Input 
   // data = Response From getAccessToken
   //
-  // Output
+  // Output accessToken
   // access_token = Token as provided by SFMC 
   // accessToken = "Bearer "+access_token
 //
@@ -932,34 +932,35 @@ async function soapRequest(soapEnv=''){
     if (postDebug==true) console.log('(soapRequest)')
   }
 
-  // Setup call
-  let accessToken = await getAccessToken();
-  soapEnv = soapEnv.replace('{{access_token}}',access_token)
-  soapEnv = soapEnv.replace('{{url}}',soapDomain)
-  if (postDebug==true){
-    console.log('(soapRequest) Url: '+soapDomain)
-    console.log('(soapRequest) Token: '+accessToken)
-    console.log('(soapRequest) SOAP: '+soapEnv)
-  }
-
   // Setup headers
   let url = soapDomain
   let headers = {
     "Accept": "*/*",
     "Content-Type": 'application/soap+xml',
-    "Authorization":accessToken
+    "Authorization":access_token
   }
-  
-  // Perform Call
-  return await fetch(url, {method: 'POST', headers: headers, body: soapEnv})      
-    .then(fetchResponse)  
-    .then((response)=>{return parseSoapResponse(response)})
-    .then((xmlResponse)=> {
-      return xmlResponse.toString()         
+
+  // Setup call
+  await getAccessToken().then(async ()=>{
+    soapEnv = soapEnv.replace('{{access_token}}',access_token)
+    soapEnv = soapEnv.replace('{{url}}',url)
+
+    if (postDebug==true){
+      console.log('(soapRequest) Url: '+url)
+      console.log('(soapRequest) Token: '+access_token)
+      console.log('(soapRequest) SOAP: '+soapEnv)
+    }
+    
+    // Perform Call
+    return await fetch(url, {method: 'POST', headers: headers, body: soapEnv})  
+      //.then((response)=>{return fetchResponse(response)})   
+      .then((response)=>{
+        return parseSoapResponse(response)
     }).catch((error) => {
-      let errorResponse = `(soapRequest) ${error}`
-      return handleError(errorResponse);
-  });    
+        let errorResponse = `(soapRequest) ${error}`
+        return handleError(errorResponse);
+    });   
+  }); 
 }
 
 // postDataToPassCreator(url = '', postData=null)
@@ -1050,14 +1051,10 @@ function handleError(error){
     errorResponse.status = error.hasOwnProperty('status') 
   }
 
-  if (error.hasOwnProperty('errno')){ 
-    errorResponse.status = error.errno
-  }else{    
-      errorResponse.status = '0'    
-  }
-
   if (error.hasOwnProperty('cause') && error.cause.hasOwnProperty('code')){ 
-    errorResponse.body = explainError(error)
+    let errorDetails = explainError(error)
+    errorResponse.body = errorDetails.body
+    errorResponse.status = errorDetails.status
   }
   
   return errorResponse
@@ -1084,6 +1081,13 @@ function explainError(error){
     errorCause = error.cause
   }else{
     errorCause = error
+  }  
+
+  let errorStatus = null
+  if (errorCause.hasOwnProperty('errno')){ 
+      errorStatus = error.errno
+  }else{    
+      errorStatus = '0'    
   }
   
   let errorReason = 'Unrecognised Error'
@@ -1094,7 +1098,7 @@ function explainError(error){
         break;      
     }
   }
-  return errorReason;
+  return {body:errorReason,status:errorStatus};
 }
 
 // parseRestResponse(result)
@@ -1166,14 +1170,14 @@ function parseRestResponse(result) {
   // } 
 //
 function parseSoapResponse(result) {  
-  // Announce and log result
+  // Announce 
   if (postDebug){    
-    console.log('(parseSoapResponse)')
+    console.log('(parseSoapResponse) input:')
     console.table(result)
     }  
 
   let xml = new jsdom.JSDOM(result)
-  console.log('parseSoapResponse Response XML: ')
+  console.log('(parseSoapResponse) Response  => JSON: ')
   console.table(xml)
   
   let soapResult = {}
@@ -1208,6 +1212,12 @@ function parseSoapResponse(result) {
     messageResponse.status = 'Unknown'
   }
   
+  // Announce 
+  if (postDebug){    
+    console.log('(parseSoapResponse) output:')
+    console.table(messageResponse)
+    }  
+
   //  Return standardised messageResponse
   return messageResponse
   

@@ -912,7 +912,7 @@ const jbApp = {
                 return jbApp.restResponse(result)
             },
             error:function(result){           
-                Alert(JSON.stringify(result))
+                console.log(JSON.stringify(result))
             }
         });
     },
@@ -1243,7 +1243,7 @@ const jbApp = {
  * Main tests run at startup
  */
     testConfigurationExists:async function(){
-        console.log('(testConfigurationExists) configExists:'+jbApp.configExists.toString())
+        console.log('(testConfigurationExists) configExists: '+jbApp.configExists.toString())
         
         if (jbApp.configExists == true){
             return true;
@@ -1259,15 +1259,15 @@ const jbApp = {
                         jbApp.apiKey = config.apikey
         
                         // Report success
-                        console.log('(testConfigurationExists) assigning apiKey'+JSON.stringify(jbApp.configTable))
+                        console.log('(testConfigurationExists) assigning apiKey: '+config.apikey)
         
                     }else{            
                         // Report failure
-                        console.log('(testConfigurationExists) could not find apiKey'+JSON.stringify(jbApp.configTable))
+                        console.log('(testConfigurationExists) Found table but could not find apiKey: '+JSON.stringify(jbApp.configTable))
                     }
                 }else{            
                     // Report failure
-                    console.log('(testConfigurationExists) could not find config'+JSON.stringify(jbApp.configTable))
+                    console.log('(testConfigurationExists) could not find config table')
                 }
                 return (config ? true:false);
             });     
@@ -1497,7 +1497,7 @@ const jbApp = {
                 });
             
             // Accounce Click
-            console.log('testing:getApiKey | '+jbApp.action)
+            console.log('testing:getApiKey | '+apiKey)
         },
         installTable:async function(){
             return jbApp.installConfigTable()
