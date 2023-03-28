@@ -911,7 +911,7 @@ const jbApp = {
             success: function(result){           
                 return jbApp.restResponse(result)
             },
-            fail:function(result){           
+            error:function(result){           
                 Alert(JSON.stringify(result))
             }
         });
@@ -1055,7 +1055,7 @@ const jbApp = {
     
 /**
  * SOAP functionality 
- */
+ 
     soapBuildTag:function(field='',value=null){
         let xml = null
         console.log('Formatting: '+field+' is '+(typeof value))
@@ -1072,9 +1072,7 @@ const jbApp = {
     },
 
     soapBuildDe:async function(details={},fields = [],sendableFields=[]){
-        /**
-         * Envelope Wrapper
-         */
+        // Envelope Wrapper         
         let soapOpening = `<?xml version="1.0" encoding="UTF-8"?>
 <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:u="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
     <s:Header>
@@ -1092,23 +1090,17 @@ const jbApp = {
     </s:Body>
 </s:Envelope>`
 
-        /**
-         * SOAP Envelope
-         */     
+        // SOAP Envelope  
         let SOAP = soapOpening;
 
-        /**
-         * SOAP Details
-         */        
+       // SOAP Details    
         let soapDetails = ''
         for (var d in details){
             let detail = details[d]
             soapDetails += jbApp.soapBuildTag(d,detail)
         }
 
-        /**
-         * Sendable fields
-         */
+        // Sendable fields
         let sendFields = ''
         if (sendableFields.length > 0){
             for (var s in sendableFields){
@@ -1126,9 +1118,7 @@ const jbApp = {
             SOAP += br+sendFields+br
         }
 
-        /**
-         * Standard Fields
-         */
+        // Standard Fields
         let mainFields = ''
         if (fields.length > 0){
             mainFields += br+'<Fields>'+br
@@ -1147,9 +1137,7 @@ const jbApp = {
             mainFields += '</Fields>'+br
         }
 
-        /**
-         * Build Envelope 
-         */
+        // Build Envelope 
         if (soapDetails!=''){
             SOAP += soapDetails
         }
@@ -1160,16 +1148,6 @@ const jbApp = {
             SOAP += mainFields
         }
         return SOAP+soapClosing;
-    },
-
-    saveConfig:async function(apiKey){
-        let config = {
-            'Id':jbApp.guid(),
-            'APIKey':apiKey,
-            'DateModified':jbApp.getDateTime().DateTime
-        }
-        saveResult = await jbApp.callBackend('/saveConfig',config)
-        return saveResult;
     },
 
     buildConfigXml:async function(){
@@ -1249,6 +1227,16 @@ const jbApp = {
         }
         ]
         return this.soapBuildDe(details,fields)
+    },
+*/
+    
+    saveConfig:async function(apiKey){
+        let config = {
+            'Id':jbApp.guid(),
+            'APIKey':apiKey,
+            'DateModified':jbApp.getDateTime().DateTime
+        }
+        return await jbApp.callBackend('/saveConfig',config)        
     },
 
 /**

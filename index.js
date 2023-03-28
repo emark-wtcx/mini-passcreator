@@ -1,7 +1,8 @@
 const express = require('express');
 const app = express();
+const jsdom = require("jsdom");
+const { JSDOM } = jsdom;
 const path = require('path');
-const br = "\n"
 const fetchResponse = response => {
   if (!response.ok) { 
      throw Error(response.statusText);
@@ -195,6 +196,8 @@ const XML = {
       return this.soapBuildDe(details,fields)
   },
 }
+var br = "\n"
+
 var configDe = 'passCreator_configuration'
 var logDe = 'passcreator_success_log'
 var errorDe = 'passcreator_error_log'
@@ -304,32 +307,21 @@ app.post('/install',async function (req, res, next) {
     }else{
       console.log('/install request was received: ')
       console.table(req.body)
-      let xml = req.body
-      let configXml = await XML.soapBuildDe(xml.details,xml.fields)
+      let inputXml = req.body
+      let configXml = await XML.soapBuildDe(inputXml.details,inputXml.fields)  
       
-      console.log('/install request was built: ')
-      console.table(configXml)   
-      
-      await soapRequest(configXml)
-        .then((getSoapResponse) => {
-          let jsonResponse = res.send(getSoapResponse)
-          if (postDebug) console.log('/install route end ') 
-          return jsonResponse
-          }).catch((error)=>{ 
-            if (postDebug) console.log('/install route end ') 
-            console.log('/install route error')         
-            console.table(error)
-            return false
-          });    
+      return soapRequest(configXml)
+        .then((installResponse) => {
+          if (postDebug) console.log('/install successful') 
+          res.send(installResponse)
+          return installResponse
+        }).catch((error)=>{ 
+          let errorResponse = `(/install) Error: ${error}`
+          return handleError(errorResponse);
+        });    
     }
-    /*
-    for (key in req){
-      console.log('key: '+key)
-      console.table(req[key])
-    }
-    */ 
   }else{
-    return {'message':'No data submitted'}
+    return {'responseJSON':'No data submitted'}
   }
 })
 
@@ -543,7 +535,7 @@ async function postMessage(data){
 async function getDataExtension(customerKey){
   // Request setup
   var data = {}
-  data.url = restDomain+'/data/v1/customobjectdata/key/'+customerKey+'/rowset/'
+  data.url = restDomain+'data/v1/customobjectdata/key/'+customerKey+'/rowset/'
 
   // Request content
   if (postDebug){
@@ -580,10 +572,8 @@ async function getDataExtension(customerKey){
       //
       return dataResponse        
     }).catch((error) => {
-      console.log('getDataExtension Error:'+JSON.stringify(error))
-      //logError(error)
-      return JSON.stringify(error)
-    });
+      return handleError(error);
+    }); 
 
   if (postDebug){
     console.log('getDataExtension getDataResponse: ')
@@ -815,7 +805,7 @@ async function getAccessToken(){
 }
 
 async function getData(url = '', headers) {
-  var getResponse = await fetch(url, {
+  return await fetch(url, {
     method: 'GET', 
     mode: 'no-cors', 
     cache: 'no-cache', 
@@ -823,15 +813,15 @@ async function getData(url = '', headers) {
     headers: headers,
     redirect: 'follow', 
     referrerPolicy: 'no-referrer'
-  }).then((jsonResponse)=>parseHttpResponse((jsonResponse)))
-    .then((httpResponse) => {
+  }).then(response=>res.json(response))
+    .then((json)=>parseHttpResponse((json)))
+    .then((parsedResponse) => {
       // return response
-      return httpResponse; 
+      return parsedResponse; 
     }).catch((error) => {
       // return error
       return handleError(error);
-    })
-  return getResponse;
+    })  
 }
 /**
  * Specific header setup for
@@ -881,17 +871,22 @@ async function postData(url = '', postData=null) {
  * POSTing data to SFMC via SOAP
  */
 async function soapRequest(soapEnv=''){
-  if (postDebug==false) console.log('(soapRequest)')
   if (soapEnv==''){
     console.log('(soapRequest) No SOAP provided')
     return false;
   }else{
-    console.log('(soapRequest) SOAP provided:'+soapEnv)
+    if (postDebug==true) console.log('(soapRequest)')
   }
+
   // Setup call
   let accessToken = await getAccessToken();
   soapEnv = soapEnv.replace('{{access_token}}',access_token)
   soapEnv = soapEnv.replace('{{url}}',soapDomain)
+  if (postDebug==true){
+    console.log('(soapRequest) Url: '+soapDomain)
+    console.log('(soapRequest) Token: '+accessToken)
+    console.log('(soapRequest) SOAP: '+soapEnv)
+  }
 
   let url = soapDomain
   let headers = {
@@ -899,45 +894,20 @@ async function soapRequest(soapEnv=''){
     "Content-Type": 'application/xml',
     "Authorization":accessToken
   }
-  if (postDebug){
-    console.log('(soapRequest) url:'+url)
-    console.log('(soapRequest) headers: '+JSON.stringify(headers))
-    console.log('(soapRequest) soapEnv: '+soapEnv)
-  }
   
   /**
    *  Testing 
    **/
   // Perform Call
-  let soapRequest = await fetch(url, {
-    method: 'POST', 
-    headers: headers,
-    body: soapEnv
-    })  
+  return await fetch(url, {method: 'POST', headers: headers, body: soapEnv})      
+    .then(fetchResponse)  
+    .then((response)=>{return parseSoapResponse(response)})
     .then((xmlResponse)=> {
-      let parser = new DOMParser();
-      let xml = parser.parseFromString(xmlResponse, "application/xml");
-      return xml
-    })  
-    .then((soapResponse)=>parseSoapResponse(soapResponse))
-    .then((parsedResponse) => {
-      if (postDebug) {
-        console.log('(soapRequest) Backend parsedResponse:'+parsedResponse);   
-        if (parsedResponse.hasOwnProperty('soap')){
-        console.log('(soapRequest) Backend parsedResponse.soap:'+parsedResponse.soap);   
-        }
-        
-        let responseString = parsedResponse
-        console.log('(soapRequest) Backend responseString:'+responseString);           
-      }
-      return parsedResponse; // return response
+      return xmlResponse.toString()         
     }).catch((error) => {
-      let errorResponse = `Error: ${error}`
+      let errorResponse = `(soapRequest) ${error}`
       return handleError(errorResponse);
-  });  
-  res.send(soapRequest)
-return soapRequest;
-    
+  });    
 }
 
 /**
@@ -1001,16 +971,43 @@ function handleError(error){
     'body':(typeof error !== 'string') ? JSON.stringify(error) : error
   }  
   // Append Error Status (if defined)
-  errorResponse.status = (error.hasOwnProperty('status') ? error.status:null)
+  if (error.hasOwnProperty('status')){
+    errorResponse.status = error.hasOwnProperty('status') 
+  }
+
+  if (error.hasOwnProperty('errno')){ 
+    errorResponse.status = error.errno
+  }else{    
+      errorResponse.status = '0'    
+  }
+
+  if (error.hasOwnProperty('cause') && error.cause.hasOwnProperty('code')){ 
+    errorResponse.body = explainError(error)
+  }
   
   return errorResponse
 }
-function parseHttpResponse(result) {  
-  // Announce and log result
-  if (postDebug){    
-    console.log('(parseHttpResponse) Input result:'+JSON.stringify(result))
-    }    
 
+function explainError(error){
+  let errorCause = null
+  if (error.hasOwnProperty('cause')){
+    errorCause = error.cause
+  }else{
+    errorCause = error
+  }
+  
+  let errorReason = 'Unrecognised Error'
+  if (errorCause != null){
+    switch(errorCause.code){
+      case 'ENOTFOUND':
+        errorReason = 'The requested item could not be found'
+        break;      
+    }
+  }
+  return errorReason;
+}
+
+function parseHttpResponse(result) {  
   // Response time
   var date = getDateTime();
   
@@ -1028,7 +1025,7 @@ function parseHttpResponse(result) {
     if (result.hasOwnProperty('ok')){
       messageResponse.status = 200
     }else{
-      messageResponse.status = 202
+      messageResponse.status = 'Parsed, Not found'
     }
   }
   if (result.hasOwnProperty('errorcode')){
@@ -1038,17 +1035,32 @@ function parseHttpResponse(result) {
     if (result.hasOwnProperty('errorcode')){
         messageResponse.status = result.errorcode
         }
+      
+    console.log('(parseHttpResponse) Response: '+JSON.stringify(messageResponse))
     return messageResponse
   }else{
     messageResponse.body = result
+    console.log('(parseHttpResponse) Response: '+JSON.stringify(messageResponse))
     return messageResponse
   }  
 }
+
+
 function parseSoapResponse(result) {  
   // Announce and log result
   if (postDebug){    
-    console.log('parseSoapResponse result:'+JSON.stringify(result))
+    console.log('(parseSoapResponse)')
+    console.table(result)
     }  
+
+  let xml = new jsdom.JSDOM(result)
+  console.log('parseSoapResponse Response XML: ')
+  console.table(xml)
+  
+  let soapResult = {}
+  if (soapResult.hasOwnProperty('StatusMessage')){
+      soapResult = xml.CreateResponse.Results
+  }
 
   // Response time
   var date = getDateTime();
@@ -1060,41 +1072,25 @@ function parseSoapResponse(result) {
     'requestDate':date.DateTime,
     'status':null,
     'body':null
-  }      
+  }    
   
-  /* Error Response Handling */
-  if (result.hasOwnProperty('body')
-    && result.body.hasOwnProperty('resultMessages')
-    && result.body.resultMessages.hasOwnProperty('resultClass')
-    && result.body.resultMessages.resultClass == 'Error'){
-    console.log('parseSoapResponse Error Response')
-    let messageResponse = {
-      'requestDate':date.DateTime,
-      'status':result.body.resultCode,
-      'body':result.body.resultMessages.message
-    }  
-    return messageResponse
-  }else{
-    console.log('parseSoapResponse Standard Response')
-    /* Standard Response Handling */
-    if (result.hasOwnProperty('status')){
-      messageResponse.status = result.status
-    }else{
-      messageResponse.status = 200
-    }
-    if (result.hasOwnProperty('errorcode')){
-      if (result.hasOwnProperty('message')){
-          messageResponse.body = result.message
-        }
-      if (result.hasOwnProperty('errorcode')){
-          messageResponse.status = result.errorcode
-          }
-      return messageResponse
-    }else{
-      messageResponse.body = result
-      return messageResponse
-    }  
+  
+  /* StatusMessage Handling */
+  if (soapResult.hasOwnProperty('StatusMessage')){
+    console.log('parseSoapResponse StatusMessage')
+    messageResponse.body = soapResult.StatusMessage
   }
+    
+    /* Standard Response Handling */
+  if (soapResult.hasOwnProperty('StatusCode')){
+    console.log('parseSoapResponse StatusCode')
+    messageResponse.status = soapResult.StatusCode
+  }else{
+    messageResponse.status = 'Unknown'
+  }
+
+  return messageResponse
+  
 }
 app.listen(PORT, function () {
   console.log(`App listening on port ${PORT}`);
