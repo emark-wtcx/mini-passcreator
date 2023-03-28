@@ -692,10 +692,20 @@ async function writeData(targetDe,data={}){
 
 /**
  * 
- *  External API call engines
+ *  External API call engine
  * 
  * */
 
+// refreshToken(data)
+  // Purpose
+  // 
+  // Input 
+  // data = Response From getAccessToken
+  //
+  // Output
+  // access_token = Token as provided by SFMC 
+  // accessToken = "Bearer "+access_token
+//
 function refreshToken(data){
   // Response time
   let d = new Date();
@@ -727,6 +737,17 @@ function refreshToken(data){
   return accessToken
 }
 
+// tokenValid()
+  // Purpose
+  // Checks for token in system 
+  // If token found, compare expiration date to current time
+  // 
+  // Input 
+  // None
+  //
+  // Output
+  // tokenValid = true/false
+//
 function tokenValid(){
   if (postDebug) console.log('Checking Token')
   if (accessToken == null
@@ -749,9 +770,13 @@ function tokenValid(){
     }
 }
 
-/**
- * SFMC Communication
- */
+// getAccessToken()
+  // Input 
+  // None
+  // 
+  // Output
+  // refreshToken(requestResponse)
+//
 async function getAccessToken(){
   if (!tokenValid()){
     if (postDebug) console.log('Token expired: Requesting remote authentication')
@@ -804,6 +829,16 @@ async function getAccessToken(){
   }
 }
 
+// getData(url = '', headers)
+  // Input 
+  // url = request url
+  // headers = [] array of header to overwrite defaults
+  //
+  // Request Data from SFMC via REST
+  //
+  // Output 
+  // JSON
+//
 async function getData(url = '', headers) {
   return await fetch(url, {
     method: 'GET', 
@@ -813,8 +848,9 @@ async function getData(url = '', headers) {
     headers: headers,
     redirect: 'follow', 
     referrerPolicy: 'no-referrer'
-  }).then(response=>res.json(response))
-    .then((json)=>parseHttpResponse((json)))
+  })
+    .then((response)=>{return fetchResponse(response)})
+    .then((json)=>parseRestResponse((json)))
     .then((parsedResponse) => {
       // return response
       return parsedResponse; 
@@ -823,10 +859,20 @@ async function getData(url = '', headers) {
       return handleError(error);
     })  
 }
-/**
- * Specific header setup for
- * POSTing data to SFMC via REST
- */
+
+// postData(url = '', postData=null)
+  //
+  // Specific header setup for
+  // POSTing data to SFMC via REST
+  //
+  // Input 
+  // url = Destination endpoint (restDomain prepended if missing)
+  // postData = JSON Data to POST (Stringified at time of request)
+  //
+  // Output
+  // success = fetchResponse(response)
+  // failure = handleError(error)
+  //
 async function postData(url = '', postData=null) {
   if (url != '' && postData != null){
     let postResponse = await getAccessToken()
@@ -866,10 +912,18 @@ async function postData(url = '', postData=null) {
   }
 }
 
-/**
- * Specific header setup for
- * POSTing data to SFMC via SOAP
- */
+// soapRequest(soapEnv='')
+  // Specific header setup for
+  // POSTing data to SFMC via SOAP
+  //
+  // Input 
+  // soapEnv = SOAP Envelope Describing Request
+  //
+  // Output
+  // success = soapResponse(response)
+  // failure = handleError(error)
+  //
+//
 async function soapRequest(soapEnv=''){
   if (soapEnv==''){
     console.log('(soapRequest) No SOAP provided')
@@ -888,16 +942,14 @@ async function soapRequest(soapEnv=''){
     console.log('(soapRequest) SOAP: '+soapEnv)
   }
 
+  // Setup headers
   let url = soapDomain
   let headers = {
     "Accept": "*/*",
-    "Content-Type": 'application/xml',
+    "Content-Type": 'application/soap+xml',
     "Authorization":accessToken
   }
   
-  /**
-   *  Testing 
-   **/
   // Perform Call
   return await fetch(url, {method: 'POST', headers: headers, body: soapEnv})      
     .then(fetchResponse)  
@@ -910,10 +962,20 @@ async function soapRequest(soapEnv=''){
   });    
 }
 
-/**
- * Specific header setup for
- * POSTing data to PassCreator
- */
+// postDataToPassCreator(url = '', postData=null)
+  //
+  // Input 
+  // url = Destination endpoint
+  // postData = JSON Data to POST (Stringified at time of request)
+  //
+  // Output
+  // success = fetchResponse(response)
+  // failure = outputhandleError(error)
+  //
+  //
+  // Specific header setup for
+  // POSTing data to PassCreator via postData() above
+//
 async function postDataToPassCreator(url = '', postData=null) {
   if (url != '' && postData != null){
     //
@@ -947,15 +1009,28 @@ async function postDataToPassCreator(url = '', postData=null) {
     .then((finalResponse)=>{return finalResponse})
     // Announce and log response
     .catch((error) => {
-      // Broadcast error 
-      if (postDebug) console.log('Backend error:'+JSON.stringify(error));
-      return error;
-    });
+      let errorResponse = `(soapRequest) ${error}`
+      return handleError(errorResponse);
+    }); 
     return postResponse; // return response
   }
 }
 
 
+// handleError(error)
+  // Purpose
+  // Parse error from request
+  //
+  // Input 
+  // error = error of fetch()
+  //
+  // Output JSON
+  // errorResponse = {
+  // 'requestDate':date.DateTime,
+  // 'type':null,
+  // 'body':explainError(error)
+  // } 
+//
 function handleError(error){  
   // Response time
   var date = getDateTime();
@@ -988,6 +1063,21 @@ function handleError(error){
   return errorResponse
 }
 
+
+// explainError(error)
+  // Purpose
+  // Parse response from SFMC via SOAP
+  //
+  // Input 
+  // result = result of soapRequest()
+  //
+  // Output JSON
+  // errorResponse = {
+  // 'requestDate':date.DateTime,
+  // 'type':null,
+  // 'body':explainError(error)
+  // } 
+//
 function explainError(error){
   let errorCause = null
   if (error.hasOwnProperty('cause')){
@@ -1007,7 +1097,21 @@ function explainError(error){
   return errorReason;
 }
 
-function parseHttpResponse(result) {  
+// parseRestResponse(result)
+  // Purpose
+  // Parse response from SFMC via Rest
+  //
+  // Input 
+  // result = result of fetch()
+  //
+  // Output 
+  // messageResponse = {
+  // 'requestDate':date.DateTime,
+  // 'status':null,
+  // 'body':null
+  // } 
+//
+function parseRestResponse(result) {  
   // Response time
   var date = getDateTime();
   
@@ -1019,16 +1123,17 @@ function parseHttpResponse(result) {
     'body':null
   }      
   
+  
   if (result.hasOwnProperty('status')){
-    messageResponse.status = result.status
+    // Respect original status
+    messageResponse.status = result.status 
   }else{
-    if (result.hasOwnProperty('ok')){
-      messageResponse.status = 200
-    }else{
-      messageResponse.status = 'Parsed, Not found'
-    }
+    // Assume Success if orignal response doesn't have status
+    messageResponse.status = 200 
   }
+  
   if (result.hasOwnProperty('errorcode')){
+    // Overwrite results if errorCode detected
     if (result.hasOwnProperty('message')){
         messageResponse.body = result.message
       }
@@ -1036,16 +1141,30 @@ function parseHttpResponse(result) {
         messageResponse.status = result.errorcode
         }
       
-    console.log('(parseHttpResponse) Response: '+JSON.stringify(messageResponse))
+    console.log('(parseRestResponse) Response: '+JSON.stringify(messageResponse))
     return messageResponse
   }else{
+    //  Return standardised messageResponse
     messageResponse.body = result
-    console.log('(parseHttpResponse) Response: '+JSON.stringify(messageResponse))
+    console.log('(parseRestResponse) Response: '+JSON.stringify(messageResponse))
     return messageResponse
   }  
 }
 
-
+// parseSoapResponse(result)
+  // Purpose
+  // Parse response from SFMC via SOAP
+  //
+  // Input 
+  // result = result of soapRequest()
+  //
+  // Output 
+  // messageResponse = {
+  // 'requestDate':date.DateTime,
+  // 'status':null,
+  // 'body':null
+  // } 
+//
 function parseSoapResponse(result) {  
   // Announce and log result
   if (postDebug){    
@@ -1088,10 +1207,15 @@ function parseSoapResponse(result) {
   }else{
     messageResponse.status = 'Unknown'
   }
-
+  
+  //  Return standardised messageResponse
   return messageResponse
   
 }
+
+//
+// Listen for Connections on configured Port
+//
 app.listen(PORT, function () {
   console.log(`App listening on port ${PORT}`);
   console.log('localhost: '+isLocalhost)
