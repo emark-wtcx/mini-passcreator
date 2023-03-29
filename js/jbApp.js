@@ -7,7 +7,7 @@ const connection = new Postmonger.Session();
  */
 const debug = true;
 const jbApp = { 
-    version:2.4,
+    version:2.5,
     configurationTable:'passCreator_configuration',
     configTable:null,
     configExists:false,
@@ -1135,7 +1135,7 @@ const jbApp = {
             dataType: "json",
             data: JSON.stringify(data),
             success: function(result){
-                return jbApp.restSuccess(result)
+                return jbApp.restResponse(result)
             },
             error: function(error){
                 return jbApp.restError(error)
@@ -1283,8 +1283,8 @@ const jbApp = {
                 'message':'This is a test from Journey Builder (WPP Passcreator v'+jbApp.version + ') | Generated: '+dateTime.DateTime,
                 'apiKey':jbApp.configTable.apikey,
                 "token":jbApp.token,
-                "authUrl":(jbApp.authUrl !== 'undefined' ? '{{authUrl}}' : jbApp.authUrl),
-                "restUrl":(jbApp.restUrl !== 'undefined' ? '{{restUrl}}' : jbApp.restUrl)
+                "authUrl":(jbApp.authUrl === 'undefined' ? '{{authUrl}}' : jbApp.authUrl),
+                "restUrl":(jbApp.restUrl === 'undefined' ? '{{restUrl}}' : jbApp.restUrl)
             }
 
             await jbApp.sendTestMessage(testData).then((testResults)=>{
