@@ -591,7 +591,7 @@ async function writeConfigData(data={}){
   if (postDebug) console.log('logData called')
   let date = getDateTime();
   let logId = guid();
-  let loggingUri = 'data/v1/async/dataextensions/key:'+configDe+'/rows'
+  let loggingUri = '/data/v1/async/dataextensions/key:'+configDe+'/rows'
 
   let row = {'items':[
     {
@@ -620,7 +620,7 @@ async function logData(data={}){
   if (postDebug) console.log('logData called')
   let date = getDateTime();
   let logId = guid();
-  let loggingUri = 'data/v1/async/dataextensions/key:'+logDe+'/rows'
+  let loggingUri = '/data/v1/async/dataextensions/key:'+logDe+'/rows'
 
   let row = {'items':[
     {
@@ -642,7 +642,7 @@ async function logData(data={}){
     });
 }
 async function logError(message,data={}){
-  let loggingUri = 'data/v1/async/dataextensions/key:'+errorDe+'/rows'
+  let loggingUri = '/data/v1/async/dataextensions/key:'+errorDe+'/rows'
   let date = getDateTime();
   let logId = guid();
 
@@ -672,7 +672,7 @@ async function writeData(targetDe,data={}){
   if (postDebug) console.log('writeData ('+targetDe+') called')
   let date = getDateTime();
   let logId = guid();
-  let loggingUri = 'data/v1/async/dataextensions/key:'+targetDe+'/rows'
+  let loggingUri = '/data/v1/async/dataextensions/key:'+targetDe+'/rows'
 
   let row = data
   
