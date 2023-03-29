@@ -543,7 +543,7 @@ async function postMessage(data){
 async function getDataExtension(customerKey){
   // Request setup
   var data = {}
-  data.url = restDomain+'data/v1/customobjectdata/key/'+customerKey+'/rowset/'
+  data.url = restDomain+'/data/v1/customobjectdata/key/'+customerKey+'/rowset/'
 
   // Request content
   if (postDebug){
@@ -564,6 +564,8 @@ async function getDataExtension(customerKey){
     "Content-Type": dataType,
     "Authorization":accessToken
   }
+  data.headers = restHeaders;
+
   if (postDebug){
     console.log('getDataExtension Headers: ')
     console.table(restHeaders)
@@ -573,7 +575,7 @@ async function getDataExtension(customerKey){
   //
   // Request Data via getData function
   //
-  return await getData(data.url,restHeaders)
+  return await getData(data.url,data.headers)
     .then((dataResponse) => {
       if (postDebug){
         console.log('(getDataExtension) dataResponse: ')
