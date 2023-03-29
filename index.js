@@ -360,7 +360,9 @@ app.post('/log',async function (req, res, next) {
         if (postDebug) console.log('(/log) Response: ')
         if (postDebug) console.table(logResponse)
         return res.send(logResponse)
-      })
+      }).catch((error) => {
+        return handleError(error);
+      }); 
   }else{
     return {'message':'No data submitted'}
   }
@@ -376,7 +378,9 @@ app.post('/testauth',async function (req, res, next) {
       if (postDebug) console.log('/testauth Response: ')
       if (postDebug) console.table(getAuthResponse)
       return res.json(getAuthResponse)
-    })
+    }).catch((error) => {
+      return handleError(error);
+    }); 
   }else{
     return {'message':'No data submitted'}
   }
@@ -539,7 +543,9 @@ async function postMessage(data){
         console.table(messageResponse);
       }
       return messageResponse
-    });
+    }).catch((error) => {
+      return handleError(error);
+    }); 
   return postResponse
 }
 
@@ -648,7 +654,9 @@ async function logData(data={}){
   return await postData(loggingUri,row)   
     .then((postDataResponse)=>{
       return postDataResponse
-    });
+    }).catch((error) => {
+      return handleError('(Handle Error) '+error);
+    }); 
 }
 async function logError(message,data={}){
   let loggingUri = '/data/v1/async/dataextensions/key:'+errorDe+'/rows'
@@ -1017,7 +1025,13 @@ async function postDataToPassCreator(url = '', postData=null) {
       referrerPolicy: 'no-referrer', 
       body: JSON.stringify(postData) 
     })// Parse Response
-    .then((finalResponse)=>{return parseRestResponse(finalResponse)})
+    .then((finalResponse)=>{
+      let response = parseRestResponse(finalResponse)
+      if (response.status == 200){
+        logData({'message':'Pass Update sent successfully: '+postData.pushNotificationText})
+      }
+      return response
+    })
     // Announce and log response
     .catch((error) => {
       let errorResponse = `(pDTPC) ${error}`
