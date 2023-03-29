@@ -391,7 +391,7 @@ app.post('/testmessage',async function (req, res, next) {
     await postMessage(req.body).then((serverResponse) => {
       if (postDebug) console.log('/testmessage Response: ')
       if (postDebug) console.table(serverResponse)
-      return serverResponse
+      return res.json(serverResponse)
       })
   }else{
     return {'message':'No data submitted'}
@@ -413,9 +413,10 @@ app.use(function (err, req, res, next) {
 * */
 function isJson(input){
   try {
+      JSON.stringify(input)
       console.log('(isJson) true')
   } catch (e) {
-      console.log('(isJson) false '+JSON.stringify(e))
+      console.log('(isJson) false')
       return false;
   }
   return true;
@@ -500,9 +501,9 @@ async function postMessage(data){
   var bodyContent = {
     "pushNotificationText":messageData.message+ ' | ['+date.Time+']',   
     "endpoint":messageData.endpoint,
-    "token":messageData.token,
-    "authUrl":messageData.authUrl,
-    "restUrl":messageData.restUrl,
+    "token":accessToken,
+    "authUrl":authDomain,
+    "restUrl":restDomain,
     "apiKey":messageData.apiKey
   }
   if (postDebug){
@@ -519,10 +520,12 @@ async function postMessage(data){
       //
       //  Build response 
       //
+      let responseString = (isJson(dataResponse) ? JSON.stringify(dataResponse) : (dataResponse.hasOwnProperty('status') ? dataResponse.status : {status:200}))        
+
       var messageResponse = {
         'requestDate':date.DateTime,
         'requestData':bodyContent,
-        'messageData':JSON.stringify(dataResponse)
+        'messageData':responseString
       }
       //
       // Add call status if available
@@ -543,7 +546,13 @@ async function postMessage(data){
 async function getDataExtension(customerKey){
   // Request setup
   var data = {}
-  data.url = restDomain+'/data/v1/customobjectdata/key/'+customerKey+'/rowset/'
+  let endpoint = 'data/v1/customobjectdata/key/'+customerKey+'/rowset/'
+  // Test to see if the domain has and end /
+  if(restDomain.substring(restDomain.length - 1) == '/'){
+    data.url = restDomain+endpoint
+  }else{
+    data.url = restDomain+'/'+endpoint
+  }
 
   // Request content
   if (postDebug){
@@ -998,7 +1007,7 @@ async function postDataToPassCreator(url = '', postData=null) {
     //
     // Perform API Call
     //
-    var postResponse = await fetch(url, {
+    return await fetch(url, {
       method: 'POST', 
       mode: 'no-cors', 
       cache: 'no-cache', 
@@ -1008,14 +1017,12 @@ async function postDataToPassCreator(url = '', postData=null) {
       referrerPolicy: 'no-referrer', 
       body: JSON.stringify(postData) 
     })// Parse Response
-    .then(fetchResponse)
-    .then((finalResponse)=>{return finalResponse})
+    .then((finalResponse)=>{return parseRestResponse(finalResponse)})
     // Announce and log response
     .catch((error) => {
-      let errorResponse = `(soapRequest) ${error}`
+      let errorResponse = `(pDTPC) ${error}`
       return handleError(errorResponse);
     }); 
-    return postResponse; // return response
   }
 }
 
@@ -1146,6 +1153,9 @@ function parseRestResponse(result) {
     if (result.hasOwnProperty('errorcode')){
         messageResponse.status = result.errorcode
         }
+
+    
+    messageResponse = (isJson(messageResponse) ? JSON.stringify(messageResponse) : response)    
       
     console.log('(parseRestResponse) Response: '+JSON.stringify(messageResponse))
     return messageResponse

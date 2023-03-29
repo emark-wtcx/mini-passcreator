@@ -7,7 +7,7 @@ const connection = new Postmonger.Session();
  */
 const debug = true;
 const jbApp = { 
-    version:2.2,
+    version:2.4,
     configurationTable:'passCreator_configuration',
     configTable:null,
     configExists:false,
@@ -967,13 +967,15 @@ const jbApp = {
         let functionName = '(getApiKey) '
         
         if (jbApp.hasOwnProperty('configTable') && jbApp.configTable != null){
-                console.log(functionName+'looking for apiKey in: ')
-                console.table(jbApp.configTable)
-                let apiKey = jbApp.configTable.apikey
-                console.log(functionName+'apiKey in: '+apiKey)
-                return apiKey;
+            console.log(functionName+'looking for apiKey in: ')
+            console.table(jbApp.configTable)
+            let apiKey = jbApp.configTable.apikey
+            console.log(functionName+'apiKey in: '+apiKey)
+            return apiKey;
         }else{
-            console.log(functionName+'App has no config table: ')
+            await jbApp.getConfiguration()
+            let apiKey = jbApp.configTable.apikey
+            console.log(functionName+'apiKey in: '+apiKey)
             return false;
         }
     },
@@ -1200,9 +1202,12 @@ const jbApp = {
             // Request Table
             let table = await jbApp.getDataExtensionRest(customerKey)
 
-            // Execute Action                        
-            jbApp.pageHtml = JSON.stringify(table.body)
-            jbApp.processPageChange(true)
+            // Prepare Results                        
+            let testResults = JSON.stringify(table.body)
+
+            // Show Results
+            let result = '<pre>'+testResults+'</pre>'                     
+            jbApp.Test.updateResults(result)
             
             // Accounce Click
             console.log('testing:readSendable')
@@ -1213,10 +1218,13 @@ const jbApp = {
 
             // Request Table
             let table = await jbApp.checkDeExists(customerKey)
-            
-            // Execute Action                        
-            jbApp.pageHtml = JSON.stringify(table.body)
-            jbApp.processPageChange(true)
+
+            // Prepare Results                        
+            let testResults = JSON.stringify(table.body)
+
+            // Show Results
+            let result = '<pre>'+testResults+'</pre>'                     
+            jbApp.Test.updateResults(result)
             
             // Accounce Click
             console.log('testing:getLogTable')
@@ -1224,10 +1232,13 @@ const jbApp = {
         getConfiguration:async function(){
             let customerKey = 'passCreator_configuration'                        
             let table = await jbApp.getDataExtensionRest(customerKey)
-            jbApp.pageHtml = JSON.stringify(table.body)
 
-            // Execute Action
-            jbApp.processPageChange(true)
+            // Prepare Results                        
+            let testResults = JSON.stringify(table.body)
+
+            // Show Results
+            let result = '<pre>'+testResults+'</pre>'                     
+            jbApp.Test.updateResults(result)
             
             // Accounce Click
             console.log('testing:getConfiguration')
@@ -1244,10 +1255,10 @@ const jbApp = {
         },
         authenticate:function(){
             var testResults = jbApp.testAuthentication()
-            jbApp.pageHtml = JSON.stringify(testResults)
 
-            // Execute Action
-            jbApp.processPageChange(true)
+            // Show Results
+            let result = '<pre>'+testResults+'</pre>'                     
+            jbApp.Test.updateResults(result)
             
             // Accounce Click
             console.log('testing:authenticate')
@@ -1259,82 +1270,71 @@ const jbApp = {
             console.log(message)
 
             var testResults = jbApp.log({'message':message})
-            jbApp.pageHtml = JSON.stringify(testResults)
-
-            // Execute Action
-            jbApp.processPageChange(true)
+            let result = '<pre>'+testResults+'</pre>'                     
+            jbApp.Test.updateResults(result)
             
             // Accounce Click
             console.log('testing:testLog | '+jbApp.action)
 
         },
-        testMessage:async function(){
+        testMessage:async function(){            
+            let dateTime = await jbApp.getDateTime()
             var testData = {
-                'message':'help me',
+                'message':'This is a test from Journey Builder (WPP Passcreator v'+jbApp.version + ') | Generated: '+dateTime.DateTime,
                 'apiKey':jbApp.configTable.apikey,
                 "token":jbApp.token,
-                "authUrl":jbApp.authUrl,
-                "restUrl":jbApp.restUrl
+                "authUrl":(jbApp.authUrl !== 'undefined' ? '{{authUrl}}' : jbApp.authUrl),
+                "restUrl":(jbApp.restUrl !== 'undefined' ? '{{restUrl}}' : jbApp.restUrl)
             }
 
             await jbApp.sendTestMessage(testData).then((testResults)=>{
-                jbApp.pageHtml = testResults
-
-                // Execute Action
-                jbApp.processPageChange(true)
+                let result = '<pre>'+testResults+'</pre>'                     
+                jbApp.Test.updateResults(result)
 
                 // Accounce Click
                 console.log('testing:testMessage | '+JSON.stringify(testData))
                 console.log('testResults | '+JSON.stringify(testResults))
-                return JSON.stringify(testResults)
                 });
         },
         getXml:function(){
             var testResults = jbApp.buildConfigXml()
             testResults = testResults.replaceAll('<','&lt;').replaceAll('>','&gt;')
-            jbApp.pageHtml = '<pre>'+testResults+'</pre>'
 
-            // Execute Action
-            jbApp.processPageChange(true)
+            let result = '<pre>'+testResults+'</pre>'                     
+            jbApp.Test.updateResults(result)
             
             // Accounce Click
-            console.log('testing:getXml | '+jbApp.action)
+            console.log('testing:getXml')
 
         },
         getLogXml:function(){
             var testResults = jbApp.buildLogXml('passcreator_success_log')
             testResults = testResults.replaceAll('<','&lt;').replaceAll('>','&gt;')
-            jbApp.pageHtml = '<pre>'+testResults+'</pre>'
 
-            // Execute Action
-            jbApp.processPageChange(true)
-            
-            // Accounce Click
-            console.log('testing:getLogXml | '+jbApp.action)
+            let result = '<pre>'+testResults+'</pre>'                     
+            jbApp.Test.updateResults(result)
 
+            // Accounce Tests
+            console.log('testing:getLogXml')
         },
         getApiKey:async function(){
             await jbApp.getApiKey().then((apiKey)=>{
-                console.log('Action Get APIKey: '+apiKey)
-                jbApp.pageHtml = '<pre>'+apiKey+'</pre>'
-                jbApp.apiKey = apiKey
-                // Execute Action
-                jbApp.processPageChange(true)
+                console.log('Action Get APIKey: '+apiKey)                        
+                jbApp.Test.updateResults(apiKey) 
                 });
-            
-            // Accounce Click
-            console.log('testing:getApiKey | '+apiKey)
         },
         installTable:async function(){
             return jbApp.installConfigTable()
         },
         testInstall:function(){        
-            jbApp.testInstall()
-            
-            // Accounce Click
-            console.log('testing:testInstall | '+jbApp.action)
-
+            jbApp.testInstall().then((result)=>{            
+                jbApp.Test.updateResults(result)
+                });
         },
+        updateResults:function(results){     
+            let testResults = ( typeof results === 'string' ? results : results.toString() )       
+            $('#main').html('<div id="testResults">' + testResults + '</div>')
+        }
 
     },
 }
