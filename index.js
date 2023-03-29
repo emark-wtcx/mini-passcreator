@@ -516,11 +516,11 @@ async function postMessage(data){
    * Transmit Message via postDataToPassCreator function
    */
   let postResponse = await postDataToPassCreator(messageData.endpoint, bodyContent)
-    .then((dataResponse) => {
+    .then((passResponse) => {
       //
       //  Build response 
       //
-      let responseString = (isJson(dataResponse) ? JSON.stringify(dataResponse) : (dataResponse.hasOwnProperty('status') ? dataResponse.status : {status:200}))        
+      let responseString = (isJson(passResponse) ? JSON.stringify(passResponse) : (passResponse.hasOwnProperty('body') ? passResponse.body : 'No Content'))        
 
       var messageResponse = {
         'requestDate':date.DateTime,
@@ -530,8 +530,8 @@ async function postMessage(data){
       //
       // Add call status if available
       //
-      if (dataResponse && dataResponse.hasOwnProperty('status')){
-        messageResponse.status = dataResponse.status
+      if (passResponse && passResponse.hasOwnProperty('status')){
+        messageResponse.status = passResponse.status
       }
 
       if (postDebug){
@@ -1142,7 +1142,7 @@ function parseRestResponse(result) {
     messageResponse.status = result.status 
   }else{
     // Assume Success if orignal response doesn't have status
-    messageResponse.status = 200 
+    messageResponse.status = 200
   }
   
   if (result.hasOwnProperty('errorcode')){
