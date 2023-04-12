@@ -1,30 +1,33 @@
-const connection = new Postmonger.Session();
 /**
  * Create a new connection for this session.
  */
+const connection = new Postmonger.Session();
 /**
  * Show Console Output?
  */
 const debug = true;
-
 const jbApp = { 
+    version:2.5,
+    configurationTable:'passCreator_configuration',
+    configTable:null,
+    configExists:false,
+    configReady:false,
+    apiKey:null,
     isTest:false, 
-    isLocalhost:(location.hostname === 'localhost' || location.hostname === '127.0.0.1'),
+    isLocalhost:((typeof location !== 'undefined') ? location.hostname === 'localhost' || location.hostname === '127.0.0.1' : false ),
     getSchema:true,
     getTokens:true,
     getEndpoints:true,
     getInteractions:false,
     token:null,
     passId:null,
+    passUrl:'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
     currentStep:0,
     pageHtml:'',
     deStructure:{},
     message:'',
     action:null,
-    credentials:{
-        'url': 'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
-        'auth': '8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0'        
-    },
+    dataExtension:null,
     system:{
         subscriber:{
             'firstname':'{{Contact.Attribute."Email Demographics".Firstname}}',
@@ -59,84 +62,66 @@ const jbApp = {
           "key": 'confirm'
         },
       ], 
-    soap:{
-        getDataExtension:`<?xml version="1.0" encoding="UTF-8"?>
-<s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:u="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
-    <s:Header>
-        <a:Action s:mustUnderstand="1">Retrieve</a:Action>
-        <a:To s:mustUnderstand="1">https://{{jbApp.subdomain}}.soap.marketingcloudapis.com/Service.asmx</a:To>
-        <fueloauth xmlns="http://exacttarget.com">{{jbApp.etAccessToken}}</fueloauth>
-    </s:Header>
-    <s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-        <RetrieveRequestMsg xmlns="http://exacttarget.com/wsdl/partnerAPI">
-            <RetrieveRequest>
-                <ObjectType>DataExtension</ObjectType>
-                <Properties>ObjectID</Properties>
-                <Properties>CustomerKey</Properties>
-                <Properties>Name</Properties>
-                <Properties>IsSendable</Properties>
-                <Properties>SendableSubscriberField.Name</Properties>
-                <Filter xsi:type="SimpleFilterPart">
-                    <Property>CustomerKey</Property>
-                    <SimpleOperator>equals</SimpleOperator>
-                    <Value>postman_demographics</Value>
-                </Filter>
-            </RetrieveRequest>
-        </RetrieveRequestMsg>
-    </s:Body>
-</s:Envelope>
-        `
+
+/**
+ * Core & Front End Functionality
+ */
+    guid:function() { 
+        var d = new Date().getTime();//Timestamp
+        var d2 = (performance && performance.now && (performance.now()*1000)) || 0;//Time in microseconds since page-load or 0 if unsupported
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            var r = Math.random() * 16;//random number between 0 and 16
+            if(d > 0){//Use timestamp until depleted
+                r = (d + r)%16 | 0;
+                d = Math.floor(d/16);
+            } else {//Use microseconds since page-load if supported
+                r = (d2 + r)%16 | 0;
+                d2 = Math.floor(d2/16);
+            }
+            return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+    },
+    log:function(data){
+        if (debug) console.log('testLog:')
+        if (debug) console.table(data)
+        return $.ajax({
+            type: "POST",
+            url: '/log',
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify(data),
+            success: function(result){
+                return jbApp.restResponse(result)
+            },
+            error: function(error){
+                return jbApp.restError(error)
+            }
+        });
+    }, 
+    getDateTime:async function(){
+        let d = new Date();
+        var requestDate = d.toLocaleDateString()
+        var requestTime = d.toLocaleTimeString()
+        var dateTime = requestDate+'-'+requestTime;
+        return {
+            'Date':requestDate,
+            'Time':requestTime,
+            'DateTime':dateTime,
+            'ISODateTime':d.toISOString()
+        }
     },
     getPassEndpoint:function(){
         if (debug) console.log('getPassEndpoint triggered')
         // Get starter URL based on isTest setting of app
-        var endpoint = jbApp.credentials.url;
+        var endpoint = jbApp.passUrl;
         
         if (jbApp.passId != null){
             endpoint = endpoint.replace('{passId}',jbApp.passId)
         }
         return endpoint;
     },
-    parseEndpoints:function(data){
-        if (data.hasOwnProperty('fuelapiRestHost')){
-            jbApp.restUrl = data.fuelapiRestHost
-            jbApp.authUrl = jbApp.restUrl.replace('rest','auth')
-        }
-    },
-    parseSchema:function(){
-        if (debug) console.log('parseSchema')
-        if (
-            jbApp.hasOwnProperty('schema')
-            && jbApp.schema.length>0
-            ){
-                if (debug) console.log('schema: '+JSON.stringify(jbApp.schema))
-                for (let i in jbApp.schema){
-                    let schemaItem = jbApp.schema[i]
-                    let fieldName = schemaItem.name
-                    let fieldTag = schemaItem.key
-
-                    if (schemaItem.type == 'Text'
-                    && schemaItem.name != 'passId'
-                    && schemaItem.length == null)
-                    {
-                    jbApp.deStructure[fieldName] = '{{'+fieldTag+'}}'
-                    }else{
-                        if (schemaItem.name == 'passId'){                            
-                            jbApp.passId = '{{'+fieldTag+'}}'
-                        }
-                    }
-                    if (debug) console.log('['+fieldName+']:'+fieldTag)
-                }
-            }
-        if (debug) console.log('jbApp.deStructure: ')
-        if (debug) console.table(jbApp.deStructure)
-        if (debug) console.log('jbApp.deStructure.length: '+jbApp.deStructure.toString().length)
-
-        if (!jbApp.isLocalhost && typeof connection !== 'undefined'){
-            if (debug) console.table(connection)
-        }else{
-            if (debug) console.table('Localhost or Connection not availble')
-        }         
+    setPassId:function(id){
+        jbApp.passId = '{{'+id+'}}';
     },
     getCurrentStep:function(){
         return jbApp.currentStep
@@ -156,6 +141,8 @@ const jbApp = {
     },
     bindMenu:function(connection){
         if (debug) console.log('Binding menu')
+
+        // Bind menu actions        
         $('.pass_action').each(function() {
             let elem = $( this )
             
@@ -236,6 +223,14 @@ const jbApp = {
                     });
                     if (debug) console.log('Bound '+action)
                 break;
+    
+                case 'showMessages':
+                    $(elem).on('click',function(){                        
+                        // Prepare action changes
+                        jbApp.showMessages()
+                    });
+                    if (debug) console.log('Bound '+action)
+                break;
                 
                 case 'home':
                     $(elem).on('click',function(){
@@ -247,123 +242,22 @@ const jbApp = {
                         })
                     if (debug) console.log('Bound '+action)
                 break;
-            }   
-    
-        }); 
-    },
-    bindTestMenu:function(){
-        if (debug) console.log('Binding test menu')
-        $('.test_action').each(function() {
-            let elem = $( this )
-            
-            /**
-             * Presume we'll be changing the page
-             */
-            var refreshPage=true;
-
-            /**
-             * Isolate the required action
-             */
-            let action = elem.data('action');
-            jbApp.action = null
-            jbApp.action = action
-
-            /**
-             * Bind the requested action
-             */
-            switch(action){
-
-                case 'readSendable':
+                
+                case 'settings':
                     $(elem).on('click',function(){
-                        jbApp.action = action
-                        let customerKey = 'testing_dale'
-                        var testResults = 'Test successful'
-                        var testResults = jbApp.getDataExtensionRest(customerKey)
-                        jbApp.pageHtml = testResults
-
+                        // Prepare action changes
+                        jbApp.settingsButtonAction()
+                        
                         // Execute Action
                         jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked:readSendable | '+jbApp.action)
-
-                    });                
-                    console.log('Bound '+action) 
-                break;  
-
-                case 'authenticate':
-                    $(elem).on('click',function(){
-                        jbApp.action = null
-                        jbApp.action = action
-                        var testResults = jbApp.testAuth()
-                        jbApp.pageHtml = testResults
-
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked:authenticate | '+jbApp.action)
-
-                    });                
-                    console.log('Bound '+action) 
-                break;     
-
-                case 'testLog':
-                    $(elem).on('click',function(){
-                        jbApp.action = null
-                        jbApp.action = action
-                        var testResults = jbApp.testLog({'message':'help'})
-                        jbApp.pageHtml = testResults
-
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked:testLog | '+jbApp.action)
-
-                    });                
-                    console.log('Bound '+action) 
-                break;        
-
-                case 'testMessage':
-                    $(elem).on('click',function(){
-                        jbApp.action = null
-                        jbApp.action = action
-                        var testResults = jbApp.testMessage({
-                            'message':'help me'
                         })
-                        jbApp.pageHtml = testResults
-
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked:testLog | '+jbApp.action)
-
-                    });                
-                    console.log('Bound '+action) 
-                break;   
-
-                default:
-                    $(elem).on('click',function(){
-                        jbApp.action = null
-                        var testResults = 'Unconfigured test option'
-                        jbApp.pageHtml = testResults  
-
-                        // Execute Action
-                        jbApp.processPageChange(refreshPage)
-                        
-                        // Accounce Click
-                        console.log('clicked unconfigured test option:'+jbApp.action)   
-                    });    
+                    if (debug) console.log('Bound '+action)
                 break;
-
-
             }   
     
         }); 
     },
-    processPageChange(refreshPage){
+    async processPageChange(refreshPage){
         /** 
          * Process any page changes
          */
@@ -382,9 +276,119 @@ const jbApp = {
             if (jbApp.action == 'selectMessage'){
                 jbApp.buildMessageOptions()
             }   
+            if ($('#apiKeyDisplay')){
+                await jbApp.getApiKey().then((apiKey)=>{                
+                    if (apiKey != null){
+                        $('#apiKeyDisplay').html(apiKey)
+                    }else{
+                        $('#apiKeyDisplay').html('apiKey not found')
+                    }
+                });
+            }
         }else{            
             if(debug) console.log('processPageChange: refresh false')
         }   
+    },
+    showMessages:function(){
+        if (debug) console.log('showMessages() called')
+        $.when(jbApp.getMessageOptions()).then(function(messages){
+
+            // Format any message display
+            if (messages.toString().length > 0){
+                if (debug) console.log('showMessages() got messages')
+                var messageOutput = '<Br /><p><span class="slds-text-heading_small">Available Messages</span><ul>'
+
+                for (key in messages){
+                    var message = messages[key]
+                    var output = '<li><strong>'+key+'</strong>: '+message+'</li>'
+                    messageOutput += output
+                }
+
+                messageOutput += '</ul></p>'
+
+            }else{
+                if (debug) console.log('showMessages() No messages found ('+messages.length+') : '+JSON.stringify(messages))
+                var messageOutput = 'No messages loaded'
+            }
+
+            // Ensure we have somewhere to place the messages
+            if ($('#available_messages').length == 0){
+                $('#main').append('<div id="available_messages"></div>')
+            }
+
+            // Place the messages
+            $('#available_messages').html(messageOutput)
+
+            $('#showMessages')
+                .attr('onClick',"jbApp.closeMessages()")
+                .attr('data-action',"closeMessages")
+                .text('Close messages')
+        });        
+    },
+    closeMessages:function(){
+        $('#available_messages').html('')
+        $('#showMessages')
+                .attr('onClick',"jbApp.showMessages()")
+                .attr('data-action',"showMessages")
+                .text('Show messages')
+    },
+    saveConfigButtonAction:async function(){
+        let functionName = '(saveConfigButtonAction) '
+        let apiKey = $('#apiKey').val();
+        let logo_url = $('#logo_url').val();
+        if (apiKey.length == 80){
+            jbApp.apiKey = apiKey
+
+            //
+            // Build configuration
+            //
+            var configTableXml = null
+            if (!jbApp.configExists){
+                await jbApp.installConfigTable()
+                    .then((installResult)=>{
+                        console.log(functionName+'install result: '+JSON.stringify(installResult))
+                    }).catch((error)=>{
+                        console.log(functionName+'install result: '+JSON.stringify(error))
+                    });
+            }else{
+                console.log(functionName+'install not required')
+            }
+
+            //
+            // Save config
+            //
+            var saveData = {
+                'apiKey':jbApp.apiKey,
+                'logo_url':logo_url
+            }
+            await jbApp.callBackend('/saveConfig',saveData).then((saveConfig)=>{
+                if (!saveConfig){
+                    console.log(functionName+'APIKey install failed:'+JSON.stringify(saveConfig))
+                }else{    
+                    console.log(functionName+'APIKey install success:'+JSON.stringify(saveConfig))
+                    if (saveConfig.hasOwnProperty('status')){
+                        if (saveConfig.status == 200){
+                            return true;
+                        }else{
+                            return false
+                        }            
+                    }else{
+                        console.log(functionName+'APIKey install unrecognised response')
+                        return false
+                    }
+                }
+                //
+                // Redirect to home 
+                // 
+                jbApp.homeButtonAction()
+                return configTableXml.toString();
+            }).catch((error)=>{
+                Alert(error)
+                })
+        }else{
+            alert('The API key should be 80 characters')
+            $('#apiKey').addClass('slds-has-error')
+        }
     },
     homeButtonAction:function(){
         jbApp.pageHtml = jbApp.getHtml('home')
@@ -398,6 +402,12 @@ const jbApp = {
         }else{            
             if (debug) console.log('Local Step: 1')
         }
+    },
+    settingsButtonAction:function(){
+        jbApp.pageHtml = jbApp.getHtml('config')
+        $('#jbapp__nav_home').text('Back').data('action','home')        
+        jbApp.setProgress(0)
+        jbApp.currentStep = 0
     },
     inputMessageButtonAction:function(){
         // Setup the required HTML
@@ -692,36 +702,62 @@ const jbApp = {
         html += '</div>'
         $( '#progress-holder' ).html(html)
     },    
-    getHtml:function(page,refreshPage){
-        if (refreshPage == null){
-            refreshPage = true
-        }
-        if (debug) console.log('(getHtml): '+page)
-        if (page==null 
-            || page===undefined 
-            || page=='' 
-            || page.toString().length<1
-            ){
-            page = 'error'
-        }
+    getHtml:async function(page,refreshPage = true){
+        //
+        // Announce request 
+        //
+        if (debug) console.log('(getHtml) Looking for: '+page)
+        
+        //
+        // Map page names to file names
+        //
         let html={
             home:'home',
             error:'error',
             inputMessage:'input_message',
             selectMessage:'select_message',
-            ribbon:'ribbon'   
+            ribbon:'ribbon',
+            config:'config',
+            nav:'nav'
         }
+        
+        //
+        // Require API Key
+        // Omit nav to
+        // allow menu usage
+        //
+        if (jbApp.configReady == false && html[page] != 'nav'){
+            page = 'config'
+            refreshPage = true
+        }else{
+            //
+            // Serve Error if mapping not defined
+            //
+            if (page==null 
+                || page===undefined 
+                || page=='' 
+                || page.toString().length<1
+                || html[page]===undefined 
+                ){
+                page = 'error'
+            }
+        }   
+        jbApp.page = page;     
+        //
+        // Build and announce filename 
+        //
         let pageHtmlLocation = './html/'+html[page]+'.html'        
-        if (debug) console.log('(getHtml) Location: '+pageHtmlLocation)
+        if (debug) console.log('(getHtml) Loading '+page+': '+pageHtmlLocation)
+
         //
         // Retrieve page
         //
-        $.ajax({
+        let htmlResult = await $.ajax({
             type: "GET",
             url: pageHtmlLocation,
             async: false,
             success: function(response) {                 
-                jbApp.pageHtml = response; 
+                jbApp.pageHtml = response;
                 if (refreshPage == true){
                     //
                     // Refreshing page
@@ -733,14 +769,24 @@ const jbApp = {
                     // Returning page
                     //
                     if (debug)console.log('(getHtml) Returning HTML')
-                    return jbApp.pageHtml;
+                    return response;
                 }
              }
-         });
+         })
+         .then((htmlResult)=>{
+            return htmlResult
+        });
+        return htmlResult
     },
-    translatePage:function(html){
-    },    
-    load:function(connection){
+    isJson:function(input){
+        try {
+            JSON.parse(str);
+        } catch (e) {
+            return false;
+        }
+        return true;
+    },
+    load:async function(connection){
         if (debug) console.log('Loading jbApp')
         // If JourneyBuilder available
         if (connection){            
@@ -748,121 +794,252 @@ const jbApp = {
             if (debug) console.table(connection)
             // Inherit properties from JourneyBuilder
             if (connection.hasOwnProperty('version')){
-                jbApp.Version = connection.version 
+                jbApp.journeyVersion = connection.version 
             }
             if (jbApp.getTokens && jbApp.token== '') connection.trigger('requestTokens');
             
-            if (debug) console.log('App version:'+1.4)
+            if (debug) console.log('App version:'+jbApp.version)
             if (debug) console.log('App token:'+jbApp.token)
         }        
 
         /**
          *  Setup 
          * */
-        jbApp.bindMenu(connection)
-
+        // Perform install test
+        await jbApp.testInstall()
 
         // Announce ready
         if (debug) console.log('App Loading Complete')
         window.jbApp = jbApp
+                
+        await jbApp.getHtml('nav',false).then((nav)=>{
+            $('#nav').html(nav)
+        });        
 
-        jbApp.pageHtml = jbApp.getHtml('home')
+        if (typeof connection !== 'undefined'){
+        jbApp.bindMenu(connection) /* Order of operations issue */
+        }else{
+            jbApp.bindMenu(false)
+        }
+        
+        jbApp.pageHtml = jbApp.getHtml('home',false)
         jbApp.processPageChange(1)
     },
 
+/**
+ * Journey Builder
+ */
+
+    parseEndpoints:function(data){
+        let protocol = 'https://'
+        if (data.hasOwnProperty('fuelapiRestHost')){
+            jbApp.restUrl = data.fuelapiRestHost
+        }
+        if (data.hasOwnProperty('restHost')){
+            jbApp.restHost = protocol+data.restHost
+            jbApp.authUrl = jbApp.restHost.replace('rest','auth')+'/v2/token'
+        }
+        if (data.hasOwnProperty('soapHost')){
+            jbApp.soapHost = protocol+data.soapHost
+            jbApp.soapUrl = jbApp.soapHost+'/Service.asmx'
+        }
+    },
+    parseSchema:function(){
+        if (debug) console.log('parseSchema')
+        if (
+            jbApp.hasOwnProperty('schema')
+            && jbApp.schema.length>0
+            ){
+                if (debug) console.log('schema: '+JSON.stringify(jbApp.schema))
+                for (let i in jbApp.schema){
+                    let schemaItem = jbApp.schema[i]
+                    let fieldName = schemaItem.name
+                    let fieldTag = schemaItem.key
+
+                    if (schemaItem.type == 'Text'
+                    && schemaItem.name != 'passId'
+                    && schemaItem.length == null){
+                        jbApp.deStructure[fieldName] = '{{'+fieldTag+'}}'
+                    }else{
+                        if (schemaItem.name == 'passId'){                            
+                            jbApp.setPassId(fieldTag)
+                        }
+                    }
+                    if (debug) console.log('['+fieldName+']:'+fieldTag)
+                }
+            }
+        if (debug) console.log('jbApp.deStructure: ')
+        if (debug) console.table(jbApp.deStructure)
+        if (debug) console.log('jbApp.deStructure.length: '+jbApp.deStructure.toString().length)
+
+        if (!jbApp.isLocalhost && typeof connection !== 'undefined'){
+            if (debug) console.table(connection)
+        }else{
+            if (debug) console.table('Localhost or Connection not availble')
+        }         
+    },
+    /* Transmit between front and back ends */
+    callBackend:async function(url=null,body=null,type={dataType:'json',contentType:'application/json'}){        
+        /* DataType Setup */
+        let dataType = ''
+        let contentType = ''
+        if (type.hasOwnProperty('contentType') && type.hasOwnProperty('dataType')){
+            contentType = type.contentType
+            dataType = type.dataType
+        }else{
+            if (debug){
+                console.log('Call backend, Type error')
+                return false;
+            }
+        }
+
+        let payload = body  
+        
+        if (debug){
+            console.log('types: Data: '+dataType+' | Content-Type: '+contentType)        
+            console.log('callBackend: typeof body | '+typeof payload)
+            console.table(payload)
+            }
+        return await $.ajax({
+            type: "POST",
+            url: url,
+            contentType: contentType,
+            dataType: dataType,
+            async:false,
+            data: JSON.stringify(payload),            
+            success: function(result){           
+                return jbApp.restResponse(result)
+            },
+            error:function(result){           
+                console.log(JSON.stringify(result))
+            }
+        });
+    },
+    
+/**
+ * REST functionality 
+ */
+    /**
+     * Load configuration into app
+     * 
+     * Defines:
+     * jbApp.configExists = true/false
+     * jbApp.configTable = object of values
+     * 
+     * Returns:    
+     * jbApp.getDataExtensionRest(jbApp.configurationTable)
+     * Return Object - described in below comment
+     */
+    getConfiguration:async function(){
+        if (jbApp.configTable == null){
+            return await jbApp.getDataExtensionRest(jbApp.configurationTable)
+                .then((config)=>{
+                if (config != false){
+                    var configuration = config.body
+
+                    if (configuration.hasOwnProperty('count') 
+                        && configuration.count>0
+                        && configuration.hasOwnProperty('items')
+                        && configuration.items[0].hasOwnProperty('values')            
+                        ){
+                            jbApp.configExists = true                        
+                            console.log('(getConfiguration) assigning configuration')
+                            console.table(configuration)
+                            jbApp.configTable = configuration.items[0].values
+                            return configuration;
+                    }else{
+                        console.log('(getConfiguration) can\'t find configuration')
+                        jbApp.configExists = false
+                        console.table(configuration)
+                        return false
+                    }     
+                }else{
+                    jbApp.configExists = false
+                    return false
+                }
+            });
+        }else{
+            return jbApp.configTable
+        }
+    },
+
+    getApiKey: async function(){
+        let functionName = '(getApiKey) '
+        
+        if (jbApp.hasOwnProperty('configTable') && jbApp.configTable != null){
+            console.log(functionName+'looking for apiKey in: ')
+            console.table(jbApp.configTable)
+            let apiKey = jbApp.configTable.apikey
+            console.log(functionName+'apiKey in: '+apiKey)
+            return apiKey;
+        }else{
+            await jbApp.getConfiguration()
+            let apiKey = jbApp.configTable.apikey
+            console.log(functionName+'apiKey in: '+apiKey)
+            return false;
+        }
+    },
+    
+    /**
+     * AJAX function to request DE by CustomerKey
+     * 
+     * Input: customerKey
+     * 
+     * Successful Return Object: {
+        "requestToken":"",
+        "tokenExpireDateUtc":"",
+        "customObjectId":"",
+        "customObjectKey":"",
+        "pageSize":2500,
+        "page":1,
+        "count":1,
+        "top":0,
+        "items":[]
+        }
+
+     * Failure: false
+     *
+    */
     getDataExtensionRest:function(customerKey){
-        if (debug) console.log('getDataExtension:'+customerKey)
-        $.ajax({
+        if (debug) console.log('(getDataExtension):'+customerKey)
+        let requestResponse = $.ajax({
             type: "POST",
             url: '/getde',
             contentType: "application/json",
             dataType: "json",
-            data: '{"customerKey":"'+customerKey+'"}',
-            success: function(result){
-                jbApp.restSuccess(result)
+            async:false,
+            data: '{"customerKey":"'+customerKey+'"}',            
+            success: function(result){           
+                return jbApp.restResponse(result)
             },
-            error: function(error){
-                jbApp.restError(error)
+            fail:function(result){           
+                Alert(JSON.stringify(result))
+                return false;
             }
+        })
+        .then((ajaxResponse)=>{
+            return ajaxResponse;
         });
+        return requestResponse
     },
 
-    testAuth:function(){
-        $.ajax({
-            beforeSend:function(){$('#main').html('Loading')},
-            type: "POST",
-            url: '/testauth',
-            contentType: "application/json",
-            dataType: "json",
-            success: function(authResult){                        
-                jbApp.authSuccess(authResult)
-            },
-            error: function(xhr){
-                jbApp.restError(xhr)
-              }
-        });        
-    },    
+    restResponse:function (result) {
+        if (debug) console.log('Server response parsing starts')
 
-    testLog:function(data){
-        if (debug) console.log('testLog:')
-        if (debug) console.table(data)
-        $.ajax({
-            type: "POST",
-            url: '/testlog',
-            contentType: "application/json",
-            dataType: "json",
-            data: JSON.stringify(data),
-            success: function(result){
-                jbApp.restSuccess(result)
-            },
-            error: function(error){
-                jbApp.restError(error)
-            }
-        });
-    },   
+        if (result.hasOwnProperty('status') && result.status != null){
+            let status = result.status;
+            if (debug) console.log('Server response has status: '+status)
+        }
 
-    testMessage:function(data){
-        if (debug) console.log('testmessage:')
-        if (debug) console.table(data)
-        $.ajax({
-            type: "POST",
-            url: '/testmessage',
-            contentType: "application/json",
-            dataType: "json",
-            data: JSON.stringify(data),
-            success: function(result){
-                jbApp.restSuccess(result)
-            },
-            error: function(error){
-                jbApp.restError(error)
-            }
-        });
-    },
-
-    getDeSuccess:function (result) {
-        if (debug) console.log('getDeSuccess Success')
-        if (debug) console.log('Call Status: '+result.status)
-        if (debug) console.log('Success data: ')
-        console.table(result.body)
-        $('#main').html(result.body)
-    },
-
-    authSuccess:function (result) {
-        if (debug) console.log('Auth Success')
-        if (debug) console.log('Success data: ')
-        console.table(result)
-        $('#main').html(result)
-    },
-
-    restSuccess:function (result) {
-        if (debug) console.log('Rest Success')
-        if (debug) console.log('Success data: ')
-        console.table(result)
-        $('#main').html(result)
+        if (result.hasOwnProperty('responseJSON')){
+            return result.responseJSON;
+        }else{
+            return result;
+        }
     },
 
     restError:function(data) {
-        if (debug) console.log('Auth Error')
+        if (debug) console.log('Rest Error')
         if (data.hasOwnProperty('responseText')){
             console.log(data.responseText + " " + data.status);
         }else if (data.hasOwnProperty('statusText')){
@@ -872,41 +1049,294 @@ const jbApp = {
         }
     },
 
-    /**
-     * Deprecated
-     */
-    getDataExtensionSoap:function(){
-        if (debug) console.log('getDataExtension')
-        $.ajax({
-            type: "POST",
-            url: jbApp.webserviceUrl,
-            contentType: "text/xml",
-            dataType: "xml",
-            data: jbApp.soap.getDataExtension,
-            success: jbApp.soapSuccess(),
-            error: jbApp.soapError(),
-            done:parseSoapResponse( response, request, settings )
+    checkDeExists:async function(customerKey=''){        
+        let table = await jbApp.getDataExtensionRest(customerKey)        
+        return (table.status == 200) ? true : false  
+    },
+    
+    saveConfig:async function(apiKey){
+        let config = {
+            'Id':jbApp.guid(),
+            'APIKey':apiKey,
+            'DateModified':jbApp.getDateTime().DateTime
+        }
+        return await jbApp.callBackend('/saveConfig',config)        
+    },
+
+/**
+ * Main tests run at startup
+ */
+    testConfigurationExists:async function(){
+        console.log('(testConfigurationExists) configExists: '+jbApp.configExists.toString())
+        
+        if (jbApp.configExists == true){
+            return true;
+        }else{
+            return await jbApp.getConfiguration()
+            .then((config) =>{
+                if (config != false){ 
+                    console.log('(testConfigurationExists) got config: '+JSON.stringify(jbApp.configTable))
+                    if (jbApp.configTable != null
+                        && jbApp.configTable.hasOwnProperty('apikey')
+                        && jbApp.configTable.apikey != ''){
+                        // Assign API to property
+                        jbApp.apiKey = jbApp.configTable.apikey
+        
+                        // Report success
+                        console.log('(testConfigurationExists) assigning apiKey: '+jbApp.configTable.apikey)
+        
+                    }else{            
+                        // Report failure
+                        console.log('(testConfigurationExists) Found table but could not find apiKey: '+JSON.stringify(jbApp.configTable))
+                    }
+                }else{            
+                    // Report failure
+                    console.log('(testConfigurationExists) could not find config table')
+                }
+                return (config ? true:false);
+            });     
+        }   
+    },
+    
+    testInstall:async function(){     
+        return await jbApp.testConfigurationExists().then((installStatus)=>{
+        console.log('(testInstall) Install status: '+installStatus)
+        jbApp.configReady = installStatus
+        return installStatus
         });
     },
+    /**
+     * Helper functions for
+     * Test child object 
+     */
+    testAuthentication:function(){
+        $.ajax({
+            beforeSend:function(){$('#main').html('Loading')},
+            type: "POST",
+            url: '/testauth',
+            contentType: "application/json",
+            dataType: "json",
+            success: function(authResult){                        
+                 return jbApp.restResponse(authResult)
+            },
+            error: function(xhr){
+                jbApp.restError(xhr)
+              }
+        });        
+    },  
 
-    parseSoapResponse:function( response, request, settings ){
-        if (debug) console.table(response)
-        return JSON.stringify(response)
+    sendTestMessage:function(data){
+        if (debug) console.log('testmessage:')
+        if (debug) console.table(data)
+        return $.ajax({
+            type: "POST",
+            url: '/testmessage',
+            contentType: "application/json",
+            dataType: "json",
+            data: JSON.stringify(data),
+            success: function(result){
+                return jbApp.restResponse(result)
+            },
+            error: function(error){
+                return jbApp.restError(error)
+            }
+        });
     },
-
-    soapSuccess:function (data, status, req) {
-        if (debug) console.log('SuccessOccur')
-        if (data && data.hasOwnProperty('responseText') && status == "success")
-            alert(data.responseText);
-    },
-
-    soapError:function(data, status, req) {
-        if (debug) console.log('ErrorOccur')
-        if (data && data.hasOwnProperty('responseText')){
-        alert(data.responseText + " " + status);
-        }else{
-            console.table(data)
+    installConfigTable:async function(){
+        if (!jbApp.configExists){
+            return await jbApp.buildConfigStructure()
+            .then(async (configTableStructure)=>{
+                return await jbApp.callBackend('/install',configTableStructure)
+            }).catch(error=>{
+                console.log(error)
+                return error
+            });
         }
     },
+    buildConfigStructure:async function(){
+        let details = {
+            CustomerKey:jbApp.configurationTable,
+            Name:jbApp.configurationTable,
+            isSendable:false
+        }
+        let fields = [
+        {
+            CustomerKey:'Id',
+            Name:'Id',
+            FieldType:'Text',
+            Length:36,
+            isRequired:true,
+            isPrimaryKey:true
+        },{
+            CustomerKey:'APIKey',
+            Name:'APIKey',
+            FieldType:'Text',
+            Length:80,
+            isRequired:false,
+            isPrimaryKey:false
+        },{
+            CustomerKey:'logo_url',
+            Name:'logo_url',
+            FieldType:'Text',
+            Length:500,
+            isRequired:false,
+            isPrimaryKey:false
+        },{
+            CustomerKey:'DateModified',
+            Name:'DateModified',
+            FieldType:'Date',
+            isRequired:false,
+            isPrimaryKey:false
+        },
+        ]
+        return {'details':details,'fields':fields}
+    },
+    /**
+     *  Test Object
+     */
+    Test:{
+        readSendable:async function(){
+            // Nominate table
+            let customerKey = 'testing_dale'
+
+            // Request Table
+            let table = await jbApp.getDataExtensionRest(customerKey)
+
+            // Prepare Results                        
+            let testResults = JSON.stringify(table.body)
+
+            // Show Results
+            let result = '<pre>'+testResults+'</pre>'                     
+            jbApp.Test.updateResults(result)
+            
+            // Accounce Click
+            console.log('testing:readSendable')
+        },
+        getLogTable: async function(){
+            // Nominate table
+            let customerKey = 'passcreator_success_log'
+
+            // Request Table
+            let table = await jbApp.checkDeExists(customerKey)
+
+            // Prepare Results                        
+            let testResults = JSON.stringify(table.body)
+
+            // Show Results
+            let result = '<pre>'+testResults+'</pre>'                     
+            jbApp.Test.updateResults(result)
+            
+            // Accounce Click
+            console.log('testing:getLogTable')
+        },
+        getConfiguration:async function(){
+            let customerKey = 'passCreator_configuration'                        
+            let table = await jbApp.getDataExtensionRest(customerKey)
+
+            // Prepare Results                        
+            let testResults = JSON.stringify(table.body)
+
+            // Show Results
+            let result = '<pre>'+testResults+'</pre>'                     
+            jbApp.Test.updateResults(result)
+            
+            // Accounce Click
+            console.log('testing:getConfiguration')
+        },
+        buildTable:function(){
+            let configXml = getConfigXml()
+            console.log('testing:buildTable')
+            console.log('Bound '+action)
+            jbApp.pageHtml = '<pre>'+configXml+'</pre>'
+            // Execute Action
+            jbApp.processPageChange(true)
+            return configXml; 
+
+        },
+        authenticate:function(){
+            var testResults = jbApp.testAuthentication()
+
+            // Show Results
+            let result = '<pre>'+testResults+'</pre>'                     
+            jbApp.Test.updateResults(result)
+            
+            // Accounce Click
+            console.log('testing:authenticate')
+
+        },
+        testLog:async function(){
+            dateTime = await jbApp.getDateTime()
+            let message = 'Test of the logging system performed at '+dateTime.DateTime
+            console.log(message)
+
+            var testResults = jbApp.log({'message':message})
+            let result = '<pre>'+testResults+'</pre>'                     
+            jbApp.Test.updateResults(result)
+            
+            // Accounce Click
+            console.log('testing:testLog | '+jbApp.action)
+
+        },
+        testMessage:async function(){            
+            let dateTime = await jbApp.getDateTime()
+            var testData = {
+                'message':'This is a test from Journey Builder (WPP Passcreator v'+jbApp.version + ') | Generated: '+dateTime.DateTime,
+                'apiKey':jbApp.configTable.apikey,
+                "token":jbApp.token,
+                "authUrl":(jbApp.authUrl === 'undefined' ? '{{authUrl}}' : jbApp.authUrl),
+                "restUrl":(jbApp.restUrl === 'undefined' ? '{{restUrl}}' : jbApp.restUrl)
+            }
+
+            await jbApp.sendTestMessage(testData).then((testResults)=>{
+                let result = '<pre>'+testResults+'</pre>'                     
+                jbApp.Test.updateResults(result)
+
+                // Accounce Click
+                console.log('testing:testMessage | '+JSON.stringify(testData))
+                console.log('testResults | '+JSON.stringify(testResults))
+                });
+        },
+        getXml:function(){
+            var testResults = jbApp.buildConfigXml()
+            testResults = testResults.replaceAll('<','&lt;').replaceAll('>','&gt;')
+
+            let result = '<pre>'+testResults+'</pre>'                     
+            jbApp.Test.updateResults(result)
+            
+            // Accounce Click
+            console.log('testing:getXml')
+
+        },
+        getLogXml:function(){
+            var testResults = jbApp.buildLogXml('passcreator_success_log')
+            testResults = testResults.replaceAll('<','&lt;').replaceAll('>','&gt;')
+
+            let result = '<pre>'+testResults+'</pre>'                     
+            jbApp.Test.updateResults(result)
+
+            // Accounce Tests
+            console.log('testing:getLogXml')
+        },
+        getApiKey:async function(){
+            await jbApp.getApiKey().then((apiKey)=>{
+                console.log('Action Get APIKey: '+apiKey)                        
+                jbApp.Test.updateResults(apiKey) 
+                });
+        },
+        installTable:async function(){
+            return jbApp.installConfigTable()
+        },
+        testInstall:function(){        
+            jbApp.testInstall().then((result)=>{            
+                jbApp.Test.updateResults(result)
+                });
+        },
+        updateResults:function(results){     
+            let testResults = ( typeof results === 'string' ? results : results.toString() )       
+            $('#main').html('<div id="testResults">' + testResults + '</div>')
+        }
+
+    },
 }
-jbApp.load(connection)
+
+jbApp.load(false)

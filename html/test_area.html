@@ -17,31 +17,59 @@
 <body style="padding-top:2em">
     <div class="slds-panel slds-size_large slds-panel_docked slds-panel_docked-left slds-is-open" aria-hidden="false">
         <div class="slds-panel__header">
-          <h2 class="slds-panel__header-title slds-text-heading_small slds-truncate" title="Panel Header">Pass Creator Testing Area</h2>
+          <h2 class="slds-panel__header-title slds-text-heading_small slds-truncate" title="Panel Header">Pass Creator Testing Area
+            <button class="slds-button slds-button_brand slds-float_right" onclick="history.back()">Back</button></h2>
         </div>
         <div class="slds-panel__body">
-            <div id="panel_intro">A panel body accepts any layout or component</div>
             <div id="panel_actions" class="sdls-grid slds-gutters">
                 <table class="slds-table" id="test_navigation">
                     <thead>
-                        <td>Description</td>
-                        <td>Action</td>
+                        <td style="font-weight: bold;">Description</td>
+                        <td style="font-weight: bold;">Action</td>
                     </thead>
                     <tr>
                         <td>Authenticate</td>
-                        <td><button id="jbapp__test_button1" data-action="authenticate" class="slds-button slds-button_brand test_action">Request</button></td>
+                        <td><button id="jbapp__test_button1" onClick="jbApp.Test.authenticate()" class="slds-button slds-button_brand">Request</button></td>
                     </tr>
                     <tr>
                         <td>Test Log</td>
-                        <td><button id="jbapp__test_button2" data-action="testLog" class="slds-button slds-button_brand test_action">Write</button></td>
+                        <td><button id="jbapp__test_button2" onClick="jbApp.Test.testLog()" class="slds-button slds-button_brand">Write</button></td>
                     </tr>
                     <tr>
                         <td>Sendable DE</td>
-                        <td><button id="jbapp__test_button3" data-action="readSendable" class="slds-button slds-button_brand test_action">Read</button></td>
+                        <td><button id="jbapp__test_button3" onClick="jbApp.Test.readSendable()" class="slds-button slds-button_brand">Read</button></td>
                     </tr>
                     <tr>
                         <td>Test Pass</td>
-                        <td><button id="jbapp__test_button2" data-action="testMessage" class="slds-button slds-button_brand test_action">Send</button></td>
+                        <td><button id="jbapp__test_button4" onClick="jbApp.Test.testMessage()" class="slds-button slds-button_brand">Send</button></td>
+                    </tr>
+                    <tr>
+                        <td>Get Config Table XML</td>
+                        <td><button id="jbapp__test_button5" onClick="jbApp.Test.getXml()" class="slds-button slds-button_brand">Get</button></td>
+                    </tr>
+                    <tr>
+                        <td>Get Log Table XML</td>
+                        <td><button id="jbapp__test_button6" onClick="jbApp.Test.getLogXml()" class="slds-button slds-button_brand">Get</button></td>
+                    </tr>
+                    <tr>
+                        <td>Get Configuration</td>
+                        <td><button id="jbapp__test_button7" onClick="jbApp.Test.getConfiguration()" class="slds-button slds-button_brand">Get Config</button></td>
+                    </tr>
+                    <tr>
+                        <td>Get Log Table</td>
+                        <td><button id="jbapp__test_button8" onClick="jbApp.Test.getLogTable()" class="slds-button slds-button_brand">Get Logs</button></td>
+                    </tr>
+                    <tr>
+                        <td>Check Install</td>
+                        <td><button id="jbapp__test_button9" onClick="jbApp.Test.testInstall()" class="slds-button slds-button_brand">Check</button></td>
+                    </tr>
+                    <tr>
+                        <td>Get Api Key</td>
+                        <td><button id="jbapp__test_button9" onClick="jbApp.Test.getApiKey()" class="slds-button slds-button_brand">Get APIKey</button></td>
+                    </tr>
+                    <tr>
+                        <td>Config table installation</td>
+                        <td><button id="jbapp__test_button9" onClick="jbApp.Test.installTable()" class="slds-button slds-button_brand">Install</button></td>
                     </tr>
                 </table>
                 
@@ -65,8 +93,5 @@
     <script type="application/javascript" src="/js/jbApp.js"></script>
     <script type="application/javascript" src="/js/jbActions.js"></script>
     <script type="application/javascript" src="index.js"></script>
-    <script>
-        jbApp.bindTestMenu()
-    </script>
 </body>
 </html>

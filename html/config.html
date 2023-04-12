@@ -1,0 +1,26 @@
+<h1 class="slds-panel__header-title slds-text-heading_medium">Configure the activity</h1>
+<br />
+<!-- API Key -->
+<div class="slds-form-element">
+    <label class="slds-form-element__label" for="apiKey">API Key</label>
+    <div class="slds-form-element__control">
+        <input type="text" id="apiKey" name="apiKey" placeholder="Enter your PassCreator API Key" class="slds-input" />
+    </div>
+</div>
+<div style="display:none">
+8cn/SZm168HpBz_dUK&GvEIxwL6xbf8YE8rB3Il9tO_od0XngAeBV9tLe_LykQxPC4A4i0K1zKoOlxQ0
+</div>
+<br />
+<div class="slds-form-element">
+    <label class="slds-form-element__label" for="apiKey">Logo URL</label>
+    <div class="slds-form-element__control">
+        <input type="text" id="logo_url" name="logo_url" placeholder="Enter your logo's URL" class="slds-input" />
+    </div>
+</div>
+<br />
+<br />
+<button 
+    id="saveConfig" 
+    data-action="saveConfig" 
+    onClick="jbApp.saveConfigButtonAction()" 
+    class="slds-button slds-button_brand pass_action">Save Key</button>

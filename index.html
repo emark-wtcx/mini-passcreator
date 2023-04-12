@@ -10,8 +10,12 @@
 
     <!--Styles-->
     <link type="text/css" rel="stylesheet" href="/assets/styles/salesforce-lightning-design-system.css"></style>
+    <link type="text/css" rel="stylesheet" href="/assets/styles/salesforce-lightning-design-system-additional.css"></style>
 </head>
 <body style="padding-top:2em">
+    <div id="logo">
+        <img src="assets/images/pass_creator.png" />
+    </div>
     <div id="progress-holder">
         <div class="slds-progress-bar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" aria-label="{{Placeholder for description of progress bar}}" role="progressbar">
             <span class="slds-progress-bar__value" style="width:0%">
@@ -19,32 +23,17 @@
             </span>
         </div>
     </div>
-    <br />
     <div class="slds-grid slds-wrap slds-gutters slds-container_x-large slds-container_center" id="nav">
-        <div class="slds-col slds-size_1-of-4">
-            <button id="jbapp__nav_home" data-action="home" class="slds-button slds-button_brand pass_action">Home</button>
-        </div>
-        <div class="slds-col slds-size_1-of-4">
-            <button id="jbapp__nav_button1" data-action="inputMessage" class="slds-button slds-button_brand pass_action">Input Message</button>
-        </div>
-        <div class="slds-col slds-size_1-of-4">
-            <button id="jbapp__nav_button2" data-action="selectMessage" class="slds-button slds-button_brand pass_action">Select Message</button>
-        </div>
-        <!--
-        <div class="slds-col slds-size_1-of-4">
-            <button id="jbapp__nav_button3" data-action="showStep" class="slds-button slds-button_brand pass_action">Show step</button>
-        </div>
-    -->
+        Navigation Loading...
     </div>
     <input type="hidden" style="visibility:none" id="pass_activity" value="" />
 
-    <div id="discount-code-output" class="slds-text-heading_small"></div>
     <div class="slds-docked-form-footer" style="justify-content: flex-end">
         <button id="cancel" type="button" class="slds-button slds-button_neutral">Cancel</button>
         <button id="done" disabled type="button" class="slds-button slds-button_brand slds-m-right--medium">Done</button>
     </div>
-    <div id="main" style="padding:2em;">
-    <h1>Choose Activity</h1>
+    <div id="main">
+    <h1>Please Choose Activity</h1>
     </div>
     <script type="application/javascript" src="/js/postmonger.js"></script>   
     <script type="application/javascript" src="/js/jquery.js"></script>

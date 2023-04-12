@@ -1,12 +1,17 @@
-# starter-micro-api
+# Overview
+This SFMC Journey Builder Custom Activity is developed using HTML5, ES6 & jQuery for the frontend and Node.js & expressJS server for the backend.
+## Getting Started
+Use "NPM start" to launch a local server for development.
 
-This is the simplest possible nodejs api using the base http library that responds to any request with: 
-```
-Yo!
-```
+### Files
+**index.js** Main backend server, handles comminication between SFMC & Passcreator and logging data back to SFMC. The file is broken into three sections: Configuration, Routes and Functions
 
-## Deploy in under 10 seconds
+**jbActions.js** Entry point for the Activity, fires events, listens for responses, passes values to **jbApp**
 
-[![Deploy to Cyclic](https://deploy.cyclic.app/button.svg)](https://deploy.cyclic.app/)
-- Sets up instant continuous deployment on `git push`
-- Realtime backend logs and API request monitoring
+**customActivity.js** Journey Builder UI Functions
+
+**jbApp.js** Main frontend application, text input, ajax calls to the backend, etc
+
+**package.json** NPM Configuration & Scripts
+
+**config.json** Journey Bulder Activity Configuration file
