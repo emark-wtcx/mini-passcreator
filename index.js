@@ -7,7 +7,7 @@ const fetchResponse = response => {
   if (!response.ok) { 
      throw Error(response.statusText);
   } else {
-     return (isJson(response) ? response.json() : response);
+     return (isJson(response) ? response.json() : response.text());
   }
 };
 const XML = {
@@ -638,12 +638,12 @@ async function logData(data={}){
   let loggingUri = '/data/v1/async/dataextensions/key:'+logDe+'/rows'
 
   let row = {'items':[
-    {
-      'Id':logId,
-      'DateTime':date.ISODateTime,
-      'Message':(data.hasOwnProperty('message') ? data.message : JSON.stringify(data)),
-      'MetaData':JSON.stringify(data)
-    }
+      {
+        'Id':logId,
+        'DateTime':date.ISODateTime,
+        'Message':(data.hasOwnProperty('message') ? data.message : JSON.stringify(data)),
+        'MetaData':JSON.stringify(data)
+      }
     ]
   }
   
@@ -653,6 +653,8 @@ async function logData(data={}){
 
   return await postData(loggingUri,row)   
     .then((postDataResponse)=>{
+      if (postDebug) console.log('logData response: ')
+      console.table(postDataResponse)
       return postDataResponse
     }).catch((error) => {
       return handleError('(Handle Error) '+error);

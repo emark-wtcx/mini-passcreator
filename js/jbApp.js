@@ -90,11 +90,11 @@ const jbApp = {
             contentType: "application/json",
             dataType: "json",
             data: JSON.stringify(data),
-            success: function(result){
-                return jbApp.restResponse(result)
-            },
             error: function(error){
                 return jbApp.restError(error)
+            },
+            complete: function(data){
+                return jbApp.restResponse(data)
             }
         });
     }, 
@@ -1272,9 +1272,9 @@ const jbApp = {
             var testResults = jbApp.log({'message':message})
             let result = '<pre>'+testResults+'</pre>'                     
             jbApp.Test.updateResults(result)
-            
-            // Accounce Click
-            console.log('testing:testLog | '+jbApp.action)
+
+            console.log('Test results:')
+            console.table(testResults)
 
         },
         testMessage:async function(){            
