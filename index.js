@@ -654,7 +654,7 @@ async function logData(data={}){
   return await postData(loggingUri,row)   
     .then((postDataResponse)=>{
       if (postDebug) console.log('logData response: ')
-      console.table(postDataResponse)
+      if (postDebug) console.table(postDataResponse)
       return postDataResponse
     }).catch((error) => {
       return handleError('(Handle Error) '+error);

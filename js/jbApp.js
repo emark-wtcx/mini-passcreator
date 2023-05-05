@@ -7,7 +7,7 @@ const connection = new Postmonger.Session();
  */
 const debug = true;
 const jbApp = { 
-    version:2.5,
+    version:2.6,
     configurationTable:'passCreator_configuration',
     configTable:null,
     configExists:false,
