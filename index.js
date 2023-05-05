@@ -895,6 +895,7 @@ async function getData(url = '', headers) {
   // failure = handleError(error)
   //
 async function postData(url = '', postData=null) {
+  console.log('(postData) starts')
   if (url != '' && postData != null){
     let postResponse = await getAccessToken()
       .then(async accessToken => {
@@ -922,8 +923,16 @@ async function postData(url = '', postData=null) {
             headers: headers,
             body: JSON.stringify(postData)
             })
-          .then((response)=>{return fetchResponse(response)})
-          .then((finalResponse)=>{return finalResponse})
+          .then((response)=>{            
+            if (postDebug) console.log('(postData) response: ')
+            if (postDebug) console.log(JSON.stringify(response))
+            return fetchResponse(response)
+          })
+          .then((finalResponse)=>{            
+            if (postDebug) console.log('(postData) finalResponse: ')
+            if (postDebug) console.log(JSON.stringify(finalResponse))
+            return finalResponse
+          })
           .catch((error) => {
               return handleError(error);
             });  
