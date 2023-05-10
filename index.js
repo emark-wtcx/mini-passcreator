@@ -992,45 +992,41 @@ async function soapRequest(soapEnv=''){
 //
 async function postDataToPassCreator(url = '', postData=null) {
   if (url != '' && postData != null){
-    //
-    // Set Custom Headers 
-    //
     var headers = {
       "Accept": dataType,
       "Content-Type": dataType,
-      "Authorization":postData.apiKey
-    }
+      "Authorization": postData.apiKey
+    };
 
-    console.log('(pDTPC) Input headers:')
-    console.table(headers)
-    
-    console.log('(pDTPC) Input Data:')
-    console.table(postData)
-    //
-    // Perform API Call
-    //
-    return await fetch(url, {
-      method: 'POST', 
-      mode: 'no-cors', 
-      cache: 'no-cache', 
-      credentials: 'omit', 
-      headers: headers,
-      redirect: 'follow', 
-      referrerPolicy: 'no-referrer', 
-      body: JSON.stringify(postData) 
-    })// Parse Response
-    .then((finalResponse)=>{
-      let response = await parseRestResponse(finalResponse)
-      if (response.status == 200){
-        logData({'message':'Pass Update sent successfully: '+postData.pushNotificationText})
+    console.log('(pDTPC) Input headers:');
+    console.table(headers);
+
+    console.log('(pDTPC) Input Data:');
+    console.table(postData);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        mode: 'cors',
+        cache: 'no-cache',
+        credentials: 'omit',
+        headers: headers,
+        redirect: 'follow',
+        referrerPolicy: 'no-referrer',
+        body: JSON.stringify(postData)
+      });
+
+      const finalResponse = await parseRestResponse(response);
+
+      if (finalResponse.status === 200) {
+        logData({ 'message': 'Pass Update sent successfully: ' + postData.pushNotificationText });
       }
-      return response
-    })
-    // Announce and log response
-    .catch((error) => {
-      let errorResponse = `(pDTPC) ${error}`
+
+      return finalResponse;
+    } catch (error) {
+      let errorResponse = `(pDTPC) ${error}`;
       return handleError(errorResponse);
-    }); 
+    }
   }
 }
 
@@ -1132,48 +1128,39 @@ function explainError(error){
   // 'body':null
   // } 
 //
-function parseRestResponse(result) {  
-  // Response time
+function parseRestResponse(result) {
   var date = getDateTime();
-  
-  //
-  // Construct Standardised Response
-  //
-  var messageResponse = {
-    'requestDate':date.DateTime,
-    'body':null
-  }      
-  
-  
-  if (result.hasOwnProperty('status')){
-    // Respect original status
-    messageResponse.status = result.status 
-  }else{
-    // Assume Success if orignal response doesn't have status
-    messageResponse.status = 200
-  }
-  
-  if (result.hasOwnProperty('errorcode')){
-    // Overwrite results if errorCode detected
-    if (result.hasOwnProperty('message')){
-        messageResponse.body = result.message
-      }
-    if (result.hasOwnProperty('errorcode')){
-        messageResponse.status = result.errorcode
-        }
 
-    
-    messageResponse = (isJson(messageResponse) ? JSON.stringify(messageResponse) : response)    
-      
-    console.log('(parseRestResponse) Response: '+JSON.stringify(messageResponse))
-    return messageResponse
-  }else{
-    //  Return standardised messageResponse
-    messageResponse.body = result
-    console.log('(parseRestResponse) Response: '+JSON.stringify(messageResponse))
-    return messageResponse
-  }  
+  var messageResponse = {
+    'requestDate': date.DateTime,
+    'body': null
+  };
+
+  if (result.hasOwnProperty('status')) {
+    messageResponse.status = result.status;
+  } else {
+    messageResponse.status = 200;
+  }
+
+  if (result.hasOwnProperty('errorcode')) {
+    if (result.hasOwnProperty('message')) {
+      messageResponse.body = result.message;
+    }
+    if (result.hasOwnProperty('errorcode')) {
+      messageResponse.status = result.errorcode;
+    }
+
+    var response = isJson(messageResponse) ? JSON.stringify(messageResponse) : messageResponse;
+
+    console.log('(parseRestResponse) Response: ' + JSON.stringify(response));
+    return response;
+  } else {
+    messageResponse.body = result;
+    console.log('(parseRestResponse) Response: ' + JSON.stringify(messageResponse));
+    return messageResponse;
+  }
 }
+
 
 // parseSoapResponse(result)
   // Purpose
