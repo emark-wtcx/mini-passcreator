@@ -1,8 +1,10 @@
+// Import required modules
 const express = require('express');
 const app = express();
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 const path = require('path');
+
 const fetchResponse = response => {
   if (!response.ok) { 
      throw Error(response.statusText);
@@ -196,6 +198,8 @@ const XML = {
       return this.soapBuildDe(details,fields)
   },
 }
+
+// Define variables
 var br = "\n"
 
 var configDe = 'passCreator_configuration'
@@ -209,63 +213,50 @@ var testUrl = 'https://app.passcreator.com/api/pass/f2235798-6df8-4c85-97b3-a8b0
 var protocol = 'https://'
 var subdomain = 'mc3tb2-hmmbngz-85h36g8xz1b4m'
 
-var isLocalhost = null
-
 var HOME_DIR = '/';
 var postDebug = true
 var dataType = 'application/json'
 
-/* Auth domain for REST */
 // Raw properties
-var access_token,accessToken,tokenExpiry,MID = null
+var access_token,accessToken,tokenExpiry,isLocalhost,MID = null
 
 // Token Domain
 var tokenUrl = '/v2/token'
 var authDomain = protocol+subdomain+'.auth.marketingcloudapis.com'+tokenUrl 
 
-/* REST domain */
+// REST domain
 var restDomain = protocol+subdomain+'.rest.marketingcloudapis.com'
-/* SOAP domain */
+// SOAP domain
 var soapDomain = protocol+subdomain+'.soap.marketingcloudapis.com/Service.asmx'
 
+// Set up middleware
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 var PORT = process.env.port || 8080;
 
-/**
- *
- * Front End Routes 
- * 
-**/
+//Front End Routes
+
+// Serve static files from the root directory
 app.use('/', express.static(__dirname + HOME_DIR));
 
+// Handle GET request to root URL
 app.get('/', function (req, res) {
   res.sendFile(path.resolve('index.html'));
 });
 
-/**
- *  Mock form access
- * */
+// Handle GET request to "/form" URL
 app.get('/form', function (req, res) {
   res.sendFile(path.resolve('./html/form.html'));
 });
 
-/**
- *  Tesing area access
- **/
+// Handle GET request to "/test" URL
 app.get('/test', function (req, res) {
   res.sendFile(path.resolve('./html/test_area.html'));
 });
 
-/**
- *  
- * Back End Routes
- * 
-**/
+// Back End Routes
 
-/**
- * Send payload to Passcreator 
- */
+// Handle POST request to "/execute" URL
 app.post('/execute',async function (req, res, next) { 
   if (postDebug) console.log('/execute called ')
   if (req.body != null){
@@ -279,9 +270,7 @@ app.post('/execute',async function (req, res, next) {
   }
 })
 
-/**
- * Test reading data from a DataExtension identified by CustomerKey 
- */
+// Handle POST request to "/getde" URL
 app.post('/getde',async function (req, res, next) { 
   if (req.body.customerKey != null){
     let getde = await getDataExtension(req.body.customerKey).then((getServerResponse) => {
@@ -293,9 +282,7 @@ app.post('/getde',async function (req, res, next) {
   }
 })
 
-/**
- * Route to install config table
- */
+// Route to install config table
 app.post('/install',async function (req, res, next) { 
   if (postDebug) console.log('/install route called ') 
   if (req != null && typeof req !== 'undefined'){
@@ -325,9 +312,7 @@ app.post('/install',async function (req, res, next) {
   }
 })
 
-/**
- * Route to install config table
- */
+//Route to write config data
 app.post('/saveConfig',async function (req, res, next) { 
   if (postDebug) console.log('/install route called ') 
   if (req != null){
@@ -349,9 +334,7 @@ app.post('/saveConfig',async function (req, res, next) {
   }
 })
 
-/**
- * Route to Write data to the log 
- */
+//Route to Write data to the log 
 app.post('/log',async function (req, res, next) { 
   if (postDebug) console.log('(/log) called') 
   if (req != null){
@@ -368,9 +351,7 @@ app.post('/log',async function (req, res, next) {
   }
 })
 
-/**
- * Test requesting an authentication token
- */
+// Handle POST request to "/testauth" URL
 app.post('/testauth',async function (req, res, next) { 
   if (postDebug) console.log('/testauth called ') 
   if (req != null){
@@ -386,9 +367,7 @@ app.post('/testauth',async function (req, res, next) {
   }
 })
 
-/**
- * Send a mock payload to the test endpoint 
- */
+// Handle POST request to "/testmessage" URL
 app.post('/testmessage',async function (req, res, next) { 
   if (postDebug) console.log('/testmessage called ')
   if (req.body != null){
@@ -403,18 +382,16 @@ app.post('/testmessage',async function (req, res, next) {
 })
 
 
-/**
- * Generic Error Handling
- */
+// Generic Error Handling middleware
 app.use(function (err, req, res, next) {
   console.table(err.stack)
   res.status(500).send('Something broke!')
 })
 
 
-/**
- *  Back End Functions
-* */
+// Back End Functions
+
+// Function (helper) to get test is something is JSON
 function isJson(input){
   try {
       JSON.stringify(input)
@@ -425,6 +402,7 @@ function isJson(input){
   }
   return true;
 }
+// Function to generate a GUID
 function guid() { 
   var d = new Date().getTime();//Timestamp
   var d2 = (performance && performance.now && (performance.now()*1000)) || 0;//Time in microseconds since page-load or 0 if unsupported
@@ -441,6 +419,7 @@ function guid() {
   });
 }
 
+// Function to get the current date and time
 function getDateTime(){
   let d = new Date();
   var requestDate = d.toLocaleDateString()
@@ -453,19 +432,20 @@ function getDateTime(){
     'ISODateTime':d.toISOString()
   }
 }
-/**
- * Set the details from Journey Builder 
- */
+
+// Function to set the access token
 function setToken(payload){
   if (postDebug) console.log('(setToken) setting token: '+payload.token)
   access_token = payload.token
   accessToken = 'Bearer '+access_token
 }
+// Function to set the REST URL
 function setRestUrl(payload){
   if (postDebug) console.log('(setRestUrl) setting restUrl: '+payload.restUrl)
   restDomain = payload.restUrl
 }
 
+// Function to send a message to Passcreator
 async function postMessage(data){
   /**
    *  The inArguments property originates in JourneyBuilder
@@ -549,6 +529,7 @@ async function postMessage(data){
   return postResponse
 }
 
+// Function to get data from a DataExtension
 async function getDataExtension(customerKey){
   // Request setup
   var data = {}
@@ -631,6 +612,7 @@ async function writeConfigData(data={}){
     return response
     });  
 }
+// Function to log data
 async function logData(data={}){
   if (postDebug) console.log('logData called')
   let date = getDateTime();
@@ -660,6 +642,7 @@ async function logData(data={}){
       return handleError('(Handle Error) '+error);
     }); 
 }
+// Function to log an error
 async function logError(message,data={}){
   let loggingUri = '/data/v1/async/dataextensions/key:'+errorDe+'/rows'
   let date = getDateTime();
@@ -1037,7 +1020,7 @@ async function postDataToPassCreator(url = '', postData=null) {
       body: JSON.stringify(postData) 
     })// Parse Response
     .then((finalResponse)=>{
-      let response = parseRestResponse(finalResponse)
+      let response = await parseRestResponse(finalResponse)
       if (response.status == 200){
         logData({'message':'Pass Update sent successfully: '+postData.pushNotificationText})
       }
