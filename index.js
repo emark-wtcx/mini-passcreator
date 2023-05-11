@@ -716,29 +716,30 @@ async function postData(url = '', postData=null) {
           console.log(JSON.stringify(postData))
         }
 
-        return await fetch(url, {
-            method: 'POST', 
-            headers: headers,
-            body: JSON.stringify(postData)
-            })
-          .then((response)=>{
-            if (postDebug) console.log('(postData) response: ')
-            if (postDebug) console.table(response)
-            return response.json()
+        return fetch(url, {
+          method: 'POST', 
+          headers: headers,
+          body: JSON.stringify(postData)
           })
-          .then((finalResponse)=>{
-            if (postDebug) console.log('(postData) finalResponse: ')
-            if (postDebug) console.log(JSON.stringify(finalResponse))
-            return finalResponse
-          })
-          .catch((error) => {
-            return handleError(error);
-          });  
-      });
-    return postResponse; // collect & return response
-  }else{
-    console.log('(postData) missing input')
-  }
+        .then((response)=>{
+          if (postDebug) console.log('(postData) response: ')
+          if (postDebug) console.table(response)
+          return response.json()
+        })
+        .then((finalResponse)=>{
+          if (postDebug) console.log('(postData) finalResponse: ')
+          if (postDebug) console.log(JSON.stringify(finalResponse))
+          return finalResponse
+        })
+        .catch((error) => {
+          handleError(error);
+          throw error;
+        });  
+    });
+  return postResponse; // collect & return response
+}else{
+  console.log('(postData) missing input')
+}
 }
 
 // soapRequest(soapEnv='')
