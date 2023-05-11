@@ -629,17 +629,17 @@ async function logData(data={}){
     ]
   }
   
-  if (postDebug) console.log('logData loggingUrl: '+loggingUri)
-  if (postDebug) console.log('logData items: ')
+  if (postDebug) console.log('(logData) loggingUrl: '+loggingUri)
+  if (postDebug) console.log('(logData) items: ')
   if (postDebug) console.table(row.items)
 
   return await postData(loggingUri,row)   
     .then((postDataResponse)=>{
-      if (postDebug) console.log('logData response: ')
+      if (postDebug) console.log('(logData) response: ')
       if (postDebug) console.table(postDataResponse)
       return postDataResponse
     }).catch((error) => {
-      return handleError('(Handle Error) '+error);
+      return handleError('(logData) error: '+error);
     }); 
 }
 // Function to log an error
@@ -906,21 +906,20 @@ async function postData(url = '', postData=null) {
             headers: headers,
             body: JSON.stringify(postData)
             })
-          .then((response)=>{            
+          .then((response)=>{
             if (postDebug) console.log('(postData) response: ')
-            if (postDebug) console.log(JSON.stringify(response))
-            return fetchResponse(response)
+            if (postDebug) console.table(response)
+            return response.json()
           })
-          .then((finalResponse)=>{            
+          .then((finalResponse)=>{
             if (postDebug) console.log('(postData) finalResponse: ')
             if (postDebug) console.log(JSON.stringify(finalResponse))
             return finalResponse
           })
           .catch((error) => {
-              return handleError(error);
-            });  
-      }
-    );    
+            return handleError(error);
+          });  
+      });
     return postResponse; // collect & return response
   }
 }
@@ -1045,33 +1044,33 @@ async function postDataToPassCreator(url = '', postData=null) {
   // 'body':explainError(error)
   // } 
 //
-function handleError(error){  
-  // Response time
+function handleError(error) {
   var date = getDateTime();
 
-  if (postDebug) console.log('(handleError) Error:');
-  console.table(error)
-  //
-  // Construct Standardised Response
-  //
-  var errorResponse = {
-    'requestDate':date.DateTime,
-    'type':typeof error,
-    'body':(typeof error !== 'string') ? JSON.stringify(error) : error
-  }  
-  // Append Error Status (if defined)
-  if (error.hasOwnProperty('status')){
-    errorResponse.status = error.hasOwnProperty('status') 
+  if (postDebug) {
+    console.log('(handleError) Error:');
+    console.table(error);
   }
 
-  if (error.hasOwnProperty('cause') && error.cause.hasOwnProperty('code')){ 
-    let errorDetails = explainError(error)
-    errorResponse.body = errorDetails.body
-    errorResponse.status = errorDetails.status
+  var errorResponse = {
+    'requestDate': date.DateTime,
+    'type': typeof error,
+    'body': (typeof error !== 'string') ? JSON.stringify(error) : error
+  };
+
+  if (error.hasOwnProperty('status')) {
+    errorResponse.status = error.status;
   }
-  
-  return errorResponse
+
+  if (error.hasOwnProperty('cause') && error.cause.hasOwnProperty('code')) {
+    var errorDetails = explainError(error);
+    errorResponse.body = errorDetails.body;
+    errorResponse.status = errorDetails.status;
+  }
+
+  return errorResponse;
 }
+
 
 
 // explainError(error)
