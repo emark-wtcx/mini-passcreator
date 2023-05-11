@@ -641,7 +641,9 @@ async function getAccessToken(){
         return accessToken
       })
     if (postDebug) console.log('Authentication requested')
-    return authResponse
+    return authResponse.then((token) => {
+      return token.access_token;
+    });
   }else{
     if (postDebug) console.log('Token valid: Authentication cached: '+accessToken)
     return Promise.resolve(accessToken)
