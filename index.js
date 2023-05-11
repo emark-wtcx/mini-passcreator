@@ -644,7 +644,7 @@ async function getAccessToken(){
     return authResponse
   }else{
     if (postDebug) console.log('Token valid: Authentication cached: '+accessToken)
-    return accessToken
+    return Promise.resolve(accessToken)
   }
 }
 
