@@ -721,7 +721,7 @@ async function postData(url = '', postData=null) {
       console.log(JSON.stringify(postData))
     }
 
-    return fetch(url, {
+    var fetchResult = await fetch(url, {
       method: 'POST', 
       headers: headers,
       body: JSON.stringify(postData)
@@ -742,6 +742,11 @@ async function postData(url = '', postData=null) {
       handleError(error);
       throw error;
     }); 
+
+    console.log('(postData) Fetch Result: ')
+    console.table(fetchResult)
+
+    return fetchResult;
 }else{
   console.log('(postData) missing input')
 }
