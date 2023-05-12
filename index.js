@@ -571,8 +571,7 @@ function refreshToken(data){
 //
 function tokenValid(){
   if (postDebug) console.log('Checking Token')
-  if (accessToken == null
-    || tokenExpiry == null){
+  if (accessToken == null){
       if (postDebug) console.log('No token to check')
       return false
   }else{
@@ -580,7 +579,9 @@ function tokenValid(){
     let time = d.getTime()
     console.log('Checking: (tokenExpiry) '+tokenExpiry)
     console.log('Checking: (time) '+time)
-    let tokenValid = (accessToken != null && parseInt(tokenExpiry)>parseInt(time)) ? true : false
+    
+    let tokenValid = ((accessToken != null && parseInt(tokenExpiry)>parseInt(time)) || (tokenExpiry == null && accessToken != null)) ? true : false
+    
     if (postDebug){
       console.log('Checking: token is valid? '+tokenValid)
     }
@@ -843,6 +844,9 @@ async function postDataToPassCreator(url = '', postData=null) {
       const finalResponse = await parseRestResponse(response);
 
       if (finalResponse.status === 200) {
+        if (postData.token != ''){
+          accessToken = postData.token
+        }
         logData({ 'message': 'Pass Update sent successfully: ' + postData.pushNotificationText });
       }
 
