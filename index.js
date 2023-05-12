@@ -621,7 +621,7 @@ async function getAccessToken(){
       console.table(authBody)
       }
 
-    var authResponse = await fetch(authUrl, {
+      var authResponse = await fetch(authUrl, {
         method: 'POST', 
         mode: 'no-cors', 
         cache: 'no-cache', 
@@ -630,20 +630,21 @@ async function getAccessToken(){
         redirect: 'follow', 
         referrerPolicy: 'no-referrer', 
         body: JSON.stringify(authBody) 
-      }).catch((error) => {
+      })
+      .catch((error) => {
         // Broadcast error 
         if (postDebug) console.log('Backend auth error:'+JSON.stringify(error));
         return error;
-      }).then(response => response.json())
+      })
+      .then(response => response.json())
       .then((authenticationResponse) => {  
         if (postDebug) console.log('Refreshing Authentication')
         accessToken = refreshToken(authenticationResponse)
         return accessToken
-      })
-    if (postDebug) console.log('Authentication requested')
-    return authResponse.then((token) => {
-      return token.access_token;
-    });
+      });
+      
+      if (postDebug) console.log('Authentication requested')
+      return authResponse;
   }else{
     if (postDebug) console.log('Token valid: Authentication cached: '+accessToken)
     return Promise.resolve(accessToken)
