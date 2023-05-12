@@ -428,34 +428,36 @@ async function writeConfigData(data={}){
     });  
 }
 // Function to log data
-async function logData(data={}){
-  if (postDebug) console.log('logData called')
-  let date = getDateTime();
-  let logId = guid();
-  let loggingUri = '/data/v1/async/dataextensions/key:'+logDe+'/rows'
+async function logData(data = {}) {
+  if (postDebug) console.log('logData called');
+  const date = getDateTime();
+  const logId = guid();
+  const loggingUri = '/data/v1/async/dataextensions/key:' + logDe + '/rows';
 
-  let row = {'items':[
+  const row = {
+    'items': [
       {
-        'Id':logId,
-        'DateTime':date.ISODateTime,
-        'Message':(data.hasOwnProperty('message') ? data.message : JSON.stringify(data)),
-        'MetaData':JSON.stringify(data)
+        'Id': logId,
+        'DateTime': date.ISODateTime,
+        'Message': (data.hasOwnProperty('message') ? data.message : JSON.stringify(data)),
+        'MetaData': JSON.stringify(data)
       }
     ]
-  }
-  
-  if (postDebug) console.log('(logData) loggingUrl: '+loggingUri)
-  if (postDebug) console.log('(logData) items: ')
-  if (postDebug) console.table(row.items)
+  };
 
-  return await postData(loggingUri,row)   
-    .then((postDataResponse)=>{
-      if (postDebug) console.log('(logData) response: ')
-      if (postDebug) console.table(postDataResponse)
-      return postDataResponse
+  if (postDebug) console.log('(logData) loggingUrl: ' + loggingUri);
+  if (postDebug) console.log('(logData) items: ');
+  if (postDebug) console.table(row.items);
+
+  return await postData(loggingUri, row)
+    .then((postDataResponse) => {
+      if (postDebug) console.log('(logData) response: ');
+      if (postDebug) console.table(postDataResponse);
+      console.log('Log data response:', postDataResponse);
+      return postDataResponse;
     }).catch((error) => {
-      return handleError('(logData) error: '+error);
-    }); 
+      return handleError('(logData) error: ' + error);
+    });
 }
 // Function to log an error
 async function logError(message,data={}){
@@ -735,6 +737,8 @@ async function postData(url = '', postData=null) {
           return finalResponse
         })
         .catch((error) => {
+          if (postDebug) console.log('(postData) error: ')
+          if (postDebug) console.table(error)
           handleError(error);
           throw error;
         });  
