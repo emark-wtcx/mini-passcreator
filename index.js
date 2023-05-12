@@ -206,7 +206,7 @@ app.use(function (err, req, res, next) {
 
 // Back End Functions
 
-// Function (helper) to get test is something is JSON
+// Function (helper) to get test if something is JSON
 function isJson(input){
   try {
       JSON.stringify(input)
@@ -701,50 +701,47 @@ async function getData(url = '', headers) {
 async function postData(url = '', postData=null) {
   console.log('(postData) starts')
   if (url != '' && postData != null){
-    let postResponse = await getAccessToken()
-      .then(async accessToken => {
-        var headers = {
-          "Accept": "*/*",
-          "Content-Type": dataType,
-          "Authorization":accessToken
-        }
-        // Prepend Rest Domain to URL 
-        // (if missing)
-        if (url.indexOf(restDomain)==-1){
-          url = restDomain+url
-        }
+    let accessToken = await getAccessToken()
+    var headers = {
+      "Accept": "*/*",
+      "Content-Type": dataType,
+      "Authorization":accessToken
+    }
+    // Prepend Rest Domain to URL 
+    // (if missing)
+    if (url.indexOf(restDomain)==-1){
+      url = restDomain+url
+    }
 
-        if (postDebug) {
-          console.log('(postData) url: '+url)
-          console.log('(postData) headers: ')
-          console.table(headers)
-          console.log('(postData) data: ')
-          console.log(JSON.stringify(postData))
-        }
+    if (postDebug) {
+      console.log('(postData) url: '+url)
+      console.log('(postData) headers: ')
+      console.table(headers)
+      console.log('(postData) data: ')
+      console.log(JSON.stringify(postData))
+    }
 
-        return fetch(url, {
-          method: 'POST', 
-          headers: headers,
-          body: JSON.stringify(postData)
-          })
-        .then((response)=>{
-          if (postDebug) console.log('(postData) response: ')
-          if (postDebug) console.table(response)
-          return response.json()
-        })
-        .then((finalResponse)=>{
-          if (postDebug) console.log('(postData) finalResponse: ')
-          if (postDebug) console.log(JSON.stringify(finalResponse))
-          return finalResponse
-        })
-        .catch((error) => {
-          if (postDebug) console.log('(postData) error: ')
-          if (postDebug) console.table(error)
-          handleError(error);
-          throw error;
-        });  
-    });
-  return postResponse; // collect & return response
+    return fetch(url, {
+      method: 'POST', 
+      headers: headers,
+      body: JSON.stringify(postData)
+      })
+    .then((response)=>{
+      if (postDebug) console.log('(postData) response: ')
+      if (postDebug) console.table(response)
+      return response.json()
+    })
+    .then((finalResponse)=>{
+      if (postDebug) console.log('(postData) finalResponse: ')
+      if (postDebug) console.log(JSON.stringify(finalResponse))
+      return finalResponse
+    })
+    .catch((error) => {
+      if (postDebug) console.log('(postData) error: ')
+      if (postDebug) console.table(error)
+      handleError(error);
+      throw error;
+    }); 
 }else{
   console.log('(postData) missing input')
 }
