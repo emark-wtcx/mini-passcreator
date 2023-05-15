@@ -586,12 +586,15 @@ function tokenValid(){
       if (postDebug) console.log('No token to check')
       return false
   }else{
+    let tokenValid = true
     let d = new Date();
     let time = d.getTime()
     console.log('Checking: (tokenExpiry) '+tokenExpiry)
     console.log('Checking: (time) '+time)
-    
-    let tokenValid = ((!tokenExpiry && !accessToken) || (!accessToken && parseInt(tokenExpiry)>parseInt(time))) ? true : false
+
+    if (tokenExpiry != null){
+      tokenValid = (parseInt(tokenExpiry)>parseInt(time)) ? true : false
+    }
     
     if (postDebug){
       console.log('Checking: token is valid? '+tokenValid)
