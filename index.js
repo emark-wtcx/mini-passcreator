@@ -261,7 +261,7 @@ function setToken(payload){
 }
 // Function to set the REST URL from a Journey Builder Payload
 function setRestUrl(payload){
-  if (payload.hasOwnProperty('restUrl') && payload.restUrl.toString().length > 0){
+  if (payload.hasOwnProperty('restUrl') && !!payload.restUrl){
     if (postDebug) console.log('(setRestUrl) setting restUrl: '+payload.restUrl)
     restDomain = payload.restUrl
     return true;
@@ -324,7 +324,7 @@ async function postMessage(data){
   /**
    * Transmit Message via postDataToPassCreator function
    */
-  let postResponse = await postDataToPassCreator(messageData.endpoint, bodyContent)
+  return await postDataToPassCreator(messageData.endpoint, bodyContent)
     .then((passResponse) => {
       //
       //  Build response 
@@ -351,7 +351,6 @@ async function postMessage(data){
     }).catch((error) => {
       return handleError(error);
     }); 
-  return postResponse
 }
 
 // Function to get data from a DataExtension
@@ -662,7 +661,7 @@ async function getAccessToken(){
       return authResponse;
   }else{
     if (postDebug) console.log('Token valid: Authentication cached: '+accessToken)
-    return Promise.resolve(accessToken)
+    return accessToken
   }
 }
 
@@ -858,9 +857,6 @@ async function postDataToPassCreator(url = '', postData=null) {
       const finalResponse = await parseRestResponse(response);
 
       if (finalResponse.status === 200) {
-        if (postData.token != ''){
-          setToken(postData)
-        }
         logData({ 'message': 'Pass Update sent successfully: ' + postData.pushNotificationText });
       }
 
