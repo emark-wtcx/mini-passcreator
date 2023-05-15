@@ -248,16 +248,26 @@ function getDateTime(){
   }
 }
 
-// Function to set the access token
+// Function to set the access token from a Journey Builder Payload
 function setToken(payload){
-  if (postDebug) console.log('(setToken) setting token: '+payload.token)
-  access_token = payload.token
-  accessToken = 'Bearer '+access_token
+  if (payload.hasOwnProperty('token') && !!payload.token){
+    if (postDebug) console.log('(setToken) setting token: '+payload.token)
+    access_token = payload.token
+    accessToken = 'Bearer '+access_token
+    return true;
+  }else{
+    return false;
+  }
 }
-// Function to set the REST URL
+// Function to set the REST URL from a Journey Builder Payload
 function setRestUrl(payload){
-  if (postDebug) console.log('(setRestUrl) setting restUrl: '+payload.restUrl)
-  restDomain = payload.restUrl
+  if (payload.hasOwnProperty('restUrl') && payload.restUrl.toString().length > 0){
+    if (postDebug) console.log('(setRestUrl) setting restUrl: '+payload.restUrl)
+    restDomain = payload.restUrl
+    return true;
+  }else{
+    return false;
+  }
 }
 
 // Function to send a message to Passcreator
@@ -427,7 +437,7 @@ async function writeConfigData(data={}){
     return response
     });  
 }
-// Function to log data
+// Function to log data in SFMC
 async function logData(data = {}) {
   if (postDebug) console.log('logData called');
   const date = getDateTime();
@@ -519,6 +529,8 @@ async function writeData(targetDe,data={}){
 
 // refreshToken(data)
   // Purpose
+  // Converts SFMC Rest auth response 
+  // to internal properties
   // 
   // Input 
   // data = Response From getAccessToken
@@ -580,7 +592,7 @@ function tokenValid(){
     console.log('Checking: (tokenExpiry) '+tokenExpiry)
     console.log('Checking: (time) '+time)
     
-    let tokenValid = ((accessToken != null && parseInt(tokenExpiry)>parseInt(time)) || (tokenExpiry == null && accessToken != null)) ? true : false
+    let tokenValid = ((tokenExpiry == null && accessToken != null) || (accessToken != null && parseInt(tokenExpiry)>parseInt(time))) ? true : false
     
     if (postDebug){
       console.log('Checking: token is valid? '+tokenValid)
@@ -847,7 +859,7 @@ async function postDataToPassCreator(url = '', postData=null) {
 
       if (finalResponse.status === 200) {
         if (postData.token != ''){
-          accessToken = postData.token
+          setToken(postData)
         }
         logData({ 'message': 'Pass Update sent successfully: ' + postData.pushNotificationText });
       }

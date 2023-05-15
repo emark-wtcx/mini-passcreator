@@ -7,7 +7,7 @@ const connection = new Postmonger.Session();
  */
 const debug = true;
 const jbApp = { 
-    version:2.9,
+    version:3.2,
     configurationTable:'passCreator_configuration',
     configTable:null,
     configExists:false,
@@ -1109,8 +1109,8 @@ const jbApp = {
      * Helper functions for
      * Test child object 
      */
-    testAuthentication:function(){
-        $.ajax({
+    testAuthentication:async function(){
+        return await $.ajax({
             beforeSend:function(){$('#main').html('Loading')},
             type: "POST",
             url: '/testauth',
@@ -1125,10 +1125,10 @@ const jbApp = {
         });        
     },  
 
-    sendTestMessage:function(data){
+    sendTestMessage:async function(data){
         if (debug) console.log('testmessage:')
         if (debug) console.table(data)
-        return $.ajax({
+        return await $.ajax({
             type: "POST",
             url: '/testmessage',
             contentType: "application/json",
@@ -1253,15 +1253,13 @@ const jbApp = {
             return configXml; 
 
         },
-        authenticate:function(){
-            var testResults = jbApp.testAuthentication()
-
-            // Show Results
-            let result = '<pre>'+testResults+'</pre>'                     
-            jbApp.Test.updateResults(result)
-            
-            // Accounce Click
-            console.log('testing:authenticate')
+        authenticate:async function(){
+            await jbApp.testAuthentication()
+                .then((result)=>{             
+                jbApp.Test.updateResults('<pre>'+result+'</pre>')            
+                // Accounce Click
+                console.log('testing:authenticate')
+                });
 
         },
         testLog:async function(){
@@ -1331,7 +1329,7 @@ const jbApp = {
                 jbApp.Test.updateResults(result)
                 });
         },
-        updateResults:function(results){     
+        updateResults:async function(results){     
             let testResults = ( typeof results === 'string' ? results : results.toString() )       
             $('#main').html('<div id="testResults">' + testResults + '</div>')
         }
