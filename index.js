@@ -860,7 +860,7 @@ async function postDataToPassCreator(url = '', postData=null) {
       const finalResponse = await parseRestResponse(response);
 
       if (finalResponse.status === 200) {
-        logData({ 'message': 'Pass Update sent successfully: ' + postData.pushNotificationText });
+        await logData({ 'message': 'Pass Update sent successfully: ' + postData.pushNotificationText });
       }
 
       return finalResponse;
