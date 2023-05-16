@@ -7,7 +7,7 @@ const connection = new Postmonger.Session();
  */
 const debug = true;
 const jbApp = { 
-    version:3.6,
+    version:3.7,
     configurationTable:'passCreator_configuration',
     configTable:null,
     configExists:false,
@@ -63,9 +63,9 @@ const jbApp = {
         },
       ], 
 
-/**
- * Core & Front End Functionality
- */
+//
+// Core & Front End Functionality
+//
     guid:function() { 
         var d = new Date().getTime();//Timestamp
         var d2 = (performance && performance.now && (performance.now()*1000)) || 0;//Time in microseconds since page-load or 0 if unsupported
@@ -257,7 +257,7 @@ const jbApp = {
     
         }); 
     },
-    async processPageChange(refreshPage){
+    processPageChange:async function(refreshPage){
         /** 
          * Process any page changes
          */
@@ -826,9 +826,9 @@ const jbApp = {
         jbApp.processPageChange(1)
     },
 
-/**
- * Journey Builder
- */
+//
+// Journey Builder
+//
 
     parseEndpoints:function(data){
         let protocol = 'https://'
@@ -916,9 +916,9 @@ const jbApp = {
         });
     },
     
-/**
- * REST functionality 
- */
+//
+// REST functionality 
+//
     /**
      * Load configuration into app
      * 
@@ -980,26 +980,26 @@ const jbApp = {
         }
     },
     
-    /**
-     * AJAX function to request DE by CustomerKey
-     * 
-     * Input: customerKey
-     * 
-     * Successful Return Object: {
-        "requestToken":"",
-        "tokenExpireDateUtc":"",
-        "customObjectId":"",
-        "customObjectKey":"",
-        "pageSize":2500,
-        "page":1,
-        "count":1,
-        "top":0,
-        "items":[]
-        }
-
-     * Failure: false
-     *
-    */
+    //
+    // AJAX function to request DE by CustomerKey
+    //
+    // Input: customerKey
+    // 
+    // Successful Return Object: {
+    //    "requestToken":"",
+    //    "tokenExpireDateUtc":"",
+    //    "customObjectId":"",
+    //    "customObjectKey":"",
+    //    "pageSize":2500,
+    //    "page":1,
+    //    "count":1,
+    //    "top":0,
+    //    "items":[]
+    //    }
+    //
+    // Failure: false
+    // 
+    //
     getDataExtensionRest:function(customerKey){
         if (debug) console.log('(getDataExtension):'+customerKey)
         let requestResponse = $.ajax({
@@ -1063,9 +1063,9 @@ const jbApp = {
         return await jbApp.callBackend('/saveConfig',config)        
     },
 
-/**
- * Main tests run at startup
- */
+// 
+// Main tests run at startup
+//
     testConfigurationExists:async function(){
         console.log('(testConfigurationExists) configExists: '+jbApp.configExists.toString())
         
@@ -1097,7 +1097,11 @@ const jbApp = {
             });     
         }   
     },
-    
+
+    //
+    // Helper functions for
+    // Test child object 
+    //  
     testInstall:async function(){     
         return await jbApp.testConfigurationExists().then((installStatus)=>{
         console.log('(testInstall) Install status: '+installStatus)
@@ -1105,10 +1109,6 @@ const jbApp = {
         return installStatus
         });
     },
-    /**
-     * Helper functions for
-     * Test child object 
-     */
     testAuthentication:async function(){
         return await $.ajax({
             beforeSend:function(){$('#main').html('Loading')},
@@ -1124,7 +1124,6 @@ const jbApp = {
               }
         });        
     },  
-
     sendTestMessage:async function(data){
         if (debug) console.log('testmessage:')
         if (debug) console.table(data)
@@ -1191,9 +1190,9 @@ const jbApp = {
         ]
         return {'details':details,'fields':fields}
     },
-    /**
-     *  Test Object
-     */
+    //
+    // Test Object
+    //
     Test:{
         readSendable:async function(){
             // Nominate table
@@ -1286,8 +1285,8 @@ const jbApp = {
             }
 
             await jbApp.sendTestMessage(testData).then((testResults)=>{
-                let result = '<pre>'+testResults+'</pre>'                     
-                jbApp.Test.updateResults(result)
+                
+                jbApp.Test.updateResults(testResults)
 
                 // Accounce Click
                 console.log('testing:testMessage | '+JSON.stringify(testData))
@@ -1329,8 +1328,8 @@ const jbApp = {
                 jbApp.Test.updateResults(result)
                 });
         },
-        updateResults:async function(results){     
-            let testResults = ( typeof results === 'string' ? results : results.toString() )       
+        updateResults:function(results){     
+            let testResults = ( typeof results === 'string' ? results : (isJson(results) ? JSON.stringify(results) : results.toString()))       
             $('#main').html('<div id="testResults">' + testResults + '</div>')
         }
 
