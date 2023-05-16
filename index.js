@@ -5,7 +5,6 @@ const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 const path = require('path');
 const XML = require('./js/xml.js');
-
 const fetchResponse = response => {
   if (!response.ok) { 
      throw Error(response.statusText);

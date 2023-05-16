@@ -7,7 +7,7 @@ const connection = new Postmonger.Session();
  */
 const debug = true;
 const jbApp = { 
-    version:3.7,
+    version:3.8,
     configurationTable:'passCreator_configuration',
     configTable:null,
     configExists:false,
@@ -800,11 +800,7 @@ const jbApp = {
             
             if (debug) console.log('App version:'+jbApp.version)
             if (debug) console.log('App token:'+jbApp.token)
-        }        
-
-        /**
-         *  Setup 
-         * */
+        }     
         // Perform install test
         await jbApp.testInstall()
 
@@ -817,7 +813,7 @@ const jbApp = {
         });        
 
         if (typeof connection !== 'undefined'){
-        jbApp.bindMenu(connection) /* Order of operations issue */
+            jbApp.bindMenu(connection) /* Order of operations issue */
         }else{
             jbApp.bindMenu(false)
         }
@@ -829,7 +825,13 @@ const jbApp = {
 //
 // Journey Builder
 //
-
+    extractDomain:function(tssd){
+        // Example Input
+        // https://xxxx-xxxxxxx-xxxxxxxxxxxxx.auth.marketingcloudapis.com
+        let protocol = 'https://'
+        let split1 = tssd.replace(protocol,'').split('.')
+        return split1[0]
+    },
     parseEndpoints:function(data){
         let protocol = 'https://'
         if (data.hasOwnProperty('fuelapiRestHost')){
@@ -839,9 +841,20 @@ const jbApp = {
             jbApp.restHost = protocol+data.restHost
             jbApp.authUrl = jbApp.restHost.replace('rest','auth')+'/v2/token'
         }
-        if (data.hasOwnProperty('soapHost')){
-            jbApp.soapHost = protocol+data.soapHost
+        if (data.hasOwnProperty('stackHost')){
+            jbApp.stackHost = protocol+data.stackHost
             jbApp.soapUrl = jbApp.soapHost+'/Service.asmx'
+        }
+        if (data.hasOwnProperty('restTSSD')){
+            jbApp.restTSSD = data.restTSSD
+        }
+        if (data.hasOwnProperty('authTSSD')){
+            jbApp.authTSSD = data.authTSSD
+            jbApp.authUrl = jbApp.authTSSD+'/v2/token'
+        }
+        if (data.hasOwnProperty('fuelapiRestHost')){
+            jbApp.fuelapiRestHost = data.fuelapiRestHost
+            jbApp.authUrl = jbApp.authTSSD+'/v2/token'
         }
     },
     parseSchema:function(){

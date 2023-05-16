@@ -41,6 +41,7 @@ document.addEventListener('DOMContentLoaded', function main() {
             });
     }    
     
+    // Replaces onGetTokens
     if (jbApp.getInteractions){
         connection.trigger('requestInteraction');
         connection.on('requestedInteractions', function (data) {
@@ -49,6 +50,7 @@ document.addEventListener('DOMContentLoaded', function main() {
         });
     }    
     
+    // Replaces onGetEndpoints
     if (jbApp.getEndpoints){
         connection.trigger('requestEndpoints');
         connection.on('requestedEndpoints', function (data) {
