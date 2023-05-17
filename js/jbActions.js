@@ -26,11 +26,12 @@ document.addEventListener('DOMContentLoaded', function main() {
     if (jbApp.getTokens){
         connection.trigger('requestTokens');
         connection.on('requestedTokens', function (data) {
-            //jbApp.token = data['token']
-            jbApp.token = data['fuel2token']
             console.log('*** Tokens ***')
             console.table(data);
-            console.log('*** Token ***', jbApp.token);
+            jbApp.mid = data['MID']
+            jbApp.eid = data['EID']
+            jbApp.legacyToken = data['token']
+            jbApp.token = data['fuel2token']
         });
         }
     
