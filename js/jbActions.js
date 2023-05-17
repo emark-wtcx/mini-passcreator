@@ -214,6 +214,11 @@ function onDoneButtonClick() {
         "apiKey":jbApp.apiKey,
         "authUrl":jbApp.authUrl
     }
+    // If running in an 
+    // instance with TSSDs
+    if (jbApp.restTSSD != ''){
+        restBody.restUrl = jbApp.restTSSD
+    }
 
     /**
      * Place external payload in body of outgoing call
