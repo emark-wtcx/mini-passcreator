@@ -440,11 +440,11 @@ async function writeConfigData(data={}){
 // Function to log data in SFMC
 async function logData(data = {}) {
   if (postDebug) console.log('logData called');
-  const date = getDateTime();
-  const logId = guid();
-  const loggingUri = '/data/v1/async/dataextensions/key:' + logDe + '/rows';
+  let date = getDateTime();
+  let logId = guid();
+  let loggingUri = '/data/v1/async/dataextensions/key:' + logDe + '/rows';
 
-  const row = {
+  let row = {
     'items': [
       {
         'Id': logId,
@@ -466,7 +466,8 @@ async function logData(data = {}) {
       console.log('Log data response:', postDataResponse);
       return postDataResponse;
     }).catch((error) => {
-      return handleError('(logData) error: ' + error);
+      if (postDebug) console.log('(logData) error: ')
+      return handleError(error);
     });
 }
 // Function to log an error
@@ -475,26 +476,28 @@ async function logError(message,data={}){
   let date = getDateTime();
   let logId = guid();
 
-  let row = {'items':[
-    {
-      'Id':logId,
-      'DateTime':date.ISODateTime,
-      'Message':message,
-      'MetaData':JSON.stringify(data)
-    }
+  let row = {
+    'items': [
+      {
+        'Id':logId,
+        'DateTime':date.ISODateTime,
+        'Message':message,
+        'MetaData':JSON.stringify(data)
+      }
     ]
   }
 
-  var logResponse = await postData(loggingUri,row)   
-    .then(async (logResponse) => JSON.stringify(logResponse))
-    .then((logResponse) => {
+  return  await postData(loggingUri,row)   
+  .then((postDataResponse) => {
     if (postDebug){
-      console.log('logError logResponse: ')
-      console.table(logResponse)
-      }
-    return logResponse
-    });  
-  return logResponse;
+      console.log('(logError) response: ');
+      console.table(postDataResponse);
+    }
+    return postDataResponse;
+  }).catch((error) => {
+    if (postDebug) console.log('(logError) error: ')
+    return handleError(error);
+  }); 
 }
 
 async function writeData(targetDe,data={}){
@@ -862,6 +865,10 @@ async function postDataToPassCreator(url = '', postData=null) {
 
       if (finalResponse.status === 200) {
         await logData({ 'message': 'Pass Update sent successfully: ' + postData.pushNotificationText });
+      }
+
+      if (finalResponse.status !== 200) {
+        await logError({ 'message': 'Pass Update failed: ' + postData.pushNotificationText ,'metadata':isJson(finalResponse) ? JSON.stringify(finalResponse) : finalResponse});
       }
 
       return finalResponse;
