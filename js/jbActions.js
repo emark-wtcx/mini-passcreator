@@ -216,8 +216,8 @@ function onDoneButtonClick() {
     }
     // If running in an 
     // instance with TSSDs
-    if (jbApp.restTSSD != ''){
-        restBody.restUrl = jbApp.restTSSD
+    if (jbApp.fuelapiRestHost != ''){
+        restBody.restUrl = jbApp.fuelapiRestHost
     }
 
     /**
