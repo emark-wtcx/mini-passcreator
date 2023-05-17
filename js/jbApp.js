@@ -7,27 +7,51 @@ const connection = new Postmonger.Session();
  */
 const debug = true;
 const jbApp = { 
-    version:3.93,
+    // App flags
+    version:3.94,
+    isTest:false, 
+    isLocalhost:((typeof location !== 'undefined') ? location.hostname === 'localhost' || location.hostname === '127.0.0.1' : false ),
+
+    // SFMC (auto populated)
+    eid:null,
+    mid:null,
+    token:null,
+    subdomain:null,
+    legacyToken:null,
+    
+    // Passcreator Configuration (SFMC)
     configurationTable:'passCreator_configuration',
     configTable:null,
     configExists:false,
     configReady:false,
+
+    // Passcreator (Configured at install or execution)
+    passId:null, 
     apiKey:null,
-    isTest:false, 
-    isLocalhost:((typeof location !== 'undefined') ? location.hostname === 'localhost' || location.hostname === '127.0.0.1' : false ),
+    passUrl:'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
+
+    // Journey Builder
     getSchema:true,
     getTokens:true,
     getEndpoints:true,
     getInteractions:false,
-    token:null,
-    passId:null,
-    passUrl:'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
-    currentStep:0,
-    pageHtml:'',
     deStructure:{},
-    message:'',
-    action:null,
-    dataExtension:null,
+    endpoints:{        
+        "jbMiddleware":"https://eoya8wjvw5vh5ff.m.pipedream.net",
+        "jbTest":"https://eo2mifqm9yelk7e.m.pipedream.net",
+        "execute":"https://real-puce-raven-yoke.cyclic.app/execute",
+        "publish": "https://eon2nxjzthbdt2w.m.pipedream.net",
+        "validate": "https://eoxsr92hcso0n3h.m.pipedream.net",
+        "stop": "https://eoot1xooh8qwfa8.m.pipedream.net"
+    },
+    
+    // App properties
+    action:null, 
+    pageHtml:'',
+    message:'', 
+    dataExtension:null, 
+
+    // Replacements
     system:{
         subscriber:{
             'firstname':'{{Contact.Attribute."Email Demographics".Firstname}}',
@@ -40,14 +64,9 @@ const jbApp = {
             'email':'This is message 3: {email}'
         }
     },
-    endpoints:{        
-        "jbMiddleware":"https://eoya8wjvw5vh5ff.m.pipedream.net",
-        "jbTest":"https://eo2mifqm9yelk7e.m.pipedream.net",
-        "execute":"https://real-puce-raven-yoke.cyclic.app/execute",
-        "publish": "https://eon2nxjzthbdt2w.m.pipedream.net",
-        "validate": "https://eoxsr92hcso0n3h.m.pipedream.net",
-        "stop": "https://eoot1xooh8qwfa8.m.pipedream.net"
-    },
+
+    // Journey Builder UI
+    currentStep:0,
     steps:[
         {
           "label": "Select Type",
@@ -829,8 +848,22 @@ const jbApp = {
         // Example Input
         // https://xxxx-xxxxxxx-xxxxxxxxxxxxx.auth.marketingcloudapis.com
         let protocol = 'https://'
-        let split1 = tssd.replace(protocol,'').split('.')
-        return split1[0]
+        let domainChunks = tssd.replace(protocol,'').split('.')
+        return domainChunks[0]
+    },
+    parseTokens:function(data){
+        if (data.hasOwnProperty('MID')){      
+            jbApp.mid = data['MID']
+            }
+        if (data.hasOwnProperty('EID')){
+            jbApp.eid = data['EID']
+            }
+        if (data.hasOwnProperty('token')){
+            jbApp.legacyToken = data['token']
+            }
+        if (data.hasOwnProperty('fuel2token')){
+            jbApp.token = data['fuel2token']
+            }
     },
     parseEndpoints:function(data){
         let protocol = 'https://'

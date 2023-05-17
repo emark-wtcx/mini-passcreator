@@ -28,10 +28,7 @@ document.addEventListener('DOMContentLoaded', function main() {
         connection.on('requestedTokens', function (data) {
             console.log('*** Tokens ***')
             console.table(data);
-            jbApp.mid = data['MID']
-            jbApp.eid = data['EID']
-            jbApp.legacyToken = data['token']
-            jbApp.token = data['fuel2token']
+            jbApp.parseTokens(data)
         });
         }
     
