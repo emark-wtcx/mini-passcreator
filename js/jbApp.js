@@ -7,27 +7,51 @@ const connection = new Postmonger.Session();
  */
 const debug = true;
 const jbApp = { 
-    version:2.5,
+    // App flags
+    version:3.94,
+    isTest:false, 
+    isLocalhost:((typeof location !== 'undefined') ? location.hostname === 'localhost' || location.hostname === '127.0.0.1' : false ),
+
+    // SFMC (auto populated)
+    eid:null,
+    mid:null,
+    token:null,
+    subdomain:null,
+    legacyToken:null,
+    
+    // Passcreator Configuration (SFMC)
     configurationTable:'passCreator_configuration',
     configTable:null,
     configExists:false,
     configReady:false,
+
+    // Passcreator (Configured at install or execution)
+    passId:null, 
     apiKey:null,
-    isTest:false, 
-    isLocalhost:((typeof location !== 'undefined') ? location.hostname === 'localhost' || location.hostname === '127.0.0.1' : false ),
+    passUrl:'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
+
+    // Journey Builder
     getSchema:true,
     getTokens:true,
     getEndpoints:true,
     getInteractions:false,
-    token:null,
-    passId:null,
-    passUrl:'https://app.passcreator.com/api/pass/{passId}/sendpushnotification',
-    currentStep:0,
-    pageHtml:'',
     deStructure:{},
-    message:'',
-    action:null,
-    dataExtension:null,
+    endpoints:{        
+        "jbMiddleware":"https://eoya8wjvw5vh5ff.m.pipedream.net",
+        "jbTest":"https://eo2mifqm9yelk7e.m.pipedream.net",
+        "execute":"https://real-puce-raven-yoke.cyclic.app/execute",
+        "publish": "https://eon2nxjzthbdt2w.m.pipedream.net",
+        "validate": "https://eoxsr92hcso0n3h.m.pipedream.net",
+        "stop": "https://eoot1xooh8qwfa8.m.pipedream.net"
+    },
+    
+    // App properties
+    action:null, 
+    pageHtml:'',
+    message:'', 
+    dataExtension:null, 
+
+    // Replacements
     system:{
         subscriber:{
             'firstname':'{{Contact.Attribute."Email Demographics".Firstname}}',
@@ -40,14 +64,9 @@ const jbApp = {
             'email':'This is message 3: {email}'
         }
     },
-    endpoints:{        
-        "jbMiddleware":"https://eoya8wjvw5vh5ff.m.pipedream.net",
-        "jbTest":"https://eo2mifqm9yelk7e.m.pipedream.net",
-        "execute":"https://real-puce-raven-yoke.cyclic.app/execute",
-        "publish": "https://eon2nxjzthbdt2w.m.pipedream.net",
-        "validate": "https://eoxsr92hcso0n3h.m.pipedream.net",
-        "stop": "https://eoot1xooh8qwfa8.m.pipedream.net"
-    },
+
+    // Journey Builder UI
+    currentStep:0,
     steps:[
         {
           "label": "Select Type",
@@ -63,9 +82,9 @@ const jbApp = {
         },
       ], 
 
-/**
- * Core & Front End Functionality
- */
+//
+// Core & Front End Functionality
+//
     guid:function() { 
         var d = new Date().getTime();//Timestamp
         var d2 = (performance && performance.now && (performance.now()*1000)) || 0;//Time in microseconds since page-load or 0 if unsupported
@@ -90,11 +109,11 @@ const jbApp = {
             contentType: "application/json",
             dataType: "json",
             data: JSON.stringify(data),
-            success: function(result){
-                return jbApp.restResponse(result)
-            },
             error: function(error){
                 return jbApp.restError(error)
+            },
+            complete: function(data){
+                return jbApp.restResponse(data)
             }
         });
     }, 
@@ -257,7 +276,7 @@ const jbApp = {
     
         }); 
     },
-    async processPageChange(refreshPage){
+    processPageChange:async function(refreshPage){
         /** 
          * Process any page changes
          */
@@ -800,11 +819,7 @@ const jbApp = {
             
             if (debug) console.log('App version:'+jbApp.version)
             if (debug) console.log('App token:'+jbApp.token)
-        }        
-
-        /**
-         *  Setup 
-         * */
+        }     
         // Perform install test
         await jbApp.testInstall()
 
@@ -817,7 +832,7 @@ const jbApp = {
         });        
 
         if (typeof connection !== 'undefined'){
-        jbApp.bindMenu(connection) /* Order of operations issue */
+            jbApp.bindMenu(connection) /* Order of operations issue */
         }else{
             jbApp.bindMenu(false)
         }
@@ -826,10 +841,30 @@ const jbApp = {
         jbApp.processPageChange(1)
     },
 
-/**
- * Journey Builder
- */
-
+//
+// Journey Builder
+//
+    extractDomain:function(tssd){
+        // Example Input
+        // https://xxxx-xxxxxxx-xxxxxxxxxxxxx.auth.marketingcloudapis.com
+        let protocol = 'https://'
+        let domainChunks = tssd.replace(protocol,'').split('.')
+        return domainChunks[0]
+    },
+    parseTokens:function(data){
+        if (data.hasOwnProperty('MID')){      
+            jbApp.mid = data['MID']
+            }
+        if (data.hasOwnProperty('EID')){
+            jbApp.eid = data['EID']
+            }
+        if (data.hasOwnProperty('token')){
+            jbApp.legacyToken = data['token']
+            }
+        if (data.hasOwnProperty('fuel2token')){
+            jbApp.token = data['fuel2token']
+            }
+    },
     parseEndpoints:function(data){
         let protocol = 'https://'
         if (data.hasOwnProperty('fuelapiRestHost')){
@@ -839,9 +874,20 @@ const jbApp = {
             jbApp.restHost = protocol+data.restHost
             jbApp.authUrl = jbApp.restHost.replace('rest','auth')+'/v2/token'
         }
-        if (data.hasOwnProperty('soapHost')){
-            jbApp.soapHost = protocol+data.soapHost
+        if (data.hasOwnProperty('stackHost')){
+            jbApp.stackHost = protocol+data.stackHost
             jbApp.soapUrl = jbApp.soapHost+'/Service.asmx'
+        }
+        if (data.hasOwnProperty('restTSSD')){
+            jbApp.restTSSD = data.restTSSD
+        }
+        if (data.hasOwnProperty('authTSSD')){
+            jbApp.authTSSD = data.authTSSD
+            jbApp.authUrl = jbApp.authTSSD+'/v2/token'
+        }
+        if (data.hasOwnProperty('fuelapiRestHost')){
+            jbApp.fuelapiRestHost = data.fuelapiRestHost
+            jbApp.authUrl = jbApp.authTSSD+'/v2/token'
         }
     },
     parseSchema:function(){
@@ -916,9 +962,9 @@ const jbApp = {
         });
     },
     
-/**
- * REST functionality 
- */
+//
+// REST functionality 
+//
     /**
      * Load configuration into app
      * 
@@ -980,26 +1026,26 @@ const jbApp = {
         }
     },
     
-    /**
-     * AJAX function to request DE by CustomerKey
-     * 
-     * Input: customerKey
-     * 
-     * Successful Return Object: {
-        "requestToken":"",
-        "tokenExpireDateUtc":"",
-        "customObjectId":"",
-        "customObjectKey":"",
-        "pageSize":2500,
-        "page":1,
-        "count":1,
-        "top":0,
-        "items":[]
-        }
-
-     * Failure: false
-     *
-    */
+    //
+    // AJAX function to request DE by CustomerKey
+    //
+    // Input: customerKey
+    // 
+    // Successful Return Object: {
+    //    "requestToken":"",
+    //    "tokenExpireDateUtc":"",
+    //    "customObjectId":"",
+    //    "customObjectKey":"",
+    //    "pageSize":2500,
+    //    "page":1,
+    //    "count":1,
+    //    "top":0,
+    //    "items":[]
+    //    }
+    //
+    // Failure: false
+    // 
+    //
     getDataExtensionRest:function(customerKey){
         if (debug) console.log('(getDataExtension):'+customerKey)
         let requestResponse = $.ajax({
@@ -1063,9 +1109,9 @@ const jbApp = {
         return await jbApp.callBackend('/saveConfig',config)        
     },
 
-/**
- * Main tests run at startup
- */
+// 
+// Main tests run at startup
+//
     testConfigurationExists:async function(){
         console.log('(testConfigurationExists) configExists: '+jbApp.configExists.toString())
         
@@ -1097,7 +1143,11 @@ const jbApp = {
             });     
         }   
     },
-    
+
+    //
+    // Helper functions for
+    // Test child object 
+    //  
     testInstall:async function(){     
         return await jbApp.testConfigurationExists().then((installStatus)=>{
         console.log('(testInstall) Install status: '+installStatus)
@@ -1105,12 +1155,8 @@ const jbApp = {
         return installStatus
         });
     },
-    /**
-     * Helper functions for
-     * Test child object 
-     */
-    testAuthentication:function(){
-        $.ajax({
+    testAuthentication:async function(){
+        return await $.ajax({
             beforeSend:function(){$('#main').html('Loading')},
             type: "POST",
             url: '/testauth',
@@ -1124,11 +1170,10 @@ const jbApp = {
               }
         });        
     },  
-
-    sendTestMessage:function(data){
+    sendTestMessage:async function(data){
         if (debug) console.log('testmessage:')
         if (debug) console.table(data)
-        return $.ajax({
+        return await $.ajax({
             type: "POST",
             url: '/testmessage',
             contentType: "application/json",
@@ -1191,9 +1236,9 @@ const jbApp = {
         ]
         return {'details':details,'fields':fields}
     },
-    /**
-     *  Test Object
-     */
+    //
+    // Test Object
+    //
     Test:{
         readSendable:async function(){
             // Nominate table
@@ -1253,15 +1298,13 @@ const jbApp = {
             return configXml; 
 
         },
-        authenticate:function(){
-            var testResults = jbApp.testAuthentication()
-
-            // Show Results
-            let result = '<pre>'+testResults+'</pre>'                     
-            jbApp.Test.updateResults(result)
-            
-            // Accounce Click
-            console.log('testing:authenticate')
+        authenticate:async function(){
+            await jbApp.testAuthentication()
+                .then((result)=>{             
+                jbApp.Test.updateResults('<pre>'+result+'</pre>')            
+                // Accounce Click
+                console.log('testing:authenticate')
+                });
 
         },
         testLog:async function(){
@@ -1272,9 +1315,9 @@ const jbApp = {
             var testResults = jbApp.log({'message':message})
             let result = '<pre>'+testResults+'</pre>'                     
             jbApp.Test.updateResults(result)
-            
-            // Accounce Click
-            console.log('testing:testLog | '+jbApp.action)
+
+            console.log('Test results:')
+            console.table(testResults)
 
         },
         testMessage:async function(){            
@@ -1288,8 +1331,8 @@ const jbApp = {
             }
 
             await jbApp.sendTestMessage(testData).then((testResults)=>{
-                let result = '<pre>'+testResults+'</pre>'                     
-                jbApp.Test.updateResults(result)
+                
+                jbApp.Test.updateResults(testResults)
 
                 // Accounce Click
                 console.log('testing:testMessage | '+JSON.stringify(testData))
@@ -1332,7 +1375,7 @@ const jbApp = {
                 });
         },
         updateResults:function(results){     
-            let testResults = ( typeof results === 'string' ? results : results.toString() )       
+            let testResults = ( typeof results === 'string' ? results : (isJson(results) ? JSON.stringify(results) : results.toString()))       
             $('#main').html('<div id="testResults">' + testResults + '</div>')
         }
 

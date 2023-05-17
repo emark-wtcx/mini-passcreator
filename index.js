@@ -1,201 +1,19 @@
+// Import required modules
 const express = require('express');
 const app = express();
 const jsdom = require("jsdom");
 const { JSDOM } = jsdom;
 const path = require('path');
+const XML = require('./js/xml.js');
 const fetchResponse = response => {
   if (!response.ok) { 
      throw Error(response.statusText);
   } else {
-     return (isJson(response) ? response.json() : response);
+     return (isJson(response) ? response.json() : response.text());
   }
 };
-const XML = {
-  soapBuildTag:function(field='',value=null){
-    let xml = null
-    console.log('Formatting: '+field+' is '+(typeof value))
-    if (
-        typeof value === 'boolean'
-        || field == 'FieldType'
-        || field == 'Length'
-    ){
-        xml = br+'<'+field+'>'+value+'</'+field+'>';
-    }else{
-        xml = br+'<'+field+'><![CDATA['+value+']]></'+field+'>';
-    }
-    return xml
-  },
 
-  soapBuildDe:async function(details={},fields = [],sendableFields=[]){
-      /**
-       * Envelope Wrapper
-       */
-      let soapOpening = `<?xml version="1.0" encoding="UTF-8"?>
-  <s:Envelope xmlns:s="http://www.w3.org/2003/05/soap-envelope" xmlns:a="http://schemas.xmlsoap.org/ws/2004/08/addressing" xmlns:u="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
-  <s:Header>
-      <a:Action s:mustUnderstand="1">Create</a:Action>
-      <a:To s:mustUnderstand="1">{{url}}</a:To>
-      <fueloauth xmlns="http://exacttarget.com">{{access_token}}</fueloauth>
-  </s:Header>
-  <s:Body xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-  <CreateRequest xmlns="http://exacttarget.com/wsdl/partnerAPI">
-      <Options></Options>
-      <Objects xsi:type="DataExtension">` 
-      let soapClosing = `
-          </Objects>
-      </CreateRequest>
-  </s:Body>
-  </s:Envelope>`
-
-      /**
-       * SOAP Envelope
-       */     
-      let SOAP = soapOpening;
-
-      /**
-       * SOAP Details
-       */        
-      let soapDetails = ''
-      for (var d in details){
-          let detail = details[d]
-          soapDetails += XML.soapBuildTag(d,detail)
-      }
-
-      /**
-       * Sendable fields
-       */
-      let sendFields = ''
-      if (sendableFields.length > 0){
-          for (var s in sendableFields){
-              let field = sendableFields[s];
-              let sendField=br+'<SendableDataExtensionField>'+br
-              for(var x in field){
-                  let prop = field[x]
-                  sendField += XML.soapBuildTag(x,prop)
-              }
-              sendField+='</SendableDataExtensionField>'+br
-              sendFields += sendField
-          }
-      }
-      if (sendFields != '' ){
-          SOAP += br+sendFields+br
-      }
-
-      /**
-       * Standard Fields
-       */
-      let mainFields = ''
-      if (fields.length > 0){
-          mainFields += br+'<Fields>'+br
-          for (var f in fields){
-              let field = fields[f]                
-              let soapField='<Field>'
-              for(var x in field){
-                  let prop = field[x]
-                  soapField += XML.soapBuildTag(x,prop)
-              }
-              // End PK & Nullable application
-
-              soapField+=br+'</Field>'
-              mainFields += soapField+br
-          }
-          mainFields += '</Fields>'+br
-      }
-
-      /**
-       * Build Envelope 
-       */
-      if (soapDetails!=''){
-          SOAP += soapDetails
-      }
-      if (sendableFields.length && sendFields!=''){
-          SOAP += sendFields
-      }
-      if (fields.length && mainFields != ''){
-          SOAP += mainFields
-      }
-      return SOAP+soapClosing;
-  },
-
-  buildConfigXml:async function(){
-      let details = {
-          CustomerKey:jbApp.configurationTable,
-          Name:jbApp.configurationTable,
-          isSendable:false
-      }
-      let fields = [
-      {
-          CustomerKey:'Id',
-          Name:'Id',
-          FieldType:'Text',
-          Length:36,
-          isRequired:true,
-          isPrimaryKey:true
-      },{
-          CustomerKey:'APIKey',
-          Name:'APIKey',
-          FieldType:'Text',
-          Length:80,
-          isRequired:false,
-          isPrimaryKey:false
-      },{
-          CustomerKey:'logo_url',
-          Name:'logo_url',
-          FieldType:'Text',
-          Length:500,
-          isRequired:false,
-          isPrimaryKey:false
-      },{
-          CustomerKey:'DateModified',
-          Name:'DateModified',
-          FieldType:'Date',
-          isRequired:false,
-          isPrimaryKey:false
-      },
-      ]
-      return this.soapBuildDe(details,fields)
-  },
-
-  buildLogXml:async function(logName){
-      let details = {
-          CustomerKey:logName,
-          Name:logName,
-          isSendable:false
-      }
-      let fields = [
-      {
-          CustomerKey:'Id',
-          Name:'Id',
-          FieldType:'Text',
-          Length:36,
-          isRequired:true,
-          isPrimaryKey:true
-      },{
-          CustomerKey:'DateModified',
-          Name:'DateModified',
-          FieldType:'Date',
-          isRequired:false,
-          isPrimaryKey:false
-      },
-      {
-          CustomerKey:'Message',
-          Name:'Message',
-          FieldType:'Text',
-          Length:4000,
-          isRequired:false,
-          isPrimaryKey:false
-      },
-      {
-          CustomerKey:'MetaData',
-          Name:'MetaData',
-          FieldType:'Text',
-          isRequired:false,
-          isPrimaryKey:false
-      }
-      ]
-      return this.soapBuildDe(details,fields)
-  },
-}
+// Define variables
 var br = "\n"
 
 var configDe = 'passCreator_configuration'
@@ -209,63 +27,50 @@ var testUrl = 'https://app.passcreator.com/api/pass/f2235798-6df8-4c85-97b3-a8b0
 var protocol = 'https://'
 var subdomain = 'mc3tb2-hmmbngz-85h36g8xz1b4m'
 
-var isLocalhost = null
-
 var HOME_DIR = '/';
 var postDebug = true
 var dataType = 'application/json'
 
-/* Auth domain for REST */
 // Raw properties
-var access_token,accessToken,tokenExpiry,MID = null
+var access_token,accessToken,tokenExpiry,isLocalhost,MID = null
 
 // Token Domain
 var tokenUrl = '/v2/token'
 var authDomain = protocol+subdomain+'.auth.marketingcloudapis.com'+tokenUrl 
 
-/* REST domain */
+// REST domain
 var restDomain = protocol+subdomain+'.rest.marketingcloudapis.com'
-/* SOAP domain */
+// SOAP domain
 var soapDomain = protocol+subdomain+'.soap.marketingcloudapis.com/Service.asmx'
 
+// Set up middleware
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 var PORT = process.env.port || 8080;
 
-/**
- *
- * Front End Routes 
- * 
-**/
+//Front End Routes
+
+// Serve static files from the root directory
 app.use('/', express.static(__dirname + HOME_DIR));
 
+// Handle GET request to root URL
 app.get('/', function (req, res) {
   res.sendFile(path.resolve('index.html'));
 });
 
-/**
- *  Mock form access
- * */
+// Handle GET request to "/form" URL
 app.get('/form', function (req, res) {
   res.sendFile(path.resolve('./html/form.html'));
 });
 
-/**
- *  Tesing area access
- **/
+// Handle GET request to "/test" URL
 app.get('/test', function (req, res) {
   res.sendFile(path.resolve('./html/test_area.html'));
 });
 
-/**
- *  
- * Back End Routes
- * 
-**/
+// Back End Routes
 
-/**
- * Send payload to Passcreator 
- */
+// Handle POST request to "/execute" URL
 app.post('/execute',async function (req, res, next) { 
   if (postDebug) console.log('/execute called ')
   if (req.body != null){
@@ -279,9 +84,7 @@ app.post('/execute',async function (req, res, next) {
   }
 })
 
-/**
- * Test reading data from a DataExtension identified by CustomerKey 
- */
+// Handle POST request to "/getde" URL
 app.post('/getde',async function (req, res, next) { 
   if (req.body.customerKey != null){
     let getde = await getDataExtension(req.body.customerKey).then((getServerResponse) => {
@@ -293,9 +96,7 @@ app.post('/getde',async function (req, res, next) {
   }
 })
 
-/**
- * Route to install config table
- */
+// Route to install config table
 app.post('/install',async function (req, res, next) { 
   if (postDebug) console.log('/install route called ') 
   if (req != null && typeof req !== 'undefined'){
@@ -325,9 +126,7 @@ app.post('/install',async function (req, res, next) {
   }
 })
 
-/**
- * Route to install config table
- */
+//Route to write config data
 app.post('/saveConfig',async function (req, res, next) { 
   if (postDebug) console.log('/install route called ') 
   if (req != null){
@@ -349,9 +148,7 @@ app.post('/saveConfig',async function (req, res, next) {
   }
 })
 
-/**
- * Route to Write data to the log 
- */
+//Route to Write data to the log 
 app.post('/log',async function (req, res, next) { 
   if (postDebug) console.log('(/log) called') 
   if (req != null){
@@ -368,9 +165,7 @@ app.post('/log',async function (req, res, next) {
   }
 })
 
-/**
- * Test requesting an authentication token
- */
+// Handle POST request to "/testauth" URL
 app.post('/testauth',async function (req, res, next) { 
   if (postDebug) console.log('/testauth called ') 
   if (req != null){
@@ -386,9 +181,7 @@ app.post('/testauth',async function (req, res, next) {
   }
 })
 
-/**
- * Send a mock payload to the test endpoint 
- */
+// Handle POST request to "/testmessage" URL
 app.post('/testmessage',async function (req, res, next) { 
   if (postDebug) console.log('/testmessage called ')
   if (req.body != null){
@@ -403,18 +196,18 @@ app.post('/testmessage',async function (req, res, next) {
 })
 
 
-/**
- * Generic Error Handling
- */
+// Generic Error Handling middleware
 app.use(function (err, req, res, next) {
   console.table(err.stack)
   res.status(500).send('Something broke!')
 })
 
 
-/**
- *  Back End Functions
-* */
+//
+// Back End Functions
+//
+
+// Function (helper) to get test if something is JSON
 function isJson(input){
   try {
       JSON.stringify(input)
@@ -425,6 +218,7 @@ function isJson(input){
   }
   return true;
 }
+// Function to generate a GUID
 function guid() { 
   var d = new Date().getTime();//Timestamp
   var d2 = (performance && performance.now && (performance.now()*1000)) || 0;//Time in microseconds since page-load or 0 if unsupported
@@ -441,6 +235,7 @@ function guid() {
   });
 }
 
+// Function to get the current date and time
 function getDateTime(){
   let d = new Date();
   var requestDate = d.toLocaleDateString()
@@ -453,19 +248,30 @@ function getDateTime(){
     'ISODateTime':d.toISOString()
   }
 }
-/**
- * Set the details from Journey Builder 
- */
+
+// Function to set the access token from a Journey Builder Payload
 function setToken(payload){
-  if (postDebug) console.log('(setToken) setting token: '+payload.token)
-  access_token = payload.token
-  accessToken = 'Bearer '+access_token
+  if (payload.hasOwnProperty('token') && !!payload.token){
+    if (postDebug) console.log('(setToken) setting token: '+payload.token)
+    access_token = payload.token
+    accessToken = 'Bearer '+access_token
+    return true;
+  }else{
+    return false;
+  }
 }
+// Function to set the REST URL from a Journey Builder Payload
 function setRestUrl(payload){
-  if (postDebug) console.log('(setRestUrl) setting restUrl: '+payload.restUrl)
-  restDomain = payload.restUrl
+  if (payload.hasOwnProperty('restUrl') && !!payload.restUrl){
+    if (postDebug) console.log('(setRestUrl) setting restUrl: '+payload.restUrl)
+    restDomain = payload.restUrl
+    return true;
+  }else{
+    return false;
+  }
 }
 
+// Function to send a message to Passcreator
 async function postMessage(data){
   /**
    *  The inArguments property originates in JourneyBuilder
@@ -519,7 +325,7 @@ async function postMessage(data){
   /**
    * Transmit Message via postDataToPassCreator function
    */
-  let postResponse = await postDataToPassCreator(messageData.endpoint, bodyContent)
+  return await postDataToPassCreator(messageData.endpoint, bodyContent)
     .then((passResponse) => {
       //
       //  Build response 
@@ -546,9 +352,9 @@ async function postMessage(data){
     }).catch((error) => {
       return handleError(error);
     }); 
-  return postResponse
 }
 
+// Function to get data from a DataExtension
 async function getDataExtension(customerKey){
   // Request setup
   var data = {}
@@ -631,33 +437,39 @@ async function writeConfigData(data={}){
     return response
     });  
 }
-async function logData(data={}){
-  if (postDebug) console.log('logData called')
-  let date = getDateTime();
-  let logId = guid();
-  let loggingUri = '/data/v1/async/dataextensions/key:'+logDe+'/rows'
+// Function to log data in SFMC
+async function logData(data = {}) {
+  if (postDebug) console.log('logData called');
+  const date = getDateTime();
+  const logId = guid();
+  const loggingUri = '/data/v1/async/dataextensions/key:' + logDe + '/rows';
 
-  let row = {'items':[
-    {
-      'Id':logId,
-      'DateTime':date.ISODateTime,
-      'Message':(data.hasOwnProperty('message') ? data.message : JSON.stringify(data)),
-      'MetaData':JSON.stringify(data)
-    }
+  const row = {
+    'items': [
+      {
+        'Id': logId,
+        'DateTime': date.ISODateTime,
+        'Message': (data.hasOwnProperty('message') ? data.message : JSON.stringify(data)),
+        'MetaData': JSON.stringify(data)
+      }
     ]
-  }
-  
-  if (postDebug) console.log('logData loggingUrl: '+loggingUri)
-  if (postDebug) console.log('logData items: ')
-  if (postDebug) console.table(row.items)
+  };
 
-  return await postData(loggingUri,row)   
-    .then((postDataResponse)=>{
-      return postDataResponse
+  if (postDebug) console.log('(logData) loggingUrl: ' + loggingUri);
+  if (postDebug) console.log('(logData) items: ');
+  if (postDebug) console.table(row.items);
+
+  return await postData(loggingUri, row)
+    .then((postDataResponse) => {
+      if (postDebug) console.log('(logData) response: ');
+      if (postDebug) console.table(postDataResponse);
+      console.log('Log data response:', postDataResponse);
+      return postDataResponse;
     }).catch((error) => {
-      return handleError('(Handle Error) '+error);
-    }); 
+      return handleError('(logData) error: ' + error);
+    });
 }
+// Function to log an error
 async function logError(message,data={}){
   let loggingUri = '/data/v1/async/dataextensions/key:'+errorDe+'/rows'
   let date = getDateTime();
@@ -717,6 +529,8 @@ async function writeData(targetDe,data={}){
 
 // refreshToken(data)
   // Purpose
+  // Converts SFMC Rest auth response 
+  // to internal properties
   // 
   // Input 
   // data = Response From getAccessToken
@@ -769,16 +583,20 @@ function refreshToken(data){
 //
 function tokenValid(){
   if (postDebug) console.log('Checking Token')
-  if (accessToken == null
-    || tokenExpiry == null){
+  if (accessToken == null){
       if (postDebug) console.log('No token to check')
       return false
   }else{
+    let tokenValid = true
     let d = new Date();
     let time = d.getTime()
     console.log('Checking: (tokenExpiry) '+tokenExpiry)
     console.log('Checking: (time) '+time)
-    let tokenValid = (accessToken != null && parseInt(tokenExpiry)>parseInt(time)) ? true : false
+
+    if (tokenExpiry != null){
+      tokenValid = (parseInt(tokenExpiry)>parseInt(time)) ? true : false
+    }
+    
     if (postDebug){
       console.log('Checking: token is valid? '+tokenValid)
     }
@@ -821,7 +639,7 @@ async function getAccessToken(){
       console.table(authBody)
       }
 
-    var authResponse = await fetch(authUrl, {
+      var authResponse = await fetch(authUrl, {
         method: 'POST', 
         mode: 'no-cors', 
         cache: 'no-cache', 
@@ -830,18 +648,21 @@ async function getAccessToken(){
         redirect: 'follow', 
         referrerPolicy: 'no-referrer', 
         body: JSON.stringify(authBody) 
-      }).catch((error) => {
+      })
+      .catch((error) => {
         // Broadcast error 
         if (postDebug) console.log('Backend auth error:'+JSON.stringify(error));
         return error;
-      }).then(response => response.json())
+      })
+      .then(response => response.json())
       .then((authenticationResponse) => {  
         if (postDebug) console.log('Refreshing Authentication')
         accessToken = refreshToken(authenticationResponse)
         return accessToken
-      })
-    if (postDebug) console.log('Authentication requested')
-    return authResponse
+      });
+      
+      if (postDebug) console.log('Authentication requested')
+      return authResponse;
   }else{
     if (postDebug) console.log('Token valid: Authentication cached: '+accessToken)
     return accessToken
@@ -893,42 +714,57 @@ async function getData(url = '', headers) {
   // failure = handleError(error)
   //
 async function postData(url = '', postData=null) {
+  console.log('(postData) starts')
   if (url != '' && postData != null){
-    let postResponse = await getAccessToken()
-      .then(async accessToken => {
-        var headers = {
-          "Accept": "*/*",
-          "Content-Type": dataType,
-          "Authorization":accessToken
-        }
-        // Prepend Rest Domain to URL 
-        // (if missing)
-        if (url.indexOf(restDomain)==-1){
-          url = restDomain+url
-        }
+    let accessToken = await getAccessToken()
+    var headers = {
+      "Accept": "*/*",
+      "Content-Type": dataType,
+      "Authorization":accessToken
+    }
+    // Prepend Rest Domain to URL 
+    // (if missing)
+    if (url.indexOf(restDomain)==-1){
+      url = restDomain+url
+    }
 
-        if (postDebug) {
-          console.log('(postData) url: '+url)
-          console.log('(postData) headers: ')
-          console.table(headers)
-          console.log('(postData) data: ')
-          console.log(JSON.stringify(postData))
-        }
+    if (postDebug) {
+      console.log('(postData) url: '+url)
+      console.log('(postData) headers: ')
+      console.table(headers)
+      console.log('(postData) data: ')
+      console.log(JSON.stringify(postData))
+    }
 
-        return await fetch(url, {
-            method: 'POST', 
-            headers: headers,
-            body: JSON.stringify(postData)
-            })
-          .then((response)=>{return fetchResponse(response)})
-          .then((finalResponse)=>{return finalResponse})
-          .catch((error) => {
-              return handleError(error);
-            });  
-      }
-    );    
-    return postResponse; // collect & return response
-  }
+    var fetchResult = await fetch(url, {
+      method: 'POST', 
+      headers: headers,
+      body: JSON.stringify(postData)
+      })
+    .then((response)=>{
+      if (postDebug) console.log('(postData) response: ')
+      if (postDebug) console.table(response)
+      return response.json()
+    })
+    .then((finalResponse)=>{
+      if (postDebug) console.log('(postData) finalResponse: ')
+      if (postDebug) console.log(JSON.stringify(finalResponse))
+      return finalResponse
+    })
+    .catch((error) => {
+      if (postDebug) console.log('(postData) error: ')
+      if (postDebug) console.table(error)
+      handleError(error);
+      throw error;
+    }); 
+
+    console.log('(postData) Fetch Result: ')
+    console.table(fetchResult)
+
+    return fetchResult;
+}else{
+  console.log('(postData) missing input')
+}
 }
 
 // soapRequest(soapEnv='')
@@ -998,45 +834,41 @@ async function soapRequest(soapEnv=''){
 //
 async function postDataToPassCreator(url = '', postData=null) {
   if (url != '' && postData != null){
-    //
-    // Set Custom Headers 
-    //
     var headers = {
       "Accept": dataType,
       "Content-Type": dataType,
-      "Authorization":postData.apiKey
-    }
+      "Authorization": postData.apiKey
+    };
 
-    console.log('(pDTPC) Input headers:')
-    console.table(headers)
-    
-    console.log('(pDTPC) Input Data:')
-    console.table(postData)
-    //
-    // Perform API Call
-    //
-    return await fetch(url, {
-      method: 'POST', 
-      mode: 'no-cors', 
-      cache: 'no-cache', 
-      credentials: 'omit', 
-      headers: headers,
-      redirect: 'follow', 
-      referrerPolicy: 'no-referrer', 
-      body: JSON.stringify(postData) 
-    })// Parse Response
-    .then((finalResponse)=>{
-      let response = parseRestResponse(finalResponse)
-      if (response.status == 200){
-        logData({'message':'Pass Update sent successfully: '+postData.pushNotificationText})
+    console.log('(pDTPC) Input headers:');
+    console.table(headers);
+
+    console.log('(pDTPC) Input Data:');
+    console.table(postData);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        mode: 'cors',
+        cache: 'no-cache',
+        credentials: 'omit',
+        headers: headers,
+        redirect: 'follow',
+        referrerPolicy: 'no-referrer',
+        body: JSON.stringify(postData)
+      });
+
+      const finalResponse = await parseRestResponse(response);
+
+      if (finalResponse.status === 200) {
+        await logData({ 'message': 'Pass Update sent successfully: ' + postData.pushNotificationText });
       }
-      return response
-    })
-    // Announce and log response
-    .catch((error) => {
-      let errorResponse = `(pDTPC) ${error}`
+
+      return finalResponse;
+    } catch (error) {
+      let errorResponse = `(pDTPC) ${error}`;
       return handleError(errorResponse);
-    }); 
+    }
   }
 }
 
@@ -1055,33 +887,33 @@ async function postDataToPassCreator(url = '', postData=null) {
   // 'body':explainError(error)
   // } 
 //
-function handleError(error){  
-  // Response time
+function handleError(error) {
   var date = getDateTime();
 
-  if (postDebug) console.log('(handleError) Error:');
-  console.table(error)
-  //
-  // Construct Standardised Response
-  //
-  var errorResponse = {
-    'requestDate':date.DateTime,
-    'type':typeof error,
-    'body':(typeof error !== 'string') ? JSON.stringify(error) : error
-  }  
-  // Append Error Status (if defined)
-  if (error.hasOwnProperty('status')){
-    errorResponse.status = error.hasOwnProperty('status') 
+  if (postDebug) {
+    console.log('(handleError) Error:');
+    console.table(error);
   }
 
-  if (error.hasOwnProperty('cause') && error.cause.hasOwnProperty('code')){ 
-    let errorDetails = explainError(error)
-    errorResponse.body = errorDetails.body
-    errorResponse.status = errorDetails.status
+  var errorResponse = {
+    'requestDate': date.DateTime,
+    'type': typeof error,
+    'body': (typeof error !== 'string') ? JSON.stringify(error) : error
+  };
+
+  if (error.hasOwnProperty('status')) {
+    errorResponse.status = error.status;
   }
-  
-  return errorResponse
+
+  if (error.hasOwnProperty('cause') && error.cause.hasOwnProperty('code')) {
+    var errorDetails = explainError(error);
+    errorResponse.body = errorDetails.body;
+    errorResponse.status = errorDetails.status;
+  }
+
+  return errorResponse;
 }
+
 
 
 // explainError(error)
@@ -1138,48 +970,39 @@ function explainError(error){
   // 'body':null
   // } 
 //
-function parseRestResponse(result) {  
-  // Response time
+function parseRestResponse(result) {
   var date = getDateTime();
-  
-  //
-  // Construct Standardised Response
-  //
-  var messageResponse = {
-    'requestDate':date.DateTime,
-    'body':null
-  }      
-  
-  
-  if (result.hasOwnProperty('status')){
-    // Respect original status
-    messageResponse.status = result.status 
-  }else{
-    // Assume Success if orignal response doesn't have status
-    messageResponse.status = 200
-  }
-  
-  if (result.hasOwnProperty('errorcode')){
-    // Overwrite results if errorCode detected
-    if (result.hasOwnProperty('message')){
-        messageResponse.body = result.message
-      }
-    if (result.hasOwnProperty('errorcode')){
-        messageResponse.status = result.errorcode
-        }
 
-    
-    messageResponse = (isJson(messageResponse) ? JSON.stringify(messageResponse) : response)    
-      
-    console.log('(parseRestResponse) Response: '+JSON.stringify(messageResponse))
-    return messageResponse
-  }else{
-    //  Return standardised messageResponse
-    messageResponse.body = result
-    console.log('(parseRestResponse) Response: '+JSON.stringify(messageResponse))
-    return messageResponse
-  }  
+  var messageResponse = {
+    'requestDate': date.DateTime,
+    'body': null
+  };
+
+  if (result.hasOwnProperty('status')) {
+    messageResponse.status = result.status;
+  } else {
+    messageResponse.status = 200;
+  }
+
+  if (result.hasOwnProperty('errorcode')) {
+    if (result.hasOwnProperty('message')) {
+      messageResponse.body = result.message;
+    }
+    if (result.hasOwnProperty('errorcode')) {
+      messageResponse.status = result.errorcode;
+    }
+
+    var response = isJson(messageResponse) ? JSON.stringify(messageResponse) : messageResponse;
+
+    console.log('(parseRestResponse) Response: ' + JSON.stringify(response));
+    return response;
+  } else {
+    messageResponse.body = result;
+    console.log('(parseRestResponse) Response: ' + JSON.stringify(messageResponse));
+    return messageResponse;
+  }
 }
+
 
 // parseSoapResponse(result)
   // Purpose

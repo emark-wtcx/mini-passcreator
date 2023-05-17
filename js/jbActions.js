@@ -26,8 +26,9 @@ document.addEventListener('DOMContentLoaded', function main() {
     if (jbApp.getTokens){
         connection.trigger('requestTokens');
         connection.on('requestedTokens', function (data) {
-            jbApp.token = data['token']
-            console.log('*** Tokens ***', jbApp.token);
+            console.log('*** Tokens ***')
+            console.table(data);
+            jbApp.parseTokens(data)
         });
         }
     
@@ -41,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function main() {
             });
     }    
     
+    // Replaces onGetTokens
     if (jbApp.getInteractions){
         connection.trigger('requestInteraction');
         connection.on('requestedInteractions', function (data) {
@@ -49,6 +51,7 @@ document.addEventListener('DOMContentLoaded', function main() {
         });
     }    
     
+    // Replaces onGetEndpoints
     if (jbApp.getEndpoints){
         connection.trigger('requestEndpoints');
         connection.on('requestedEndpoints', function (data) {
@@ -211,6 +214,11 @@ function onDoneButtonClick() {
         "restUrl":jbApp.restUrl,
         "apiKey":jbApp.apiKey,
         "authUrl":jbApp.authUrl
+    }
+    // If running in an 
+    // instance with TSSDs
+    if (jbApp.restTSSD != ''){
+        restBody.restUrl = jbApp.restTSSD
     }
 
     /**

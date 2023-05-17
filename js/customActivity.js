@@ -29,13 +29,13 @@ function onRender() {
     // Disable the next button if a value isn't selected
     $("#select1").change(function () {
     var message = getMessage();
-    connection.trigger("updateButton", {
-        button: "next",
-        enabled: Boolean(message),
-    });
+        connection.trigger("updateButton", {
+            button: "next",
+            enabled: Boolean(message),
+        });
 
-    $("#message").html(message);
-    });
+        $("#message").html(message);
+        });
 
     // Toggle step 4 active/inactive
     // If inactive, wizard hides it and skips over it during navigation
@@ -93,7 +93,7 @@ function onGetTokens(tokens) {
 
 function onGetEndpoints(endpoints) {
     // Response: endpoints = { restHost: <url> } i.e. "rest.s1.qa1.exacttarget.com"
-    // console.log(endpoints);
+     console.log(endpoints);
 }
 
 function onClickedNext() {
