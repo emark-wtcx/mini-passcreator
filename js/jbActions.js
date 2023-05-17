@@ -28,7 +28,9 @@ document.addEventListener('DOMContentLoaded', function main() {
         connection.on('requestedTokens', function (data) {
             //jbApp.token = data['token']
             jbApp.token = data['fuel2token']
-            console.log('*** Tokens ***', jbApp.token);
+            console.log('*** Tokens ***')
+            console.table(data);
+            console.log('*** Token ***', jbApp.token);
         });
         }
     
