@@ -8,7 +8,7 @@ const connection = new Postmonger.Session();
 const debug = true;
 const jbApp = { 
     // App flags
-    version:3.94,
+    version:4.0,
     isTest:false, 
     isLocalhost:((typeof location !== 'undefined') ? location.hostname === 'localhost' || location.hostname === '127.0.0.1' : false ),
 
