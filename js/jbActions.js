@@ -26,7 +26,8 @@ document.addEventListener('DOMContentLoaded', function main() {
     if (jbApp.getTokens){
         connection.trigger('requestTokens');
         connection.on('requestedTokens', function (data) {
-            jbApp.token = data['token']
+            //jbApp.token = data['token']
+            jbApp.token = data['fuel2token']
             console.log('*** Tokens ***', jbApp.token);
         });
         }
@@ -216,8 +217,8 @@ function onDoneButtonClick() {
     }
     // If running in an 
     // instance with TSSDs
-    if (jbApp.fuelapiRestHost != ''){
-        restBody.restUrl = jbApp.fuelapiRestHost
+    if (jbApp.restTSSD != ''){
+        restBody.restUrl = jbApp.restTSSD
     }
 
     /**
